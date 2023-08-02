@@ -151,6 +151,7 @@ func (p *SonatypeIqProvider) Resources(ctx context.Context) []func() resource.Re
 func (p *SonatypeIqProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		ApplicationsDataSource,
+		OrganizationsDataSource,
 	}
 }
 

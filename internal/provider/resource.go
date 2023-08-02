@@ -67,11 +67,6 @@ func (*baseResource) Metadata(context.Context, resource.MetadataRequest, *resour
 	panic("unimplemented")
 }
 
-// NewApplicationResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
-	return &baseResource{}
-}
-
 // Configure implements resource.ResourceWithConfigure.
 func (r *baseResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
