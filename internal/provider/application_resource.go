@@ -104,19 +104,6 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(*application.Id)
-	// for orderItemIndex, orderItem := range order.Items {
-	// 	plan.Items[orderItemIndex] = orderItemModel{
-	// 		Coffee: orderItemCoffeeModel{
-	// 			ID:          types.Int64Value(int64(orderItem.Coffee.ID)),
-	// 			Name:        types.StringValue(orderItem.Coffee.Name),
-	// 			Teaser:      types.StringValue(orderItem.Coffee.Teaser),
-	// 			Description: types.StringValue(orderItem.Coffee.Description),
-	// 			Price:       types.Float64Value(orderItem.Coffee.Price),
-	// 			Image:       types.StringValue(orderItem.Coffee.Image),
-	// 		},
-	// 		Quantity: types.Int64Value(int64(orderItem.Quantity)),
-	// 	}
-	// }
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
 	// Set state to fully populated data
@@ -128,7 +115,42 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *applicationResource) Read(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var state applicationModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx = context.WithValue(
+		ctx,
+		sonatypeiq.ContextBasicAuth,
+		r.auth,
+	)
+
+	// Get refreshed Application from IQ
+	application, _, err := r.client.ApplicationsAPI.GetApplication(ctx, state.ID.ValueString()).Execute()
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading IQ Application",
+			"Could not read Application with ID "+state.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+
+	// Overwrite items with refreshed state
+	state.ID = types.StringValue(*application.Id)
+	state.Name = types.StringValue(*application.Name)
+	state.PublicId = types.StringValue(*application.PublicId)
+
+	// Set refreshed state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
