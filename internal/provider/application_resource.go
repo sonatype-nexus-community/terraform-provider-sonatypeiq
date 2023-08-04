@@ -177,8 +177,74 @@ func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *applicationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan applicationModelResource
+	var state applicationModelResource
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Make Update API Call
+	ctx = context.WithValue(
+		ctx,
+		sonatypeiq.ContextBasicAuth,
+		r.auth,
+	)
+	app_update_request := r.client.ApplicationsAPI.UpdateApplication(ctx, state.ID.ValueString())
+	app_update_request = app_update_request.ApiApplicationDTO(sonatypeiq.ApiApplicationDTO{
+		Name:            plan.Name.ValueStringPointer(),
+		PublicId:        plan.PublicId.ValueStringPointer(),
+		OrganizationId:  plan.OrganizationId.ValueStringPointer(),
+		ContactUserName: plan.ContactUserName.ValueStringPointer(),
+	})
+
+	application, api_response, err := app_update_request.Execute()
+
+	// Call API
+	if err != nil {
+		error_body, _ := io.ReadAll(api_response.Body)
+		resp.Diagnostics.AddError(
+			"Error updating Application",
+			"Could not update Application, unexpected error: "+api_response.Status+": "+string(error_body),
+		)
+		return
+	}
+
+	// Map response body to schema and populate Computed attribute values
+	plan.ID = types.StringValue(*application.Id)
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+
+	// Set state to fully populated data
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *applicationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state applicationModelResource
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Make Delete API Call
+	ctx = context.WithValue(
+		ctx,
+		sonatypeiq.ContextBasicAuth,
+		r.auth,
+	)
+
+	api_response, err := r.client.ApplicationsAPI.DeleteApplication(ctx, state.ID.ValueString()).Execute()
+	if err != nil {
+		error_body, _ := io.ReadAll(api_response.Body)
+		resp.Diagnostics.AddError(
+			"Error deleting Application",
+			"Could not delete Application, unexpected error: "+api_response.Status+": "+string(error_body),
+		)
+		return
+	}
 }
