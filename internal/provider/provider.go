@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -42,7 +43,7 @@ type SonatypeIqProvider struct {
 
 // SonatypeIqProviderModel describes the provider data model.
 type SonatypeIqProviderModel struct {
-	Host     types.String `tfsdk:"host"`
+	Url      types.String `tfsdk:"url"`
 	Username types.String `tfsdk:"username"`
 	Password types.String `tfsdk:"password"`
 }
@@ -55,7 +56,7 @@ func (p *SonatypeIqProvider) Metadata(ctx context.Context, req provider.Metadata
 func (p *SonatypeIqProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"host": schema.StringAttribute{
+			"url": schema.StringAttribute{
 				MarkdownDescription: "Sonatype IQ Server URL",
 				Required:            true,
 			},
@@ -84,21 +85,21 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 	}
 
 	// Validate Provider Configuration
-	if config.Host.IsUnknown() {
+	if config.Url.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("host"),
-			"Unknown Sonatype IQ Server Host",
+			path.Root("url"),
+			"Unknown Sonatype IQ Server URL",
 			"The provider is unable to work without a Sonatype IQ Server URL which should begin http:// or https://",
 		)
 	}
 
-	// if _, error := url.ParseRequestURI(config.Host.ValueString()); error != nil {
-	// 	resp.Diagnostics.AddAttributeError(
-	// 		path.Root("host"),
-	// 		"Invalid Sonatype IQ Server Host",
-	// 		"The provider is unable to work without a valid Sonatype IQ Server URL",
-	// 	)
-	// }
+	if _, error := url.ParseRequestURI(config.Url.ValueString()); error != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("url"),
+			"Invalid Sonatype IQ Server URL",
+			"The provider is unable to work without a valid Sonatype IQ Server URL",
+		)
+	}
 
 	if config.Username.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
@@ -122,12 +123,11 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 
 	// Example client configuration for data sources and resources
 	configuration := sonatypeiq.NewConfiguration()
-	configuration.Host = config.Host.ValueString()
-	configuration.UserAgent = "sonatypeiq-terraform-pf/" + p.version
+	configuration.UserAgent = "sonatypeiq-terraform/" + p.version
 	configuration.Servers = []sonatypeiq.ServerConfiguration{
 		{
-			URL:         "https://" + config.Host.ValueString(),
-			Description: "Default Sonatype IQ Server",
+			URL:         config.Url.ValueString(),
+			Description: "Sonatype IQ Server",
 		},
 	}
 
