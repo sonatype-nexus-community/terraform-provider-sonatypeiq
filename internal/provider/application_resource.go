@@ -115,10 +115,10 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *applicationResource) Read(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state applicationModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
 		return

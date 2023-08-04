@@ -48,7 +48,7 @@ type SonatypeIqProviderModel struct {
 }
 
 func (p *SonatypeIqProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "sonatype"
+	resp.TypeName = "sonatypeiq"
 	resp.Version = p.version
 }
 
@@ -123,7 +123,7 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 	// Example client configuration for data sources and resources
 	configuration := sonatypeiq.NewConfiguration()
 	configuration.Host = config.Host.ValueString()
-	configuration.UserAgent = "sonatype-terraform-pf/" + p.version
+	configuration.UserAgent = "sonatypeiq-terraform-pf/" + p.version
 	configuration.Servers = []sonatypeiq.ServerConfiguration{
 		{
 			URL:         "https://" + config.Host.ValueString(),

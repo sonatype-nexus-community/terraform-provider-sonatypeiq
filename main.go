@@ -20,7 +20,7 @@ import (
 	"context"
 	"flag"
 	"log"
-	"terraform-provider-sonatype-pf/internal/provider"
+	"terraform-provider-sonatypeiq-pf/internal/provider"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
@@ -52,7 +52,7 @@ func main() {
 
 	opts := providerserver.ServeOpts{
 		// TODO: Update this string with the published name of your provider.
-		Address: "sonatype-se.com/sonatype-community/sonatype-pf",
+		Address: "sonatype-se.com/sonatype-community/sonatypeiq-pf",
 		Debug:   debug,
 	}
 

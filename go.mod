@@ -1,4 +1,4 @@
-module terraform-provider-sonatype-pf
+module terraform-provider-sonatypeiq-pf
 
 go 1.19
 
