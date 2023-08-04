@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -32,11 +33,13 @@ type applicationResource struct {
 	baseResource
 }
 
-type applicationModeResource struct {
-	ID          types.String `tfsdk:"id"`
-	PublicId    types.String `tfsdk:"public_id"`
-	Name        types.String `tfsdk:"name"`
-	LastUpdated types.String `tfsdk:"last_updated"`
+type applicationModelResource struct {
+	ID              types.String `tfsdk:"id"`
+	PublicId        types.String `tfsdk:"public_id"`
+	Name            types.String `tfsdk:"name"`
+	OrganizationId  types.String `tfsdk:"organization_id"`
+	ContactUserName types.String `tfsdk:"contact_user_name"`
+	LastUpdated     types.String `tfsdk:"last_updated"`
 }
 
 // NewApplicationResource is a helper function to simplify the provider implementation.
@@ -62,6 +65,12 @@ func (r *applicationResource) Schema(_ context.Context, _ resource.SchemaRequest
 			"public_id": schema.StringAttribute{
 				Required: true,
 			},
+			"organization_id": schema.StringAttribute{
+				Required: true,
+			},
+			"contact_user_name": schema.StringAttribute{
+				Optional: true,
+			},
 			"last_updated": schema.StringAttribute{
 				Computed: true,
 			},
@@ -72,7 +81,7 @@ func (r *applicationResource) Schema(_ context.Context, _ resource.SchemaRequest
 // Create creates the resource and sets the initial Terraform state.
 func (r *applicationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
-	var plan applicationModeResource
+	var plan applicationModelResource
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -88,16 +97,19 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 
 	application_request := r.client.ApplicationsAPI.AddApplication(ctx)
 	application_request = application_request.ApiApplicationDTO(sonatypeiq.ApiApplicationDTO{
-		Name:     plan.Name.ValueStringPointer(),
-		PublicId: plan.PublicId.ValueStringPointer(),
+		Name:            plan.Name.ValueStringPointer(),
+		PublicId:        plan.PublicId.ValueStringPointer(),
+		OrganizationId:  plan.OrganizationId.ValueStringPointer(),
+		ContactUserName: plan.ContactUserName.ValueStringPointer(),
 	})
-	application, _, err := application_request.Execute()
+	application, api_response, err := application_request.Execute()
 
 	// Call API
 	if err != nil {
+		error_body, _ := io.ReadAll(api_response.Body)
 		resp.Diagnostics.AddError(
 			"Error creating Application",
-			"Could not create order, unexpected error: "+err.Error(),
+			"Could not create Application, unexpected error: "+api_response.Status+": "+string(error_body),
 		)
 		return
 	}
@@ -116,7 +128,7 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 
 // Read refreshes the Terraform state with the latest data.
 func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state applicationModel
+	var state applicationModelResource
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -131,20 +143,30 @@ func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest
 	)
 
 	// Get refreshed Application from IQ
-	application, _, err := r.client.ApplicationsAPI.GetApplication(ctx, state.ID.ValueString()).Execute()
+	application, api_response, err := r.client.ApplicationsAPI.GetApplication(ctx, state.ID.ValueString()).Execute()
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading IQ Application",
-			"Could not read Application with ID "+state.ID.ValueString()+": "+err.Error(),
-		)
+		if api_response.StatusCode == 404 {
+			resp.State.RemoveResource(ctx)
+		} else {
+			resp.Diagnostics.AddError(
+				"Error Reading IQ Application",
+				"Could not read Application with ID "+state.ID.ValueString()+": "+err.Error(),
+			)
+		}
 		return
+	} else {
+		// Overwrite items with refreshed state
+		state.ID = types.StringValue(*application.Id)
+		state.Name = types.StringValue(*application.Name)
+		state.PublicId = types.StringValue(*application.PublicId)
+		state.OrganizationId = types.StringValue(*application.OrganizationId)
+		if application.ContactUserName != nil {
+			state.ContactUserName = types.StringValue(*application.ContactUserName)
+		} else {
+			state.ContactUserName = types.StringNull()
+		}
 	}
-
-	// Overwrite items with refreshed state
-	state.ID = types.StringValue(*application.Id)
-	state.Name = types.StringValue(*application.Name)
-	state.PublicId = types.StringValue(*application.PublicId)
 
 	// Set refreshed state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

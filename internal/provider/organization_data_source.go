@@ -19,6 +19,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -51,7 +52,7 @@ func (d *organizationDataSource) Metadata(_ context.Context, req datasource.Meta
 // Schema defines the schema for the data source.
 func (d *organizationDataSource) Schema(_ context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Fetch a specific Organization",
+		Description: "Use this data source to get an Organization",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Internal ID of the Organization",
@@ -61,6 +62,7 @@ func (d *organizationDataSource) Schema(_ context.Context, req datasource.Schema
 			"name": schema.StringAttribute{
 				Description: "Name of the Organization",
 				Computed:    true,
+				Optional:    true,
 			},
 			"parent_organization_id": schema.StringAttribute{
 				Description: "Internal ID of the Parent Organization if this Organization has a Parent Organization",
@@ -106,9 +108,13 @@ func (d *organizationDataSource) Read(ctx context.Context, req datasource.ReadRe
 		d.auth,
 	)
 
+	var org *sonatypeiq.ApiOrganizationDTO
+	var r *http.Response
+	var err error
+
 	if !data.ID.IsNull() {
 		// Lookup By Org ID
-		org, r, err := d.client.OrganizationsAPI.GetOrganization(ctx, data.ID.ValueString()).Execute()
+		org, r, err = d.client.OrganizationsAPI.GetOrganization(ctx, data.ID.ValueString()).Execute()
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to Read IQ Organization by ID",
@@ -116,35 +122,66 @@ func (d *organizationDataSource) Read(ctx context.Context, req datasource.ReadRe
 			)
 			return
 		}
-		if r.StatusCode == 200 {
-			var parentOrgId = types.StringNull()
-			if org.ParentOrganizationId != nil {
-				tflog.Debug(ctx, fmt.Sprintf("Parent Org Id is %s", *org.ParentOrganizationId))
-				parentOrgId = types.StringValue(*org.ParentOrganizationId)
-			}
-			om := organizationModel{
-				ID:                    types.StringValue(*org.Id),
-				Name:                  types.StringValue(*org.Name),
-				ParentOrganiziationId: parentOrgId,
-			}
-			for _, tag := range org.Tags {
-				om.Tags = append(om.Tags, tagModel{
-					ID:          types.StringValue(*tag.Id),
-					Name:        types.StringValue(*tag.Name),
-					Description: types.StringValue(*tag.Description),
-					Color:       types.StringValue(*tag.Color),
-				})
-			}
+		if r.StatusCode != 200 {
+			resp.Diagnostics.AddError("Unexpected API Response", r.Status)
+			return
+		}
 
-			data = om
+	} else if !data.Name.IsNull() {
+		// Lookup By Org ID
+		var orgs *sonatypeiq.ApiOrganizationListDTO
+		get_orgs_req := d.client.OrganizationsAPI.GetOrganizations(ctx)
+		get_orgs_req = get_orgs_req.OrganizationName([]string{data.Name.ValueString()})
+		orgs, r, err = get_orgs_req.Execute()
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to Read IQ Organization by ID",
+				err.Error(),
+			)
+			return
+		}
+		if r.StatusCode != 200 {
+			resp.Diagnostics.AddError("Unexpected API Response", r.Status)
+			return
+		}
+		if len(orgs.Organizations) == 1 {
+			org = &orgs.Organizations[0]
+		} else if len(orgs.Organizations) > 1 {
+			resp.Diagnostics.AddError("More than one Organization matched the supplied name", r.Status)
+			return
 		}
 	} else {
-		resp.Diagnostics.AddError("No Organization ID provided ", "ID must be provided")
+		resp.Diagnostics.AddError("No Organization ID or Name provided ", "ID or Name must be provided")
 		return
 	}
 
+	if org == nil {
+		resp.Diagnostics.AddError("No Organization found", "No Organization found with the provided ID or Name")
+		return
+	}
+
+	var parentOrgId = types.StringNull()
+	if org.ParentOrganizationId != nil {
+		tflog.Debug(ctx, fmt.Sprintf("Parent Org Id is %s", *org.ParentOrganizationId))
+		parentOrgId = types.StringValue(*org.ParentOrganizationId)
+	}
+	om := organizationModel{
+		ID:                    types.StringValue(*org.Id),
+		Name:                  types.StringValue(*org.Name),
+		ParentOrganiziationId: parentOrgId,
+		Tags:                  nil,
+	}
+	for _, tag := range org.Tags {
+		om.Tags = append(om.Tags, tagModel{
+			ID:          types.StringValue(*tag.Id),
+			Name:        types.StringValue(*tag.Name),
+			Description: types.StringValue(*tag.Description),
+			Color:       types.StringValue(*tag.Color),
+		})
+	}
+
 	// Set state
-	diags := resp.State.Set(ctx, &data)
+	diags := resp.State.Set(ctx, &om)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
