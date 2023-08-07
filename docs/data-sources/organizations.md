@@ -3,12 +3,12 @@
 page_title: "sonatypeiq_organizations Data Source - terraform-provider-sonatypeiq"
 subcategory: ""
 description: |-
-  
+  Use this data source to get all Organizations
 ---
 
 # sonatypeiq_organizations (Data Source)
 
-
+Use this data source to get all Organizations
 
 ## Example Usage
 
@@ -22,24 +22,25 @@ data "sonatypeiq_organizations" "orgs" {}
 
 ### Read-Only
 
-- `organizations` (Attributes List) (see [below for nested schema](#nestedatt--organizations))
+- `id` (String) The ID of this resource.
+- `organizations` (Attributes List) List of Organizations (see [below for nested schema](#nestedatt--organizations))
 
 <a id="nestedatt--organizations"></a>
 ### Nested Schema for `organizations`
 
 Read-Only:
 
-- `id` (String)
-- `name` (String)
-- `parent_organization_id` (String)
-- `tags` (Attributes List) (see [below for nested schema](#nestedatt--organizations--tags))
+- `id` (String) Internal ID of the Organization
+- `name` (String) Name of the Organization
+- `parent_organization_id` (String) Internal ID of the Organization to which this Organization belongs
+- `tags` (Attributes List) List of any Tags associated to this Organization (see [below for nested schema](#nestedatt--organizations--tags))
 
 <a id="nestedatt--organizations--tags"></a>
 ### Nested Schema for `organizations.tags`
 
 Read-Only:
 
-- `color` (String)
-- `description` (String)
-- `id` (String)
-- `name` (String)
+- `color` (String) Color of the Tag
+- `description` (String) Description of the Tag
+- `id` (String) Internal ID of the Tag
+- `name` (String) Name of the Tag

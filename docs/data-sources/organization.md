@@ -35,14 +35,14 @@ data "sonatypeiq_organization" "sandbox" {
 ### Read-Only
 
 - `parent_organization_id` (String) Internal ID of the Parent Organization if this Organization has a Parent Organization
-- `tags` (Attributes List) List of Tags belonging to this Organization (see [below for nested schema](#nestedatt--tags))
+- `tags` (Attributes List) List of Tags associated to this Organization (see [below for nested schema](#nestedatt--tags))
 
 <a id="nestedatt--tags"></a>
 ### Nested Schema for `tags`
 
 Read-Only:
 
-- `color` (String)
-- `description` (String)
-- `id` (String)
-- `name` (String)
+- `color` (String) Color of the Tag
+- `description` (String) Description of the Tag
+- `id` (String) Internal ID of the Tag
+- `name` (String) Name of the Tag

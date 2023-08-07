@@ -69,21 +69,25 @@ func (d *organizationDataSource) Schema(_ context.Context, req datasource.Schema
 				Computed:    true,
 			},
 			"tags": schema.ListNestedAttribute{
-				Description: "List of Tags belonging to this Organization",
+				Description: "List of Tags associated to this Organization",
 				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Computed: true,
+							Description: "Internal ID of the Tag",
+							Computed:    true,
 						},
 						"name": schema.StringAttribute{
-							Computed: true,
+							Description: "Name of the Tag",
+							Computed:    true,
 						},
 						"description": schema.StringAttribute{
-							Computed: true,
+							Description: "Description of the Tag",
+							Computed:    true,
 						},
 						"color": schema.StringAttribute{
-							Computed: true,
+							Description: "Color of the Tag",
+							Computed:    true,
 						},
 					},
 				},

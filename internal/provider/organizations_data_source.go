@@ -45,6 +45,7 @@ type organizationsDataSource struct {
 }
 
 type organizationsDataSourceModel struct {
+	ID            types.String        `tfsdk:"id"`
 	Organizations []organizationModel `tfsdk:"organizations"`
 }
 
@@ -70,35 +71,48 @@ func (d *organizationsDataSource) Metadata(_ context.Context, req datasource.Met
 // Schema defines the schema for the data source.
 func (d *organizationsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Use this data source to get all Organizations",
 		Attributes: map[string]schema.Attribute{
-			"organizations": schema.ListNestedAttribute{
+			"id": schema.StringAttribute{
 				Computed: true,
+			},
+			"organizations": schema.ListNestedAttribute{
+				Description: "List of Organizations",
+				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Computed: true,
+							Description: "Internal ID of the Organization",
+							Computed:    true,
 						},
 						"name": schema.StringAttribute{
-							Computed: true,
+							Description: "Name of the Organization",
+							Computed:    true,
 						},
 						"parent_organization_id": schema.StringAttribute{
-							Computed: true,
+							Description: "Internal ID of the Organization to which this Organization belongs",
+							Computed:    true,
 						},
 						"tags": schema.ListNestedAttribute{
-							Computed: true,
+							Description: "List of any Tags associated to this Organization",
+							Computed:    true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"id": schema.StringAttribute{
-										Computed: true,
+										Description: "Internal ID of the Tag",
+										Computed:    true,
 									},
 									"name": schema.StringAttribute{
-										Computed: true,
+										Description: "Name of the Tag",
+										Computed:    true,
 									},
 									"description": schema.StringAttribute{
-										Computed: true,
+										Description: "Description of the Tag",
+										Computed:    true,
 									},
 									"color": schema.StringAttribute{
-										Computed: true,
+										Description: "Color of the Tag",
+										Computed:    true,
 									},
 								},
 							},
@@ -156,6 +170,9 @@ func (d *organizationsDataSource) Read(ctx context.Context, req datasource.ReadR
 
 		tflog.Debug(ctx, fmt.Sprintf("   Appended: %p", state.Organizations))
 	}
+
+	// For test framework
+	state.ID = types.StringValue("placeholder")
 
 	// Set state
 	diags := resp.State.Set(ctx, &state)
