@@ -349,6 +349,8 @@ github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMB
 github.com/skeema/knownhosts v1.1.0 h1:Wvr9V0MxhjRbl3f9nMnKnFfiWTJmtECJ9Njkea3ysW0=
 github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.165.0 h1:xlLF0V4izd0DetBko90LF501F4cCBB+CwVLsBHNDFik=
 github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.165.0/go.mod h1:0BQON8cWo3Di/KjbVhY1M1NQ20LvkGrVG0P1+lI9GyM=
+github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.165.1 h1:BwkkPCzElC/bhyH2M4BpIsSpZk/rIpo6RTLfsWlDdJk=
+github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.165.1/go.mod h1:0BQON8cWo3Di/KjbVhY1M1NQ20LvkGrVG0P1+lI9GyM=
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=
 github.com/spf13/cast v1.3.1/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
 github.com/spf13/cast v1.5.0 h1:rj3WzYc11XZaIZMPKmwP96zkFEnnAmV8s6XbB2aY32w=

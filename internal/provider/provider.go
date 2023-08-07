@@ -172,6 +172,7 @@ func (p *SonatypeIqProvider) DataSources(ctx context.Context) []func() datasourc
 		ApplicationsDataSource,
 		OrganizationDataSource,
 		OrganizationsDataSource,
+		SystemConfigDataSource,
 	}
 }
 
