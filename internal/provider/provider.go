@@ -19,6 +19,7 @@ package provider
 import (
 	"context"
 	"net/url"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -84,8 +85,24 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 		return
 	}
 
+	iqUrl := os.Getenv("IQ_SERVER_URL")
+	username := os.Getenv("IQ_SERVER_USERNAME")
+	password := os.Getenv("IQ_SERVER_PASSWORD")
+
+	if !config.Url.IsNull() {
+		iqUrl = config.Url.ValueString()
+	}
+
+	if !config.Username.IsNull() {
+		username = config.Username.ValueString()
+	}
+
+	if !config.Password.IsNull() {
+		password = config.Password.ValueString()
+	}
+
 	// Validate Provider Configuration
-	if config.Url.IsUnknown() {
+	if len(iqUrl) == 0 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("url"),
 			"Unknown Sonatype IQ Server URL",
@@ -93,7 +110,7 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 		)
 	}
 
-	if _, error := url.ParseRequestURI(config.Url.ValueString()); error != nil {
+	if _, error := url.ParseRequestURI(iqUrl); error != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("url"),
 			"Invalid Sonatype IQ Server URL",
@@ -126,7 +143,7 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 	configuration.UserAgent = "sonatypeiq-terraform/" + p.version
 	configuration.Servers = []sonatypeiq.ServerConfiguration{
 		{
-			URL:         config.Url.ValueString(),
+			URL:         iqUrl,
 			Description: "Sonatype IQ Server",
 		},
 	}
@@ -134,11 +151,11 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 	client := sonatypeiq.NewAPIClient(configuration)
 	resp.DataSourceData = SonatypeDataSourceData{
 		client: client,
-		auth:   sonatypeiq.BasicAuth{UserName: config.Username.ValueString(), Password: config.Password.ValueString()},
+		auth:   sonatypeiq.BasicAuth{UserName: username, Password: password},
 	}
 	resp.ResourceData = SonatypeDataSourceData{
 		client: client,
-		auth:   sonatypeiq.BasicAuth{UserName: config.Username.ValueString(), Password: config.Password.ValueString()},
+		auth:   sonatypeiq.BasicAuth{UserName: username, Password: password},
 	}
 }
 
