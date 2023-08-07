@@ -23,7 +23,7 @@ import (
 
 const (
 	// providerConfig is a shared configuration to combine with the actual
-	// test configuration
+	// test configuration.
 	providerConfig = `
 provider "sonatypeiq" {
   username = ""

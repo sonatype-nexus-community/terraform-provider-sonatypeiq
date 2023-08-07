@@ -110,7 +110,7 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 		)
 	}
 
-	if _, error := url.ParseRequestURI(iqUrl); error != nil {
+	if _, e := url.ParseRequestURI(iqUrl); e != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("url"),
 			"Invalid Sonatype IQ Server URL",
