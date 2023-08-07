@@ -39,7 +39,7 @@ func OrganizationDataSource() datasource.DataSource {
 	return &organizationDataSource{}
 }
 
-// applicationsDataSource is the data source implementation.
+// organizationsDataSource is the data source implementation.
 type organizationDataSource struct {
 	baseDataSource
 }

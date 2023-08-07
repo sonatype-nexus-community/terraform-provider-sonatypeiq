@@ -41,8 +41,7 @@ func ApplicationsDataSource() datasource.DataSource {
 
 // applicationsDataSource is the data source implementation.
 type applicationsDataSource struct {
-	client *sonatypeiq.APIClient
-	auth   sonatypeiq.BasicAuth
+	baseDataSource
 }
 
 type applicationsDataSourceModel struct {
@@ -50,9 +49,18 @@ type applicationsDataSourceModel struct {
 }
 
 type applicationModel struct {
-	ID       types.String `tfsdk:"id"`
-	PublicId types.String `tfsdk:"public_id"`
-	Name     types.String `tfsdk:"name"`
+	ID              types.String              `tfsdk:"id"`
+	PublicId        types.String              `tfsdk:"public_id"`
+	Name            types.String              `tfsdk:"name"`
+	OrganizationId  types.String              `tfsdk:"organization_id"`
+	ContactUserName types.String              `tfsdk:"contact_user_name"`
+	ApplicationTags []applicationTagLinkModel `tfsdk:"application_tags"`
+}
+
+type applicationTagLinkModel struct {
+	ID            types.String `tfsdk:"id"`
+	TagId         types.String `tfsdk:"tag_id"`
+	ApplicationId types.String `tfsdk:"application_id"`
 }
 
 // Metadata returns the data source type name.
@@ -82,26 +90,6 @@ func (d *applicationsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 			},
 		},
 	}
-}
-
-// Configure adds the provider configured client to the data source.
-func (d *applicationsDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-
-	config, ok := req.ProviderData.(SonatypeDataSourceData)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Type",
-			fmt.Sprintf("Expected provider.SonatypeDataSourceData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	d.client = config.client
-	d.auth = config.auth
 }
 
 // Read refreshes the Terraform state with the latest data.

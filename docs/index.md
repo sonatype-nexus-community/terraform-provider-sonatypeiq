@@ -29,7 +29,7 @@ description: |-
 # limitations under the License.
 #
 
-provider "sonatype" {
+provider "sonatypeiq" {
   host     = "my-sonatype-iq-server.tld:port"
   username = "username"
   password = "password"
