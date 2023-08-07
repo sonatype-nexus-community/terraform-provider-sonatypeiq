@@ -45,6 +45,7 @@ type applicationsDataSource struct {
 }
 
 type applicationsDataSourceModel struct {
+	ID           types.String       `tfsdk:"id"`
 	Applications []applicationModel `tfsdk:"applications"`
 }
 
@@ -71,19 +72,58 @@ func (d *applicationsDataSource) Metadata(_ context.Context, req datasource.Meta
 // Schema defines the schema for the data source.
 func (d *applicationsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Use this data source to get all Applications",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
 			"applications": schema.ListNestedAttribute{
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Computed: true,
+							Description: "Internal ID of the Application",
+							Computed:    true,
+							Optional:    true,
 						},
 						"public_id": schema.StringAttribute{
-							Computed: true,
+							Description: "Public ID of the Application",
+							Computed:    true,
+							Optional:    true,
 						},
 						"name": schema.StringAttribute{
-							Computed: true,
+							Description: "Name of the Application",
+							Computed:    true,
+							Optional:    true,
+						},
+						"organization_id": schema.StringAttribute{
+							Description: "Internal ID of the Organization to which this Application belongs",
+							Computed:    true,
+						},
+						"contact_user_name": schema.StringAttribute{
+							Description: "User Name of the Contact for the Application",
+							Computed:    true,
+							Optional:    true,
+						},
+						"application_tags": schema.ListNestedAttribute{
+							Description: "List of Tags applied to this Application",
+							Computed:    true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"id": schema.StringAttribute{
+										Description: "Internal ID of the Application-Tag link",
+										Computed:    true,
+									},
+									"tag_id": schema.StringAttribute{
+										Description: "Internal ID of the Tag",
+										Computed:    true,
+									},
+									"application_id": schema.StringAttribute{
+										Description: "Internal ID of the Application",
+										Computed:    true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -114,16 +154,32 @@ func (d *applicationsDataSource) Read(ctx context.Context, req datasource.ReadRe
 	tflog.Debug(ctx, fmt.Sprintf("Iterating %d Applications", len(applicationList.Applications)))
 
 	for _, application := range applicationList.Applications {
+		var contactUserName = types.StringNull()
+		if application.ContactUserName != nil {
+			contactUserName = types.StringValue(*application.ContactUserName)
+		}
 		applicationState := applicationModel{
-			ID:       types.StringValue(*application.Id),
-			PublicId: types.StringValue(*application.PublicId),
-			Name:     types.StringValue(*application.Name),
+			ID:              types.StringValue(*application.Id),
+			PublicId:        types.StringValue(*application.PublicId),
+			Name:            types.StringValue(*application.Name),
+			OrganizationId:  types.StringValue(*application.OrganizationId),
+			ContactUserName: contactUserName,
+		}
+		for _, tag := range application.ApplicationTags {
+			applicationState.ApplicationTags = append(applicationState.ApplicationTags, applicationTagLinkModel{
+				ID:            types.StringValue(*tag.Id),
+				TagId:         types.StringValue(*tag.TagId),
+				ApplicationId: types.StringValue(*tag.ApplicationId),
+			})
 		}
 
 		state.Applications = append(state.Applications, applicationState)
 
 		tflog.Debug(ctx, fmt.Sprintf("   Appended: %p", state.Applications))
 	}
+
+	// For test framework
+	state.ID = types.StringValue("placeholder")
 
 	// Set state
 	diags := resp.State.Set(ctx, &state)
