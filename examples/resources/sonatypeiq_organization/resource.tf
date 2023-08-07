@@ -4,7 +4,7 @@ data "sonatypeiq_organization" "sandbox" {
 }
 
 resource "sonatypeiq_organization" "sub_org" {
-  name = "Sub Organization"
+  name                   = "Sub Organization"
   parent_organization_id = data.sonatypeiq_organization.sandbox.id
 }
 

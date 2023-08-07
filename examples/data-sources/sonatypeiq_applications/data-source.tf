@@ -1,2 +1,2 @@
 # Get all Applications
- data "sonatypeiq_applications" "apps" {}
+data "sonatypeiq_applications" "apps" {}

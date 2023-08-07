@@ -89,15 +89,16 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 	username := os.Getenv("IQ_SERVER_USERNAME")
 	password := os.Getenv("IQ_SERVER_PASSWORD")
 
-	if !config.Url.IsNull() {
+	if !config.Url.IsNull() && len(config.Url.ValueString()) > 0 {
+		print("setting URL")
 		iqUrl = config.Url.ValueString()
 	}
 
-	if !config.Username.IsNull() {
+	if !config.Username.IsNull() && len(config.Username.ValueString()) > 0 {
 		username = config.Username.ValueString()
 	}
 
-	if !config.Password.IsNull() {
+	if !config.Password.IsNull() && len(config.Password.ValueString()) > 0 {
 		password = config.Password.ValueString()
 	}
 

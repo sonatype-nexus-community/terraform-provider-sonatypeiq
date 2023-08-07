@@ -29,11 +29,11 @@ func TestAccOrganizationDataSource(t *testing.T) {
 			// Read testing
 			{
 				Config: providerConfig + `data "sonatypeiq_organization" "sandbox" {
-					name = "Sandbox Organisation"
+					name = "Sandbox Organization"
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify placeholder id attribute
-					resource.TestCheckResourceAttr("data.sonatypeiq_organization.test", "id", "placeholder"),
+					resource.TestCheckResourceAttr("data.sonatypeiq_organization.sandbox", "parent_organization_id", "ROOT_ORGANIZATION_ID"),
 				),
 			},
 		},

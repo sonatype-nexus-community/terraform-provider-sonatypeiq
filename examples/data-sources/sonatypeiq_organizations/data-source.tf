@@ -1,2 +1,2 @@
 # Get all Organizations
- data "sonatypeiq_organizations" "orgs" {}
+data "sonatypeiq_organizations" "orgs" {}

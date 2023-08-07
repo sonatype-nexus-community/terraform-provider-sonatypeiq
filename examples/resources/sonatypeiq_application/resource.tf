@@ -4,8 +4,8 @@ data "sonatypeiq_organization" "sandbox" {
 }
 
 resource "sonatypeiq_application" "example" {
-  name = "Example Application"
-  public_id = "example_application"
+  name            = "Example Application"
+  public_id       = "example_application"
   organization_id = data.sonatypeiq_organization.sandbox.id
 }
 
