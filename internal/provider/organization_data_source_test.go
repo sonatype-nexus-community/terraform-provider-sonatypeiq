@@ -32,7 +32,7 @@ func TestAccOrganizationDataSource(t *testing.T) {
 					name = "Sandbox Organization"
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Verify placeholder id attribute
+					resource.TestCheckResourceAttr("data.sonatypeiq_organization.sandbox", "name", "Sandbox Organization"),
 					resource.TestCheckResourceAttr("data.sonatypeiq_organization.sandbox", "parent_organization_id", "ROOT_ORGANIZATION_ID"),
 				),
 			},
