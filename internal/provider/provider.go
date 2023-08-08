@@ -164,6 +164,7 @@ func (p *SonatypeIqProvider) Resources(ctx context.Context) []func() resource.Re
 	return []func() resource.Resource{
 		NewApplicationResource,
 		NewConfigMailResource,
+		NewConfigProxyServerResource,
 		NewOrganizationResource,
 		NewSystemConfigResource,
 	}

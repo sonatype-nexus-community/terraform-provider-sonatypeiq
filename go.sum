@@ -348,6 +348,8 @@ github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.165.1 h1:BwkkPCzEl
 github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.165.1/go.mod h1:0BQON8cWo3Di/KjbVhY1M1NQ20LvkGrVG0P1+lI9GyM=
 github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.165.2 h1:2chfBj1XfRnMiFuD93mj3FqzbGas2Xsbmr1s2ENSBbc=
 github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.165.2/go.mod h1:0BQON8cWo3Di/KjbVhY1M1NQ20LvkGrVG0P1+lI9GyM=
+github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.165.3 h1:oNEZTpvr6kHn9fu9/o2p2jELAt8WD3SWYusJjJULVlM=
+github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.165.3/go.mod h1:0BQON8cWo3Di/KjbVhY1M1NQ20LvkGrVG0P1+lI9GyM=
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=
 github.com/spf13/cast v1.3.1/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
 github.com/spf13/cast v1.5.0 h1:rj3WzYc11XZaIZMPKmwP96zkFEnnAmV8s6XbB2aY32w=
