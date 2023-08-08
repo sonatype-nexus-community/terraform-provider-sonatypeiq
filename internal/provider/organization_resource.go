@@ -29,8 +29,11 @@ import (
 )
 
 type organizationModelResouce struct {
-	organizationModel
-	LastUpdated types.String `tfsdk:"last_updated"`
+	ID                    types.String `tfsdk:"id"`
+	Name                  types.String `tfsdk:"name"`
+	ParentOrganiziationId types.String `tfsdk:"parent_organization_id"`
+	Tags                  []tagModel   `tfsdk:"tags"`
+	LastUpdated           types.String `tfsdk:"last_updated"`
 }
 
 // organizationResource is the resource implementation.
@@ -51,31 +54,45 @@ func (r *organizationResource) Metadata(_ context.Context, req resource.Metadata
 // Schema defines the schema for the resource.
 func (r *organizationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Use this resource to manage Organizations",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Description: "Internal ID of the Organization",
+				Computed:    true,
+				Optional:    true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Description: "Name of the Organization",
+				Computed:    true,
+				Optional:    true,
 			},
 			"parent_organization_id": schema.StringAttribute{
-				Required: true,
+				Description: "Internal ID of the Parent Organization if this Organization has a Parent Organization",
+				Computed:    true,
+				Optional:    true,
 			},
 			"tags": schema.ListNestedAttribute{
-				Computed: true,
+				Description: "List of Tags associated to this Organization",
+				Computed:    true,
+				// Default:     listdefault.StaticValue(types.ListNull(types.ObjectType{})),
+				Optional: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Computed: true,
+							Description: "Internal ID of the Tag",
+							Computed:    true,
 						},
 						"name": schema.StringAttribute{
-							Computed: true,
+							Description: "Name of the Tag",
+							Computed:    true,
 						},
 						"description": schema.StringAttribute{
-							Computed: true,
+							Description: "Description of the Tag",
+							Computed:    true,
 						},
 						"color": schema.StringAttribute{
-							Computed: true,
+							Description: "Color of the Tag",
+							Computed:    true,
 						},
 					},
 				},
@@ -94,6 +111,7 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		print("*** ERRORS ***")
 		return
 	}
 
@@ -133,6 +151,17 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(*organization.Id)
+	plan.Name = types.StringValue(*organization.Name)
+	plan.ParentOrganiziationId = types.StringValue(*organization.ParentOrganizationId)
+	plan.Tags = []tagModel{}
+	for _, tagDto := range organization.Tags {
+		plan.Tags = append(plan.Tags, tagModel{
+			ID:          types.StringValue(*tagDto.Id),
+			Name:        types.StringValue(*tagDto.Name),
+			Description: types.StringValue(*tagDto.Description),
+			Color:       types.StringValue(*tagDto.Color),
+		})
+	}
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
 	// Set state to fully populated data
