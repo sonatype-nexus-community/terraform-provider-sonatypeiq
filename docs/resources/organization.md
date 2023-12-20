@@ -40,14 +40,3 @@ output "sub_org_id" {
 
 - `id` (String) The ID of this resource.
 - `last_updated` (String)
-- `tags` (Attributes List) (see [below for nested schema](#nestedatt--tags))
-
-<a id="nestedatt--tags"></a>
-### Nested Schema for `tags`
-
-Read-Only:
-
-- `color` (String)
-- `description` (String)
-- `id` (String)
-- `name` (String)
