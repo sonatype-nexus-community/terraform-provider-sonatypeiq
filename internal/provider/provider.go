@@ -163,8 +163,11 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 func (p *SonatypeIqProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewApplicationResource,
+		NewConfigMailResource,
+		NewConfigProxyServerResource,
 		NewOrganizationResource,
 		NewSystemConfigResource,
+		NewUserResource,
 	}
 }
 
@@ -173,6 +176,7 @@ func (p *SonatypeIqProvider) DataSources(ctx context.Context) []func() datasourc
 		ApplicationCategoriesDataSource,
 		ApplicationDataSource,
 		ApplicationsDataSource,
+		ConfigSamlDataSource,
 		OrganizationDataSource,
 		OrganizationsDataSource,
 		SystemConfigDataSource,

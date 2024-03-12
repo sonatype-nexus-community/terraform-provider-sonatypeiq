@@ -14,9 +14,26 @@
  * limitations under the License.
  */
 
-package tools
+package provider
 
 import (
-	// Doc Generation
-	_ "github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+func TestAccConfigSamlDataSource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Read testing
+			{
+				Config: providerConfig + `data "sonatypeiq_config_saml" "saml" {
+				}`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.sonatypeiq_config_saml.saml", "saml_metadata"),
+				),
+			},
+		},
+	})
+}
