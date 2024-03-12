@@ -38,7 +38,7 @@ func TestAccOrganizationResource(t *testing.T) {
 					// Verify Application
 					resource.TestCheckResourceAttrSet("sonatypeiq_organization.org", "id"),
 					resource.TestCheckResourceAttr("sonatypeiq_organization.org", "name", orgName),
-					resource.TestCheckResourceAttr("sonatypeiq_organization.org", "parent_organization_id", "true"),
+					resource.TestCheckResourceAttr("sonatypeiq_organization.org", "parent_organization_id", "ROOT_ORGANIZATION_ID"),
 					resource.TestCheckResourceAttrSet("sonatypeiq_organization.org", "last_updated"),
 				),
 			},
