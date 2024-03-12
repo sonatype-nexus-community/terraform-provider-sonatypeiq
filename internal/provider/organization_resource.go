@@ -78,15 +78,22 @@ func (r *organizationResource) Metadata(_ context.Context, req resource.Metadata
 // Schema defines the schema for the resource.
 func (r *organizationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Use this resource to manage Organizations",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Description: "Internal ID of the Organization",
+				Computed:    true,
+				Optional:    true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Description: "Name of the Organization",
+				Computed:    true,
+				Optional:    true,
 			},
 			"parent_organization_id": schema.StringAttribute{
-				Required: true,
+				Description: "Internal ID of the Parent Organization if this Organization has a Parent Organization",
+				Computed:    true,
+				Optional:    true,
 			},
 			// "tags": schema.ListNestedAttribute{
 			// 	Optional: true,
@@ -108,6 +115,7 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		print("*** ERRORS ***")
 		return
 	}
 
@@ -157,6 +165,17 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(*organization.Id)
+	plan.Name = types.StringValue(*organization.Name)
+	plan.ParentOrganiziationId = types.StringValue(*organization.ParentOrganizationId)
+	// plan.Tags = []tagModel{}
+	// for _, tagDto := range organization.Tags {
+	// 	plan.Tags = append(plan.Tags, tagModel{
+	// 		ID:          types.StringValue(*tagDto.Id),
+	// 		Name:        types.StringValue(*tagDto.Name),
+	// 		Description: types.StringValue(*tagDto.Description),
+	// 		Color:       types.StringValue(*tagDto.Color),
+	// 	})
+	// }
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
 	// Finally, set the state
@@ -230,5 +249,26 @@ func (r *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// No Delete API
+	var state organizationModelResouce
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Make Delete API Call
+	ctx = context.WithValue(
+		ctx,
+		sonatypeiq.ContextBasicAuth,
+		r.auth,
+	)
+
+	api_response, err := r.client.OrganizationsAPI.DeleteOrganization(ctx, state.ID.ValueString()).Execute()
+	if err != nil {
+		error_body, _ := io.ReadAll(api_response.Body)
+		resp.Diagnostics.AddError(
+			"Error deleting Organization",
+			"Could not delete Organization, unexpected error: "+api_response.Status+": "+string(error_body),
+		)
+		return
+	}
 }
