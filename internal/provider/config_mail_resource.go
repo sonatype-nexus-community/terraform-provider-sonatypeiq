@@ -216,7 +216,10 @@ func (r *configMailResource) Read(ctx context.Context, req resource.ReadRequest,
 	// Overwrite items with refreshed state
 	state.Hostname = types.StringValue(*mail_config.Hostname)
 	state.Port = types.Int64Value(int64(*mail_config.Port))
-	state.Username = types.StringValue(*mail_config.Username)
+	state.Username = types.StringNull()
+	if mail_config.HasUsername() {
+		state.Username = types.StringValue(*mail_config.Username)
+	}
 	state.Password = types.StringNull()
 	state.PasswordIsIncluded = types.BoolValue(*mail_config.PasswordIsIncluded)
 	state.SSLEnabled = types.BoolValue(*mail_config.SslEnabled)
