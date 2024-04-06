@@ -30,7 +30,7 @@ description: |-
 #
 
 provider "sonatypeiq" {
-  host     = "my-sonatype-iq-server.tld:port"
+  url      = "https://my-sonatype-iq-server.tld:port"
   username = "username"
   password = "password"
 }
@@ -41,6 +41,6 @@ provider "sonatypeiq" {
 
 ### Required
 
-- `password` (String, Sensitive) Password for your Administrator user for Sonatype IQ Server
 - `url` (String) Sonatype IQ Server URL
 - `username` (String) Administrator Username for Sonatype IQ Server
+- `password` (String, Sensitive) Password for your Administrator user for Sonatype IQ Server
