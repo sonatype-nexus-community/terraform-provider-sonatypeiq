@@ -172,7 +172,7 @@ func (r *applicationRoleMembershipResource) Read(ctx context.Context, req resour
 		} else {
 			resp.Diagnostics.AddError(
 				"Error Reading IQ application role membership",
-				"Could not read applicaton role membership with ID "+data.ID.ValueString()+": "+err.Error(),
+				"Could not read application role membership with ID "+data.ID.ValueString()+": "+err.Error(),
 			)
 		}
 		return
@@ -189,19 +189,20 @@ func (r *applicationRoleMembershipResource) Read(ctx context.Context, req resour
 		memberName = data.UserName.ValueString()
 	}
 
-	// Find our application role membership mapping
-	var applicationRoleMembership *sonatypeiq.ApiMemberDTO
+	// Check for application role membership existence.
+	var membershipFound bool
 	for _, roleMembership := range roleMemberships.MemberMappings {
 		if *roleMembership.RoleId == data.RoleId.ValueString() {
 			for _, member := range roleMembership.Members {
 				if *member.Type == memberType && *member.UserOrGroupName == memberName && *member.OwnerType == "APPLICATION" && *member.OwnerId == data.ApplicationId.ValueString() {
-					applicationRoleMembership = &member
+					membershipFound = true
+					break
 				}
 			}
 		}
 	}
 
-	if applicationRoleMembership == nil {
+	if !membershipFound {
 		resp.State.RemoveResource(ctx)
 		return
 	}

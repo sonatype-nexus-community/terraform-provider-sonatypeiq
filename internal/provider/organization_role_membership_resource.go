@@ -189,19 +189,20 @@ func (r *organizationRoleMembershipResource) Read(ctx context.Context, req resou
 		memberName = data.UserName.ValueString()
 	}
 
-	// Find our organization role membership mapping
-	var organizationRoleMembership *sonatypeiq.ApiMemberDTO
+	// Check for organization role membership existence.
+	var membershipFound bool
 	for _, roleMembership := range roleMemberships.MemberMappings {
 		if *roleMembership.RoleId == data.RoleId.ValueString() {
 			for _, member := range roleMembership.Members {
 				if *member.Type == memberType && *member.UserOrGroupName == memberName && *member.OwnerType == "ORGANIZATION" && *member.OwnerId == data.OrganizationId.ValueString() {
-					organizationRoleMembership = &member
+					membershipFound = true
+					break
 				}
 			}
 		}
 	}
 
-	if organizationRoleMembership == nil {
+	if !membershipFound {
 		resp.State.RemoveResource(ctx)
 		return
 	}
