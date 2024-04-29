@@ -83,7 +83,8 @@ func (r *organizationResource) Schema(_ context.Context, _ resource.SchemaReques
 			"id": schema.StringAttribute{
 				Description: "Internal ID of the Organization",
 				Computed:    true,
-				Optional:    true,
+				Required:    false,
+				Optional:    false,
 			},
 			"name": schema.StringAttribute{
 				Description: "Name of the Organization",

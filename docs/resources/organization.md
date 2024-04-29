@@ -33,10 +33,10 @@ output "sub_org_id" {
 
 ### Optional
 
-- `id` (String) Internal ID of the Organization
 - `name` (String) Name of the Organization
 - `parent_organization_id` (String) Internal ID of the Parent Organization if this Organization has a Parent Organization
 
 ### Read-Only
 
+- `id` (String) Internal ID of the Organization
 - `last_updated` (String)
