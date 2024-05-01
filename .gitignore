@@ -35,3 +35,6 @@ website/vendor
 *.winfile eol=crlf
 
 local-tests
+
+# Ignore artifact
+terraform-provider-sonatypeiq
