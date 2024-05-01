@@ -62,11 +62,11 @@ func (p *SonatypeIqProvider) Schema(ctx context.Context, req provider.SchemaRequ
 				Required:            true,
 			},
 			"username": schema.StringAttribute{
-				MarkdownDescription: "Administrator Username for Sonatype IQ Server",
+				MarkdownDescription: "Username for Sonatype IQ Server, requires role/permissions scoped to the resources you wish to manage",
 				Required:            true,
 			},
 			"password": schema.StringAttribute{
-				MarkdownDescription: "Password for your Administrator user for Sonatype IQ Server",
+				MarkdownDescription: "Password for your user for Sonatype IQ Server",
 				Required:            true,
 				Sensitive:           true,
 			},
