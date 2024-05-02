@@ -1,15 +1,18 @@
 # Terraform Provider for Sonatype IQ Server
 
+[![shield_tfr-version]][link_tfr]
+[![shield_gh-workflow-test]][link_gh-workflow-test]
+[![shield_license]][license_file]
+
+---
+
 This Terraform Provider allows you to use Configuration-as-Code (CasC) practises for 
-managing the configuration deployments of Sonatype IQ Server which powers 
-[Sonatype Repository Firewall](https://www.sonatype.com/products/sonatype-repository-firewall), 
-[Sonatype Lifecycle](https://www.sonatype.com/products/open-source-security-dependency-management) and 
-[Sonatype Auditor](https://www.sonatype.com/products/auditor).
+managing the configuration of Sonatype IQ Server which powers: 
+- [Sonatype Repository Firewall](https://www.sonatype.com/products/sonatype-repository-firewall)
+- [Sonatype Lifecycle](https://www.sonatype.com/products/open-source-security-dependency-management) 
+- [Sonatype Auditor](https://www.sonatype.com/products/auditor)
 
-This provider does not provide functionality for actually deploying Sonatype IQ Server 
-(i.e. Infrastructure or Application installation). For deployment and installation, see 
-the [official Help Documentation](https://help.sonatype.com/iqserver/installing).
-
+This provider does not provide functionality for actually deploying Sonatype IQ Server (i.e. Infrastructure or Application installation). For deployment and installation, see  the [official Help Documentation](https://help.sonatype.com/iqserver/installing).
 
 ## Usage
 
@@ -17,27 +20,7 @@ See our [documentation](./docs/index.md) and the [examples directory](./examples
 
 ## Development
 
-This provider follows uses the Custom Provider Framework from HashiCorp. A great reference is available from HashiCorp [here](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider).
-
-### Linting
-
-`golangci-lint run`
-
-### Acceptance Testing
-
-Acceptance testing requires a valid licenses Sonatype IQ Server and administrative credentials.
-
-Configure the IQ Server to use for Acceptance Testing using Environment Variables:
-
-```bash
-IQ_SERVER_URL=
-IQ_SERVER_USERNAME=
-IQ_SERVER_PASSWORD=
-```
-
-Then you can run the tests:
-
-`TF_ACC=1 go test -v -cover ./internal/provider/`
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 ## The Fine Print
 
@@ -50,3 +33,12 @@ It is worth noting that this is **NOT SUPPORTED** by Sonatype, and is a contribu
 * DO file issues here on GitHub, so that the community can pitch in
 
 Phew, that was easier than I thought. Last but not least of all - have fun!
+
+
+[shield_gh-workflow-test]: https://img.shields.io/github/actions/workflow/status/sonatype-nexus-community/terraform-provider-sonatypeiq/test.yml?branch=main&logo=GitHub&logoColor=white "build"
+[shield_tfr-version]: https://img.shields.io/badge/Terraform%20Registry-8A2BE2
+[shield_license]: https://img.shields.io/github/license/sonatype-nexus-community/terraform-provider-sonatypeiq?logo=open%20source%20initiative&logoColor=white "license"
+
+[link_tfr]: https://registry.terraform.io/providers/sonatype-nexus-community/sonatypeiq/latest
+[link_gh-workflow-test]: https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq/actions/workflows/test.yml?query=branch%3Amain
+[license_file]: https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq/blob/main/LICENSE
