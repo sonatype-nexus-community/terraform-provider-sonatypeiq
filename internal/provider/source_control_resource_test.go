@@ -20,17 +20,19 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccSourceControlApplicationResource(t *testing.T) {
+	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	firstState := "true"
 	secondState := "false"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSourceControlApplicationResource(firstState),
+				Config: testAccSourceControlApplicationResource(rand, firstState),
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", firstState),
@@ -40,7 +42,7 @@ func TestAccSourceControlApplicationResource(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSourceControlApplicationResource(secondState),
+				Config: testAccSourceControlApplicationResource(rand, secondState),
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", secondState),
@@ -54,13 +56,14 @@ func TestAccSourceControlApplicationResource(t *testing.T) {
 }
 
 func TestAccSourceControlOrganizationResource(t *testing.T) {
+	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	firstState := "true"
 	secondState := "false"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSourceControlOrganizationResource(firstState),
+				Config: testAccSourceControlOrganizationResource(rand, firstState),
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", firstState),
@@ -70,7 +73,7 @@ func TestAccSourceControlOrganizationResource(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSourceControlOrganizationResource(secondState),
+				Config: testAccSourceControlOrganizationResource(rand, secondState),
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", secondState),
@@ -83,35 +86,46 @@ func TestAccSourceControlOrganizationResource(t *testing.T) {
 	})
 }
 
-func testAccSourceControlApplicationResource(enabled string) string {
-	return fmt.Sprintf(providerConfig+`
-data "sonatypeiq_application" "app_by_public_id" {
-  public_id = "sandbox-application"
-}
-
-resource "sonatypeiq_source_control" "test" {
-  owner_type = "application"
-  owner_id = data.sonatypeiq_application.app_by_public_id.id
-  base_branch = "my-cool-branch"
-  remediation_pull_requests_enabled = %s
-  pull_request_commenting_enabled = %s
-  source_control_evaluation_enabled = %s
-  repository_url = "https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq.git"
-}`, enabled, enabled, enabled)
-}
-
-func testAccSourceControlOrganizationResource(enabled string) string {
+func testAccSourceControlApplicationResource(rand string, enabled string) string {
 	return fmt.Sprintf(providerConfig+`
 data "sonatypeiq_organization" "sandbox" {
   name = "Sandbox Organization"
 }
 
+resource "sonatypeiq_application" "app_by_public_id" {
+  name = "app-%s"
+  public_id = "app-%s"
+  organization_id = data.sonatypeiq_organization.sandbox.id
+}
+
+resource "sonatypeiq_source_control" "test" {
+  owner_type = "application"
+  owner_id = sonatypeiq_application.app_by_public_id.id
+  base_branch = "my-cool-branch"
+  remediation_pull_requests_enabled = %s
+  pull_request_commenting_enabled = %s
+  source_control_evaluation_enabled = %s
+  repository_url = "https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq.git"
+}`, rand, rand, enabled, enabled, enabled)
+}
+
+func testAccSourceControlOrganizationResource(rand string, enabled string) string {
+	return fmt.Sprintf(providerConfig+`
+data "sonatypeiq_organization" "sandbox" {
+  name = "Sandbox Organization"
+}
+
+resource "sonatypeiq_organization" "my_sandbox" {
+  name = "Sandbox Organization %s"
+  parent_organization_id = data.sonatypeiq_organization.sandbox.id
+}
+
 resource "sonatypeiq_source_control" "test" {
   owner_type = "organization"
-  owner_id = data.sonatypeiq_organization.sandbox.id
+  owner_id = sonatypeiq_organization.my_sandbox.id
   remediation_pull_requests_enabled = %s
   pull_request_commenting_enabled = %s
   source_control_evaluation_enabled = %s
   base_branch = "my-cool-branch"
-}`, enabled, enabled, enabled)
+}`, rand, enabled, enabled, enabled)
 }
