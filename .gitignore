@@ -4,6 +4,8 @@
 example.tf
 terraform.tfplan
 terraform.tfstate
+terraform-provider-sonatypeiq
+.terraformrc
 bin/
 dist/
 modules-dev/
