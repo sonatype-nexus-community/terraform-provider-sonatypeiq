@@ -57,22 +57,28 @@ func (r *applicationResource) Schema(_ context.Context, _ resource.SchemaRequest
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Description: "Internal ID of the Application",
+				Computed:    true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Description: "Name of the Application",
+				Required:    true,
 			},
 			"public_id": schema.StringAttribute{
-				Required: true,
+				Description: "Public ID of the Application",
+				Required:    true,
 			},
 			"organization_id": schema.StringAttribute{
-				Required: true,
+				Description: "Internal ID of the Organization to which this Application belongs",
+				Required:    true,
 			},
 			"contact_user_name": schema.StringAttribute{
-				Optional: true,
+				Description: "User Name of the Contact for the Application",
+				Optional:    true,
 			},
 			"last_updated": schema.StringAttribute{
-				Computed: true,
+				Description: "String representation of the date/time the resource was last changed by Terraform",
+				Computed:    true,
 			},
 		},
 	}

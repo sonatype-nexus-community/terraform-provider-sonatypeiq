@@ -34,15 +34,15 @@ output "example_app" {
 
 ### Required
 
-- `name` (String)
-- `organization_id` (String)
-- `public_id` (String)
+- `name` (String) Name of the Application
+- `organization_id` (String) Internal ID of the Organization to which this Application belongs
+- `public_id` (String) Public ID of the Application
 
 ### Optional
 
-- `contact_user_name` (String)
+- `contact_user_name` (String) User Name of the Contact for the Application
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
-- `last_updated` (String)
+- `id` (String) Internal ID of the Application
+- `last_updated` (String) String representation of the date/time the resource was last changed by Terraform
