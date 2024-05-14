@@ -18,6 +18,8 @@ package provider
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -26,7 +28,7 @@ import (
 
 func TestAccApplicationResource(t *testing.T) {
 
-	appName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	appName := `TFACC` + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 
 	resourceName := "sonatypeiq_application.test"
 	resource.Test(t, resource.TestCase{
@@ -34,7 +36,7 @@ func TestAccApplicationResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccApplicationResource(appName, ""),
+				Config: testAccApplicationResource(appName, "", "data.sonatypeiq_organization.sandbox.id"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify Application
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -44,7 +46,7 @@ func TestAccApplicationResource(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccApplicationResource(appName, "2"),
+				Config: testAccApplicationResource(appName, "2", "data.sonatypeiq_organization.sandbox.id"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name", appName+"2"),
@@ -54,7 +56,7 @@ func TestAccApplicationResource(t *testing.T) {
 			},
 			// Validate
 			{
-				Config:             testAccApplicationResource(appName, "2"),
+				Config:             testAccApplicationResource(appName, "2", "data.sonatypeiq_organization.sandbox.id"),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
@@ -69,15 +71,52 @@ func TestAccApplicationResource(t *testing.T) {
 	})
 }
 
-func testAccApplicationResource(name string, update string) string {
+func TestAccApplicationResourceMoveOrganization(t *testing.T) {
+	appName := `TFACC` + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	randomOrgId := strings.ToLower(acctest.RandStringFromCharSet(32, acctest.CharSetAlphaNum))
+	organizationIdRegex, _ := regexp.Compile(`^[a-z0-9]{32}$`)
+	resourceName := "sonatypeiq_application.test"
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccApplicationResource(appName, "", "data.sonatypeiq_organization.root.id"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Verify Application created in root organization
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "organization_id", "56accd6fb9194257b90ffc5aeb04569a"),
+				),
+			},
+			{
+				Config:      testAccApplicationResource(appName, "", randomOrgId),
+				ExpectError: regexp.MustCompile("Organization with ID " + randomOrgId + " does not exist"),
+			},
+			{
+				Config: testAccApplicationResource(appName, "", "data.sonatypeiq_organization.sandbox.id"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Verify Application moved to sandbox organization
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "organization_id", organizationIdRegex),
+				),
+			},
+		},
+	})
+}
+
+func testAccApplicationResource(name string, update string, organization string) string {
 	return fmt.Sprintf(providerConfig+`
 data "sonatypeiq_organization" "sandbox" {
   name = "Sandbox Organization"
 }
 
+data "sonatypeiq_organization" "root" {
+  id = "ROOT_ORGANIZATION_ID"
+}
+
 resource "sonatypeiq_application" "test" {
   name = "%s%s"
   public_id = "%s%s"
-  organization_id = data.sonatypeiq_organization.sandbox.id
-}`, name, update, name, update)
+  organization_id = %s
+}`, name, update, name, update, organization)
 }
