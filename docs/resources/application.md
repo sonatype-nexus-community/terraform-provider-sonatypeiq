@@ -46,3 +46,15 @@ output "example_app" {
 
 - `id` (String) Internal ID of the Application
 - `last_updated` (String) String representation of the date/time the resource was last changed by Terraform
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Applications can be imported using the sonatype application id.
+# This can be obtained by searching using the PublicID in the WebUI or by calling the rest API
+
+# Example
+terraform import 4bb67dcfc86344e3a483832f8c496419
+```

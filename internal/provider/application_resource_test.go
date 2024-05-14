@@ -28,6 +28,7 @@ func TestAccApplicationResource(t *testing.T) {
 
 	appName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 
+	resourceName := "sonatypeiq_application.test"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -36,20 +37,32 @@ func TestAccApplicationResource(t *testing.T) {
 				Config: testAccApplicationResource(appName, ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify Application
-					resource.TestCheckResourceAttrSet("sonatypeiq_application.test", "id"),
-					resource.TestCheckResourceAttr("sonatypeiq_application.test", "name", appName),
-					resource.TestCheckResourceAttr("sonatypeiq_application.test", "public_id", appName),
-					resource.TestCheckResourceAttrSet("sonatypeiq_application.test", "last_updated"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name", appName),
+					resource.TestCheckResourceAttr(resourceName, "public_id", appName),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
 			},
 			{
 				Config: testAccApplicationResource(appName, "2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("sonatypeiq_application.test", "id"),
-					resource.TestCheckResourceAttr("sonatypeiq_application.test", "name", appName+"2"),
-					resource.TestCheckResourceAttr("sonatypeiq_application.test", "public_id", appName+"2"),
-					resource.TestCheckResourceAttrSet("sonatypeiq_application.test", "last_updated"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name", appName+"2"),
+					resource.TestCheckResourceAttr(resourceName, "public_id", appName+"2"),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
+			},
+			// Validate
+			{
+				Config:             testAccApplicationResource(appName, "2"),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"last_updated"},
 			},
 			// Delete testing automatically occurs in TestCase
 		},
