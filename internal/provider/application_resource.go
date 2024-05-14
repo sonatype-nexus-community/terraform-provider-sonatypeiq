@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"io"
 	"time"
 
@@ -27,6 +28,8 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
+
+var _ resource.ResourceWithImportState = &applicationResource{}
 
 // applicationResource is the resource implementation.
 type applicationResource struct {
@@ -161,6 +164,9 @@ func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest
 		state.Name = types.StringValue(*application.Name)
 		state.PublicId = types.StringValue(*application.PublicId)
 		state.OrganizationId = types.StringValue(*application.OrganizationId)
+		if state.LastUpdated == types.StringValue("") {
+			state.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+		}
 		if application.ContactUserName != nil {
 			state.ContactUserName = types.StringValue(*application.ContactUserName)
 		} else {
@@ -247,4 +253,8 @@ func (r *applicationResource) Delete(ctx context.Context, req resource.DeleteReq
 		)
 		return
 	}
+}
+
+func (r *applicationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
