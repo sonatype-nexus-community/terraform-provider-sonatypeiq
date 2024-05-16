@@ -14,8 +14,12 @@
 # limitations under the License.
 #
 
+# Example of how to use the Sonatype IQ Terraform provider.
+#
+# *Warning*: The config attributes will override the environment variables (See Schema)
+
 provider "sonatypeiq" {
-  host     = "my-sonatype-iq-server.tld:port"
+  url      = "my-sonatype-iq-server.tld:port"
   username = "username"
   password = "password"
 }
