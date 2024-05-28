@@ -203,6 +203,16 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 		sonatypeiq.ContextBasicAuth,
 		r.auth,
 	)
+	if !plan.OrganizationId.Equal(state.OrganizationId) {
+		_, apiResponse, err := r.client.ApplicationsAPI.MoveApplication(ctx, state.ID.ValueString(), plan.OrganizationId.ValueString()).Execute()
+		if err != nil {
+			errorBody, _ := io.ReadAll(apiResponse.Body)
+			resp.Diagnostics.AddError(
+				"Error moving application", "Could not move the application("+state.ID.ValueString()+") to new organization("+plan.OrganizationId.String()+"): "+apiResponse.Status+": "+string(errorBody),
+			)
+			return
+		}
+	}
 	app_update_request := r.client.ApplicationsAPI.UpdateApplication(ctx, state.ID.ValueString())
 	app_update_request = app_update_request.ApiApplicationDTO(sonatypeiq.ApiApplicationDTO{
 		Name:            plan.Name.ValueStringPointer(),
