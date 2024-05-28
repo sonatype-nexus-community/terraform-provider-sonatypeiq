@@ -19,17 +19,17 @@ package provider
 import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"os"
+	"regexp"
+	"testing"
 )
 
 const (
 	// providerConfig is a shared configuration to combine with the actual
 	// test configuration.
 	providerConfig = `
-provider "sonatypeiq" {
-  username = ""
-  password = ""
-  url     = ""
-}
+provider "sonatypeiq" {}
 `
 )
 
@@ -41,8 +41,41 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 	"sonatypeiq": providerserver.NewProtocol6WithError(New("test")()),
 }
 
-// func testAccPreCheck(t *testing.T) {
-// 	// You can add code here to run prior to any test case execution, for example assertions
-// 	// about the appropriate environment variables being set are common to see in a pre-check
-// 	// function.
-// }
+//	func testAccPreCheck(t *testing.T) {
+//		// You can add code here to run prior to any test case execution, for example assertions
+//		// about the appropriate environment variables being set are common to see in a pre-check
+//		// function.
+//	}
+
+func TestAccProviderNoConfigurationEnvVarsEmpty(t *testing.T) {
+	originalUsername, usernameSet := os.LookupEnv("IQ_SERVER_USERNAME")
+	os.Unsetenv("IQ_SERVER_USERNAME")
+	originalPassword, PasswordSet := os.LookupEnv("IQ_SERVER_PASSWORD")
+	os.Unsetenv("IQ_SERVER_PASSWORD")
+	originalServerURL, serverURLSet := os.LookupEnv("IQ_SERVER_URL")
+	os.Unsetenv("IQ_SERVER_URL")
+	defer func() {
+		if usernameSet {
+			os.Setenv("IQ_SERVER_USERNAME", originalUsername)
+		}
+		if PasswordSet {
+			os.Setenv("IQ_SERVER_PASSWORD", originalPassword)
+		}
+		if serverURLSet {
+			os.Setenv("IQ_SERVER_URL", originalServerURL)
+		}
+	}()
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: providerConfig + `resource "sonatypeiq_application" "test" {
+  name = "test"
+  public_id = "test"
+  organization_id = "aaaaa"
+}`,
+				ExpectError: regexp.MustCompile("(?s).*Unknown Sonatype IQ Server URL.*Invalid Sonatype IQ Server URL.*Username not supplied.*password not supplied.*"),
+			},
+		},
+	})
+}

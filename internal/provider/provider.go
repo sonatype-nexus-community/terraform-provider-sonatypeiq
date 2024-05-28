@@ -18,6 +18,8 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"net/url"
 	"os"
 
@@ -58,17 +60,20 @@ func (p *SonatypeIqProvider) Schema(ctx context.Context, req provider.SchemaRequ
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"url": schema.StringAttribute{
-				MarkdownDescription: "Sonatype IQ Server URL",
-				Required:            true,
+				MarkdownDescription: "Sonatype IQ Server URL, must start `http://` or `https://`, if not provided will attempt to fall back to environment variable `IQ_SERVER_URL`",
+				Optional:            true,
+				Validators:          []validator.String{stringvalidator.LengthAtLeast(8)},
 			},
 			"username": schema.StringAttribute{
-				MarkdownDescription: "Username for Sonatype IQ Server, requires role/permissions scoped to the resources you wish to manage",
-				Required:            true,
+				MarkdownDescription: "Username for Sonatype IQ Server, requires role/permissions scoped to the resources you wish to manage, if not provided will attempt to fall back to environment variable `IQ_SERVER_USERNAME`",
+				Optional:            true,
+				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 			"password": schema.StringAttribute{
-				MarkdownDescription: "Password for your user for Sonatype IQ Server",
-				Required:            true,
+				MarkdownDescription: "Password for your user for Sonatype IQ Server, if not provided will attempt to fall back to environment variable `IQ_SERVER_PASSWORD`",
+				Optional:            true,
 				Sensitive:           true,
+				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 		},
 	}
@@ -89,8 +94,16 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 	username := os.Getenv("IQ_SERVER_USERNAME")
 	password := os.Getenv("IQ_SERVER_PASSWORD")
 
-	if !config.Url.IsNull() && len(config.Url.ValueString()) > 0 {
-		print("setting URL")
+	if !config.Url.IsNull() && len(iqUrl) > 0 {
+		resp.Diagnostics.AddWarning("Provider config override", "The provider config is overriding the environment variable `IQ_SERVER_URL`")
+	}
+	if !config.Username.IsNull() && len(username) > 0 {
+		resp.Diagnostics.AddWarning("Provider config override", "The provider config is overriding the environment variable `IQ_SERVER_USERNAME`")
+	}
+	if !config.Password.IsNull() && len(password) > 0 {
+		resp.Diagnostics.AddWarning("Provider config override", "The provider config is overriding the environment variable `IQ_SERVER_PASSWORD`")
+	}
+	if !config.Url.IsNull() {
 		iqUrl = config.Url.ValueString()
 	}
 
@@ -119,19 +132,19 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 		)
 	}
 
-	if config.Username.IsUnknown() {
+	if len(username) == 0 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("username"),
 			"Username not supplied",
-			"Administratrive credentials for your Sonatype IQ Server are required",
+			"Administrative credentials for your Sonatype IQ Server are required",
 		)
 	}
 
-	if config.Password.IsUnknown() {
+	if len(password) == 0 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("password"),
-			"Username not supplied",
-			"Administratrive credentials for your Sonatype IQ Server are required",
+			"password not supplied",
+			"Administrative credentials for your Sonatype IQ Server are required",
 		)
 	}
 
