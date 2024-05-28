@@ -76,24 +76,25 @@ func TestAccApplicationResourceMoveOrganization(t *testing.T) {
 	randomOrgId := strings.ToLower(acctest.RandStringFromCharSet(32, acctest.CharSetAlphaNum))
 	organizationIdRegex, _ := regexp.Compile(`^[a-z0-9]{32}$`)
 	resourceName := "sonatypeiq_application.test"
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccApplicationResource(appName, "", "data.sonatypeiq_organization.root.id"),
+				Config: testAccApplicationWithSubOrgResource(appName, "", "data.sonatypeiq_organization.sandbox.id", randomOrgId),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Verify Application created in root organization
+					// Verify Application created in Test Sub Org
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "organization_id", "56accd6fb9194257b90ffc5aeb04569a"),
+					resource.TestCheckResourceAttrSet(resourceName, "organization_id"),
 				),
 			},
 			{
-				Config:      testAccApplicationResource(appName, "", randomOrgId),
-				ExpectError: regexp.MustCompile("Organization with ID " + randomOrgId + " does not exist"),
+				Config:      testAccApplicationWithSubOrgResource(appName, "", fmt.Sprintf("\"non-existent-%s\"", randomOrgId), randomOrgId),
+				ExpectError: regexp.MustCompile("Could not move the application"),
 			},
 			{
-				Config: testAccApplicationResource(appName, "", "data.sonatypeiq_organization.sandbox.id"),
+				Config: testAccApplicationWithSubOrgResource(appName, "", "sonatypeiq_organization.test_sub_org.id", randomOrgId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify Application moved to sandbox organization
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -119,4 +120,12 @@ resource "sonatypeiq_application" "test" {
   public_id = "%s%s"
   organization_id = %s
 }`, name, update, name, update, organization)
+}
+
+func testAccApplicationWithSubOrgResource(name string, update string, organization string, randomId string) string {
+	return fmt.Sprintf(testAccApplicationResource(name, update, organization)+`
+resource "sonatypeiq_organization" "test_sub_org" {
+  name = "test-sub-org-%s"
+  parent_organization_id = data.sonatypeiq_organization.root.id
+}`, randomId)
 }
