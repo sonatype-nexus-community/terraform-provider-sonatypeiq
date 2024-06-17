@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -29,6 +30,8 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
+
+var _ resource.ResourceWithImportState = &sourceControlResource{}
 
 type sourceControlResource struct {
 	baseResource
@@ -289,4 +292,25 @@ func (r *sourceControlResource) Delete(ctx context.Context, req resource.DeleteR
 		)
 		return
 	}
+}
+
+func (r *sourceControlResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	idParts := strings.Split(req.ID, ":")
+	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected import identifier with format: owner_type:id. Got: %q", req.ID),
+		)
+		return
+	}
+	if idParts[0] != "application" && idParts[0] != "organization" {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier prefix",
+			fmt.Sprintf("Expected import identifier to start with 'application' or 'organization'. Got: %q", idParts[0]),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("owner_type"), idParts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("owner_id"), idParts[1])...)
 }
