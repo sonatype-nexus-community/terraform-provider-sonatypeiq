@@ -63,3 +63,18 @@ resource "sonatypeiq_source_control" "organization" {
 - `source_control_evaluation_enabled` (Boolean) Set to true to enable Nexus IQ triggered source control evaluations.
 - `token` (String) The token for use with the SCM Provider 'scm_provider'
 - `user_name` (String) The user name to use when setting `scm_provider` to `bitbucket`.
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Applications can be imported using the sonatype type (application|organization) and the sonatype id.
+# This can be obtained by searching using the PublicID in the WebUI or by calling the rest API
+
+# Example for an application
+terraform import application/4bb67dcfc86344e3a483832f8c496419
+
+# Example for an organization
+terraform import organization/4bb67dcfc86344e3a483832f8c496419
+```

@@ -22,12 +22,14 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccSourceControlApplicationResource(t *testing.T) {
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	firstState := "true"
 	secondState := "false"
+	resourceName := "sonatypeiq_source_control.test"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -35,19 +37,29 @@ func TestAccSourceControlApplicationResource(t *testing.T) {
 				Config: testAccSourceControlApplicationResource(rand, firstState),
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", firstState),
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", firstState),
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
 					),
 				),
+			},
+			{
+				ResourceName:                         resourceName,
+				ImportState:                          true,
+				ImportStateVerify:                    true,
+				ImportStateVerifyIdentifierAttribute: "owner_id",
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					id := s.RootModule().Resources[resourceName].Primary.Attributes["owner_id"]
+					return fmt.Sprintf("application:%s", id), nil
+				},
 			},
 			{
 				Config: testAccSourceControlApplicationResource(rand, secondState),
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", secondState),
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", secondState),
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
 					),
 				),
 			},
@@ -59,6 +71,7 @@ func TestAccSourceControlOrganizationResource(t *testing.T) {
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	firstState := "true"
 	secondState := "false"
+	resourceName := "sonatypeiq_source_control.test"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -66,19 +79,29 @@ func TestAccSourceControlOrganizationResource(t *testing.T) {
 				Config: testAccSourceControlOrganizationResource(rand, firstState),
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", firstState),
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", firstState),
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
 					),
 				),
+			},
+			{
+				ResourceName:                         resourceName,
+				ImportState:                          true,
+				ImportStateVerify:                    true,
+				ImportStateVerifyIdentifierAttribute: "owner_id",
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					id := s.RootModule().Resources[resourceName].Primary.Attributes["owner_id"]
+					return fmt.Sprintf("organization:%s", id), nil
+				},
 			},
 			{
 				Config: testAccSourceControlOrganizationResource(rand, secondState),
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", secondState),
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", secondState),
-						resource.TestCheckResourceAttr("sonatypeiq_source_control.test", "remediation_pull_requests_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
 					),
 				),
 			},
