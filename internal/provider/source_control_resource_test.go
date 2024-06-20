@@ -25,6 +25,38 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+func TestAccSourceControlApplicationResourceMinimumConfig(t *testing.T) {
+	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	resourceName := "sonatypeiq_source_control.test"
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSourceControlApplicationResourceMinimumConfig(rand),
+				Check: resource.ComposeTestCheckFunc(
+					resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(resourceName, "repository_url", "https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq.git"),
+						resource.TestCheckNoResourceAttr(resourceName, "remediation_pull_requests_enabled"),
+						resource.TestCheckNoResourceAttr(resourceName, "pull_request_commenting_enabled"),
+						resource.TestCheckNoResourceAttr(resourceName, "source_control_evaluation_enabled"),
+						resource.TestCheckNoResourceAttr(resourceName, "base_branch"),
+					),
+				),
+			},
+			{
+				ResourceName:                         resourceName,
+				ImportState:                          true,
+				ImportStateVerify:                    true,
+				ImportStateVerifyIdentifierAttribute: "owner_id",
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					id := s.RootModule().Resources[resourceName].Primary.Attributes["owner_id"]
+					return fmt.Sprintf("application:%s", id), nil
+				},
+			},
+		},
+	})
+}
+
 func TestAccSourceControlApplicationResource(t *testing.T) {
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	firstState := "true"
@@ -38,8 +70,9 @@ func TestAccSourceControlApplicationResource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
-						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
-						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "pull_request_commenting_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "source_control_evaluation_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "base_branch", "my-cool-branch"),
 					),
 				),
 			},
@@ -58,8 +91,9 @@ func TestAccSourceControlApplicationResource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
-						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
-						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "pull_request_commenting_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "source_control_evaluation_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "base_branch", "my-cool-branch"),
 					),
 				),
 			},
@@ -80,8 +114,9 @@ func TestAccSourceControlOrganizationResource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
-						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
-						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "pull_request_commenting_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "source_control_evaluation_enabled", firstState),
+						resource.TestCheckResourceAttr(resourceName, "base_branch", "my-cool-branch"),
 					),
 				),
 			},
@@ -100,8 +135,9 @@ func TestAccSourceControlOrganizationResource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
-						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
-						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "pull_request_commenting_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "source_control_evaluation_enabled", secondState),
+						resource.TestCheckResourceAttr(resourceName, "base_branch", "my-cool-branch"),
 					),
 				),
 			},
@@ -130,6 +166,25 @@ resource "sonatypeiq_source_control" "test" {
   source_control_evaluation_enabled = %s
   repository_url = "https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq.git"
 }`, rand, rand, enabled, enabled, enabled)
+}
+
+func testAccSourceControlApplicationResourceMinimumConfig(rand string) string {
+	return fmt.Sprintf(providerConfig+`
+data "sonatypeiq_organization" "sandbox" {
+  name = "Sandbox Organization"
+}
+
+resource "sonatypeiq_application" "app_by_public_id" {
+  name = "app-%s"
+  public_id = "app-%s"
+  organization_id = data.sonatypeiq_organization.sandbox.id
+}
+
+resource "sonatypeiq_source_control" "test" {
+  owner_type = "application"
+  owner_id = sonatypeiq_application.app_by_public_id.id
+  repository_url = "https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq.git"
+}`, rand, rand)
 }
 
 func testAccSourceControlOrganizationResource(rand string, enabled string) string {
