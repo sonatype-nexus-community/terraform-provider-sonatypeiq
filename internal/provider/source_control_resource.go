@@ -25,6 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"io"
 	"strings"
 
@@ -184,12 +185,16 @@ func (r *sourceControlResource) Read(ctx context.Context, req resource.ReadReque
 	// Get refreshed Source Control from IQ
 	ownerType := strings.Trim(state.OwnerType.String(), "\"")
 	ownerId := strings.Trim(state.ID.String(), "\"")
+	tflog.Debug(ctx, fmt.Sprintf("Importing Source Control with owner_type: %s", ownerType))
+	tflog.Debug(ctx, fmt.Sprintf("Importing Source Control with owner_id: %s", ownerId))
 	sourceControl, apiResponse, err := r.client.SourceControlAPI.GetSourceControl1(ctx, ownerType, ownerId).Execute()
 	if err != nil {
 		if apiResponse.StatusCode == 404 {
+			tflog.Debug(ctx, "Remove resource from state as no longer exists")
 			resp.State.RemoveResource(ctx)
 			return
 		} else {
+			tflog.Error(ctx, "Error Reading IQ Source Control")
 			resp.Diagnostics.AddError(
 				"Error Reading IQ Source Control",
 				"Could not read Source Control for ID "+state.ID.ValueString()+": "+err.Error(),
@@ -198,14 +203,23 @@ func (r *sourceControlResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	} else {
 		// Overwrite items with refreshed state
+		tflog.Debug(ctx, fmt.Sprintf("Setting imported attributes in state %s", *sourceControl.OwnerId))
 		state.ID = types.StringValue(*sourceControl.OwnerId)
 		if ownerType == "application" {
 			state.RepositoryUrl = types.StringValue(*sourceControl.RepositoryUrl)
 		}
-		state.BaseBranch = types.StringValue(*sourceControl.BaseBranch)
-		state.RemediationPullRequestsEnabled = types.BoolValue(*sourceControl.RemediationPullRequestsEnabled)
-		state.PullRequestCommentingEnabled = types.BoolValue(*sourceControl.PullRequestCommentingEnabled)
-		state.SourceControlEvaluationsEnabled = types.BoolValue(*sourceControl.SourceControlEvaluationsEnabled)
+		if sourceControl.BaseBranch != nil {
+			state.BaseBranch = types.StringValue(*sourceControl.BaseBranch)
+		}
+		if sourceControl.RemediationPullRequestsEnabled != nil {
+			state.RemediationPullRequestsEnabled = types.BoolValue(*sourceControl.RemediationPullRequestsEnabled)
+		}
+		if sourceControl.PullRequestCommentingEnabled != nil {
+			state.PullRequestCommentingEnabled = types.BoolValue(*sourceControl.PullRequestCommentingEnabled)
+		}
+		if sourceControl.SourceControlEvaluationsEnabled != nil {
+			state.SourceControlEvaluationsEnabled = types.BoolValue(*sourceControl.SourceControlEvaluationsEnabled)
+		}
 		if sourceControl.Provider != nil {
 			state.ScmProvider = types.StringValue(*sourceControl.Provider)
 		}
@@ -260,8 +274,6 @@ func (r *sourceControlResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 	// Set the state to fully populated data
-	resp.Diagnostics.AddWarning(
-		"what", "what"+*sourceControl.Id+"XXXXXXX"+*sourceControl.OwnerId)
 	plan.ID = types.StringValue(*sourceControl.OwnerId)
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -310,7 +322,7 @@ func (r *sourceControlResource) ImportState(ctx context.Context, req resource.Im
 		)
 		return
 	}
-
+	tflog.Debug(ctx, fmt.Sprintf("Importing Source Control with owner_type: %s and owner_id: %s", idParts[0], idParts[1]))
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("owner_type"), idParts[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("owner_id"), idParts[1])...)
 }
