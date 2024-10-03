@@ -34,33 +34,63 @@ func TestAccOrganizationRoleMembershipResource(t *testing.T) {
 			// Create and Read testing
 			{
 				Config: fmt.Sprintf(providerConfig+`
-        data "sonatypeiq_organization" "sandbox" {
-          name = "Sandbox Organization"
-        }
-
-        data "sonatypeiq_role" "developer" {
-          name = "Developer"
-        }
-
-        resource "sonatypeiq_user" "user" {
-          username   = "%s"
-          password   = "randomthing"
-          first_name = "Example"
-          last_name  = "User"
-          email      = "example@user.tld"
-        }
-
-        resource "sonatypeiq_organization_role_membership" "test" {
-          role_id         = data.sonatypeiq_role.developer.id
-          organization_id = data.sonatypeiq_organization.sandbox.id
-          user_name       = sonatypeiq_user.user.username
-        }
-
-        `, userName),
+		 data "sonatypeiq_organization" "sandbox" {
+		   name = "Sandbox Organization"
+		 }
+ 
+		 data "sonatypeiq_role" "developer" {
+		   name = "Developer"
+		 }
+ 
+		 resource "sonatypeiq_user" "user" {
+		   username   = "%s"
+		   password   = "randomthing"
+		   first_name = "Example"
+		   last_name  = "User"
+		   email      = "example@user.tld"
+		 }
+ 
+		 resource "sonatypeiq_organization_role_membership" "test" {
+		   role_id         = data.sonatypeiq_role.developer.id
+		   organization_id = data.sonatypeiq_organization.sandbox.id
+		   user_name       = sonatypeiq_user.user.username
+		 }
+ 
+		 `, userName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify application role membership
 					resource.TestCheckResourceAttrSet("sonatypeiq_organization_role_membership.test", "id"),
 					resource.TestCheckResourceAttr("sonatypeiq_organization_role_membership.test", "user_name", userName),
+				),
+			},
+			{
+				Config: fmt.Sprintf(providerConfig+`
+		 data "sonatypeiq_organization" "sandbox" {
+		   name = "Sandbox Organization"
+		 }
+ 
+		 data "sonatypeiq_role" "owner" {
+		   name = "Owner"
+		 }
+ 
+		 resource "sonatypeiq_user" "user" {
+		   username   = "%s"
+		   password   = "randomthing"
+		   first_name = "Example"
+		   last_name  = "User"
+		   email      = "example@user.tld"
+		 }
+ 
+		 resource "sonatypeiq_organization_role_membership" "test" {
+		   role_id         = data.sonatypeiq_role.owner.id
+		   organization_id = data.sonatypeiq_organization.sandbox.id
+		   user_name       = sonatypeiq_user.user.username
+		 }
+ 
+		 `, userName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Verify application role membership
+					resource.TestCheckResourceAttr("sonatypeiq_organization_role_membership.test", "role_id", "1cddabf7fdaa47d6833454af10e0a3ef"),
 				),
 			},
 		},

@@ -26,6 +26,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
@@ -64,18 +66,30 @@ func (r *organizationRoleMembershipResource) Schema(_ context.Context, _ resourc
 			"role_id": schema.StringAttribute{
 				Required:    true,
 				Description: "The role ID",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"organization_id": schema.StringAttribute{
 				Required:    true,
 				Description: "The organization ID",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"user_name": schema.StringAttribute{
 				Optional:    true,
 				Description: "The username of the user (mutually exclusive with group_name)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"group_name": schema.StringAttribute{
 				Optional:    true,
 				Description: "The group name of the group (mutually exclusive with user_name)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
