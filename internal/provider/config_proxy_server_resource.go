@@ -120,7 +120,7 @@ func (r *configProxyServerResource) Create(ctx context.Context, req resource.Cre
 		r.auth,
 	)
 
-	var port *int32 = new(int32)
+	var port = new(int32)
 	*port = int32(plan.Port.ValueInt64())
 	proxy_config := sonatypeiq.ApiProxyServerConfigurationDTO{
 		Hostname: plan.Hostname.ValueStringPointer(),
