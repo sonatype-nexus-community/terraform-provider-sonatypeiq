@@ -42,9 +42,15 @@ jobs:
               with:
                   go-version-file: 'go.mod'
                   cache: true
+            # We need the latest version of Terraform for our documentation generation to use
+            - uses: hashicorp/setup-terraform@v3
+              with:
+                terraform_wrapper: false
             - run: go get github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-            - run: go generate ./...
-            - name: git diff
+            - name: Run Generation
+              run: go generate ./...
+              working-directory: tools
+            - name: Check for diff
               run: |
                   git diff --compact-summary --exit-code || \
                     (echo; echo "Unexpected difference in directories after code generation. Run 'go generate ./...' command and commit."; exit 1)
