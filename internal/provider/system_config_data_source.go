@@ -91,7 +91,7 @@ func (d *systemConfigDataSource) Read(ctx context.Context, req datasource.ReadRe
 	)
 
 	// Lookup System Configuration
-	config_request := d.client.ConfigAPI.GetConfiguration(ctx)
+	config_request := d.client.ConfigurationAPI.GetConfiguration(ctx)
 	config_request = config_request.Property([]sonatypeiq.SystemConfigProperty{
 		"baseUrl", "forceBaseUrl",
 	})

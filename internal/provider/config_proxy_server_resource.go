@@ -26,7 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
@@ -91,7 +90,6 @@ func (r *configProxyServerResource) Schema(_ context.Context, _ resource.SchemaR
 			},
 			"exclude_hosts": schema.SetAttribute{
 				Description: "Optional list of hosts to exclude communication via Proxy Server",
-				Default:     setdefault.StaticValue(types.SetNull(nil)),
 				Computed:    true,
 				Optional:    true,
 				ElementType: types.StringType,
@@ -120,7 +118,7 @@ func (r *configProxyServerResource) Create(ctx context.Context, req resource.Cre
 		r.auth,
 	)
 
-	var port *int32 = new(int32)
+	var port = new(int32)
 	*port = int32(plan.Port.ValueInt64())
 	proxy_config := sonatypeiq.ApiProxyServerConfigurationDTO{
 		Hostname: plan.Hostname.ValueStringPointer(),
@@ -227,7 +225,7 @@ func (r *configProxyServerResource) Update(ctx context.Context, req resource.Upd
 		r.auth,
 	)
 
-	var port *int32 = new(int32)
+	var port = new(int32)
 	*port = int32(plan.Port.ValueInt64())
 	proxy_config := sonatypeiq.ApiProxyServerConfigurationDTO{
 		Hostname: plan.Hostname.ValueStringPointer(),

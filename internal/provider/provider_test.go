@@ -17,12 +17,13 @@
 package provider
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"os"
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 const (
@@ -49,20 +50,20 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 
 func TestAccProviderNoConfigurationEnvVarsEmpty(t *testing.T) {
 	originalUsername, usernameSet := os.LookupEnv("IQ_SERVER_USERNAME")
-	os.Unsetenv("IQ_SERVER_USERNAME")
+	_ = os.Unsetenv("IQ_SERVER_USERNAME")
 	originalPassword, PasswordSet := os.LookupEnv("IQ_SERVER_PASSWORD")
-	os.Unsetenv("IQ_SERVER_PASSWORD")
+	_ = os.Unsetenv("IQ_SERVER_PASSWORD")
 	originalServerURL, serverURLSet := os.LookupEnv("IQ_SERVER_URL")
-	os.Unsetenv("IQ_SERVER_URL")
+	_ = os.Unsetenv("IQ_SERVER_URL")
 	defer func() {
 		if usernameSet {
-			os.Setenv("IQ_SERVER_USERNAME", originalUsername)
+			_ = os.Setenv("IQ_SERVER_USERNAME", originalUsername)
 		}
 		if PasswordSet {
-			os.Setenv("IQ_SERVER_PASSWORD", originalPassword)
+			_ = os.Setenv("IQ_SERVER_PASSWORD", originalPassword)
 		}
 		if serverURLSet {
-			os.Setenv("IQ_SERVER_URL", originalServerURL)
+			_ = os.Setenv("IQ_SERVER_URL", originalServerURL)
 		}
 	}()
 	resource.Test(t, resource.TestCase{
