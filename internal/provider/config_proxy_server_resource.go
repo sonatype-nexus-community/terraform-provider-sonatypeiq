@@ -227,7 +227,7 @@ func (r *configProxyServerResource) Update(ctx context.Context, req resource.Upd
 		r.auth,
 	)
 
-	var port *int32 = new(int32)
+	var port = new(int32)
 	*port = int32(plan.Port.ValueInt64())
 	proxy_config := sonatypeiq.ApiProxyServerConfigurationDTO{
 		Hostname: plan.Hostname.ValueStringPointer(),
