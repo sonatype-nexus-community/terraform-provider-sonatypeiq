@@ -26,7 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
@@ -91,7 +90,6 @@ func (r *configProxyServerResource) Schema(_ context.Context, _ resource.SchemaR
 			},
 			"exclude_hosts": schema.SetAttribute{
 				Description: "Optional list of hosts to exclude communication via Proxy Server",
-				Default:     setdefault.StaticValue(types.SetNull(nil)),
 				Computed:    true,
 				Optional:    true,
 				ElementType: types.StringType,
