@@ -139,7 +139,7 @@ func (r *configMailResource) Create(ctx context.Context, req resource.CreateRequ
 		r.auth,
 	)
 
-	var port *int32 = new(int32)
+	var port = new(int32)
 	*port = int32(plan.Port.ValueInt64())
 	mail_config := sonatypeiq.ApiMailConfigurationDTO{
 		Hostname:        plan.Hostname.ValueStringPointer(),
@@ -250,7 +250,7 @@ func (r *configMailResource) Update(ctx context.Context, req resource.UpdateRequ
 		r.auth,
 	)
 
-	var port *int32 = new(int32)
+	var port = new(int32)
 	*port = int32(plan.Port.ValueInt64())
 	mail_config := sonatypeiq.ApiMailConfigurationDTO{
 		Hostname:        plan.Hostname.ValueStringPointer(),

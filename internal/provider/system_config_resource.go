@@ -92,7 +92,7 @@ func (r *systemConfigResource) Create(ctx context.Context, req resource.CreateRe
 		r.auth,
 	)
 
-	config_request := r.client.ConfigAPI.SetConfiguration(ctx)
+	config_request := r.client.ConfigurationAPI.SetConfiguration(ctx)
 	system_config := sonatypeiq.SystemConfig{}
 	if !plan.BaseURL.IsNull() {
 		system_config.BaseUrl = *sonatypeiq.NewNullableString(plan.BaseURL.ValueStringPointer())
@@ -142,7 +142,7 @@ func (r *systemConfigResource) Read(ctx context.Context, req resource.ReadReques
 	)
 
 	// Lookup System Configuration
-	config_request := r.client.ConfigAPI.GetConfiguration(ctx)
+	config_request := r.client.ConfigurationAPI.GetConfiguration(ctx)
 	config_request = config_request.Property([]sonatypeiq.SystemConfigProperty{
 		"baseUrl", "forceBaseUrl",
 	})
@@ -190,7 +190,7 @@ func (r *systemConfigResource) Update(ctx context.Context, req resource.UpdateRe
 		r.auth,
 	)
 
-	config_request := r.client.ConfigAPI.SetConfiguration(ctx)
+	config_request := r.client.ConfigurationAPI.SetConfiguration(ctx)
 	system_config := sonatypeiq.SystemConfig{}
 	if !plan.BaseURL.IsNull() {
 		system_config.BaseUrl = *sonatypeiq.NewNullableString(plan.BaseURL.ValueStringPointer())

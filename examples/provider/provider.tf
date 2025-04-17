@@ -17,9 +17,12 @@
 # Example of how to use the Sonatype IQ Terraform provider.
 #
 # *Warning*: The config attributes will override the environment variables (See Schema)
+#
+# If you run on a non-standard port, include this with a colon and number:
+# e.g. https://my-sonatype-iq-server.tld:9999
 
 provider "sonatypeiq" {
-  url      = "my-sonatype-iq-server.tld:port"
+  url      = "https://my-sonatype-iq-server.tld"
   username = "username"
   password = "password"
 }
