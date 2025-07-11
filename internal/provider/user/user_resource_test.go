@@ -18,6 +18,7 @@ package user_test
 
 import (
 	"fmt"
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestAccUserResource(t *testing.T) {
 					resource.TestCheckResourceAttr("sonatypeiq_user.user1", "first_name", "Example"),
 					resource.TestCheckResourceAttr("sonatypeiq_user.user1", "last_name", "User"),
 					resource.TestCheckResourceAttr("sonatypeiq_user.user1", "email", fmt.Sprintf("%s@user.tld", userName)),
-					resource.TestCheckResourceAttr("sonatypeiq_user.user1", "realm", DEFAULT_USER_REALM),
+					resource.TestCheckResourceAttr("sonatypeiq_user.user1", "realm", common.DEFAULT_USER_REALM),
 					resource.TestCheckResourceAttrSet("sonatypeiq_user.user1", "last_updated"),
 				),
 			},
@@ -55,7 +56,7 @@ func TestAccUserResource(t *testing.T) {
 					resource.TestCheckResourceAttr("sonatypeiq_user.user1", "first_name", "Example Esq"),
 					resource.TestCheckResourceAttr("sonatypeiq_user.user1", "last_name", "User"),
 					resource.TestCheckResourceAttr("sonatypeiq_user.user1", "email", fmt.Sprintf("%s@user.tld", userName)),
-					resource.TestCheckResourceAttr("sonatypeiq_user.user1", "realm", DEFAULT_USER_REALM),
+					resource.TestCheckResourceAttr("sonatypeiq_user.user1", "realm", common.DEFAULT_USER_REALM),
 					resource.TestCheckResourceAttrSet("sonatypeiq_user.user1", "last_updated"),
 				),
 			},

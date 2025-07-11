@@ -32,10 +32,6 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
 
-const (
-	DEFAULT_USER_REALM string = "Internal"
-)
-
 // userResource is the resource implementation.
 type userResource struct {
 	common.BaseResource
@@ -98,8 +94,8 @@ func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Required:    true,
 			},
 			"realm": schema.StringAttribute{
-				Description: fmt.Sprintf("Realm the User belongs to. Only '%s' is supported at this time.", DEFAULT_USER_REALM),
-				Default:     stringdefault.StaticString(DEFAULT_USER_REALM),
+				Description: fmt.Sprintf("Realm the User belongs to. Only '%s' is supported at this time.", common.DEFAULT_USER_REALM),
+				Default:     stringdefault.StaticString(common.DEFAULT_USER_REALM),
 				Computed:    true,
 			},
 			"last_updated": schema.StringAttribute{
@@ -127,10 +123,10 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 		)
 		return
 	}
-	if !plan.Realm.Equal(types.StringValue(DEFAULT_USER_REALM)) {
+	if !plan.Realm.Equal(types.StringValue(common.DEFAULT_USER_REALM)) {
 		resp.Diagnostics.AddError(
 			"Unsupported Realm",
-			fmt.Sprintf("Only the '%s' Realm is supported currently.", DEFAULT_USER_REALM),
+			fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM),
 		)
 		return
 	}
@@ -241,7 +237,7 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	if !plan.Realm.Equal(types.StringValue("Internal")) {
 		resp.Diagnostics.AddError(
 			"Unsupported Realm",
-			fmt.Sprintf("Only the '%s' Realm is supported currently.", DEFAULT_USER_REALM),
+			fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM),
 		)
 		return
 	}
