@@ -61,11 +61,11 @@ func (r *systemConfigResource) Schema(_ context.Context, _ resource.SchemaReques
 				Computed: true,
 			},
 			"base_url": schema.StringAttribute{
-				Description: "Base URL for Sonatype IQ Server",
+				Description: "Base URL for Sonatype IQ Server. See https://help.sonatype.com/en/configuration-rest-api.html#base-url--required-",
 				Required:    true,
 			},
 			"force_base_url": schema.BoolAttribute{
-				Description: "Should the Base URL be forced?",
+				Description: "Should the Base URL be forced? See https://help.sonatype.com/en/configuration-rest-api.html#force-the-base-url",
 				Required:    true,
 			},
 			"last_updated": schema.StringAttribute{

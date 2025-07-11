@@ -25,8 +25,8 @@ resource "sonatypeiq_system_config" "iq_config" {
 
 ### Required
 
-- `base_url` (String) Base URL for Sonatype IQ Server
-- `force_base_url` (Boolean) Should the Base URL be forced?
+- `base_url` (String) Base URL for Sonatype IQ Server. See https://help.sonatype.com/en/configuration-rest-api.html#base-url--required-
+- `force_base_url` (Boolean) Should the Base URL be forced? See https://help.sonatype.com/en/configuration-rest-api.html#force-the-base-url
 
 ### Read-Only
 
