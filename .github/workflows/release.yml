@@ -13,20 +13,50 @@ on:
 permissions:
     contents: write
 
+env:
+    LC_APPLICATION_ID: terraform-provider-sonatyperepo
+
 jobs:
-    goreleaser:
+    sonatype:
+        name: Sonatype Scan
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+            - uses: actions/checkout@v4
+              
+            - uses: actions/setup-go@v5
+              with:
+                go-version-file: 'go.mod'
+                cache: true
+              
+            - name: Generate go.list
+              run:
+                    go list -f '{{define "M"}}{{.Path}} {{.Version}}{{end}}{{with .Module}}{{if not .Main}}{{if .Replace}}{{template "M" .Replace}}{{else}}{{template "M" .}}{{end}}{{end}}{{end}}' -compiled -deps| sort -u > go.list
+              
+            - name: Sonatype Lifecycle Evaluation
+              id: evaluate
+              uses: sonatype/actions/evaluate@v1
+              with:
+                    iq-server-url: ${{ vars.SONATYPE_PLATFORM_URL }}
+                    username: ${{ secrets.SONATYPE_LIFECYCLE_USERNAME }}
+                    password: ${{ secrets.SONATYPE_LIFECYCLE_PASSWORD }}
+                    application-id: ${{ env.LC_APPLICATION_ID }}
+                    scan-targets: 'go.list'
+                    stage: release
+
+    goreleaser:
+        name: Run Goreleaser
+        needs: sonatype
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
               with:
                   # Allow goreleaser to access older tag information.
                   fetch-depth: 0
-            - uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753 # v4.0.1
+            - uses: actions/setup-go@v5
               with:
                   go-version-file: 'go.mod'
-                  cache: true
             - name: Import GPG key
-              uses: crazy-max/ghaction-import-gpg@72b6676b71ab476b77e676928516f6982eef7a41 # v5.3.0
+              uses: crazy-max/ghaction-import-gpg@v6
               id: import_gpg
               with:
                   gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -35,7 +65,6 @@ jobs:
               uses: goreleaser/goreleaser-action@v6
               with:
                   args: release --clean
-                  version: "~> v2"
               env:
                   # GitHub sets the GITHUB_TOKEN secret automatically.
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
