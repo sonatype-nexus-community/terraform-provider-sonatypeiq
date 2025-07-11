@@ -18,10 +18,18 @@ package provider
 
 import (
 	"context"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"net/url"
 	"os"
+	"terraform-provider-sonatypeiq/internal/provider/application"
+	"terraform-provider-sonatypeiq/internal/provider/common"
+	"terraform-provider-sonatypeiq/internal/provider/organization"
+	"terraform-provider-sonatypeiq/internal/provider/role"
+	"terraform-provider-sonatypeiq/internal/provider/scm"
+	"terraform-provider-sonatypeiq/internal/provider/system"
+	"terraform-provider-sonatypeiq/internal/provider/user"
+
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -81,11 +89,8 @@ func (p *SonatypeIqProvider) Schema(ctx context.Context, req provider.SchemaRequ
 
 func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var config SonatypeIqProviderModel
-
 	diags := req.Config.Get(ctx, &config)
-
 	resp.Diagnostics.Append(diags...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -94,15 +99,6 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 	username := os.Getenv("IQ_SERVER_USERNAME")
 	password := os.Getenv("IQ_SERVER_PASSWORD")
 
-	if !config.Url.IsNull() && len(iqUrl) > 0 {
-		resp.Diagnostics.AddWarning("Provider config override", "The provider config is overriding the environment variable `IQ_SERVER_URL`")
-	}
-	if !config.Username.IsNull() && len(username) > 0 {
-		resp.Diagnostics.AddWarning("Provider config override", "The provider config is overriding the environment variable `IQ_SERVER_USERNAME`")
-	}
-	if !config.Password.IsNull() && len(password) > 0 {
-		resp.Diagnostics.AddWarning("Provider config override", "The provider config is overriding the environment variable `IQ_SERVER_PASSWORD`")
-	}
 	if !config.Url.IsNull() {
 		iqUrl = config.Url.ValueString()
 	}
@@ -163,40 +159,40 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 	}
 
 	client := sonatypeiq.NewAPIClient(configuration)
-	resp.DataSourceData = SonatypeDataSourceData{
-		client: client,
-		auth:   sonatypeiq.BasicAuth{UserName: username, Password: password},
+	resp.DataSourceData = common.SonatypeDataSourceData{
+		Auth:   sonatypeiq.BasicAuth{UserName: username, Password: password},
+		Client: client,
 	}
-	resp.ResourceData = SonatypeDataSourceData{
-		client: client,
-		auth:   sonatypeiq.BasicAuth{UserName: username, Password: password},
+	resp.ResourceData = common.SonatypeDataSourceData{
+		Auth:   sonatypeiq.BasicAuth{UserName: username, Password: password},
+		Client: client,
 	}
 }
 
 func (p *SonatypeIqProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewApplicationResource,
-		NewConfigMailResource,
-		NewConfigProxyServerResource,
-		NewOrganizationResource,
-		NewSystemConfigResource,
-		NewUserResource,
-		NewApplicationRoleMembershipResource,
-		NewOrganizationRoleMembershipResource,
-		NewSourceControlResource,
+		application.NewApplicationResource,
+		application.NewApplicationRoleMembershipResource,
+		organization.NewOrganizationResource,
+		organization.NewOrganizationRoleMembershipResource,
+		scm.NewSourceControlResource,
+		system.NewConfigMailResource,
+		system.NewConfigProxyServerResource,
+		system.NewSystemConfigResource,
+		user.NewUserResource,
 	}
 }
 
 func (p *SonatypeIqProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		ApplicationCategoriesDataSource,
-		ApplicationDataSource,
-		ApplicationsDataSource,
-		ConfigSamlDataSource,
-		OrganizationDataSource,
-		OrganizationsDataSource,
-		SystemConfigDataSource,
-		RoleDataSource,
+		application.ApplicationDataSource,
+		application.ApplicationsDataSource,
+		application.ApplicationCategoriesDataSource,
+		organization.OrganizationDataSource,
+		organization.OrganizationsDataSource,
+		role.RoleDataSource,
+		system.ConfigSamlDataSource,
+		system.SystemConfigDataSource,
 	}
 }
 
