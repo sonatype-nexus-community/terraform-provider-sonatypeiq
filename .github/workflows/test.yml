@@ -132,5 +132,5 @@ jobs:
                   IQ_SERVER_USERNAME: ${{ secrets.IQ_SERVER_USERNAME }}
                   IQ_SERVER_PASSWORD: ${{ secrets.IQ_SERVER_PASSWORD }}
                   TF_ACC: '1'
-              run: go test -v -cover ./internal/provider/
+              run: go test -v -cover ./...
               timeout-minutes: 10
