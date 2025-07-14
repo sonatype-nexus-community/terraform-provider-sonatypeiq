@@ -41,3 +41,5 @@ local-tests
 # Ignore artifact
 terraform-provider-sonatypeiq
 .vscode
+node_modules
+package*json

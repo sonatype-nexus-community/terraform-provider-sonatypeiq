@@ -12,6 +12,8 @@ on:
 # GitHub considers creating releases and uploading assets as writing contents.
 permissions:
     contents: write
+    issues: write
+    pull-requests: write
 
 env:
     LC_APPLICATION_ID: terraform-provider-sonatyperepo
@@ -69,3 +71,28 @@ jobs:
                   # GitHub sets the GITHUB_TOKEN secret automatically.
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+
+    changelog:
+        name: Generate Changelog
+        needs: goreleaser
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                node-version: 20
+
+            - name: Install Semantic Release Plugins
+              run:
+                npm install @semantic-release/changelog -D
+                npm install @semantic-release/git -D
+            
+            - name: Semantic Release
+              run: |
+                npx semantic-release
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
