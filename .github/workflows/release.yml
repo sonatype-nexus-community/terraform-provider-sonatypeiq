@@ -11,9 +11,9 @@ on:
 # Releases need permissions to read and write the repository contents.
 # GitHub considers creating releases and uploading assets as writing contents.
 permissions:
-    contents: write
-    issues: write
-    pull-requests: write
+    contents: write         # required for goreleaser && semantic-release
+    issues: write           # required for semantic-release
+    pull-requests: write    # required for semantic-release
 
 env:
     LC_APPLICATION_ID: terraform-provider-sonatyperepo
