@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"terraform-provider-sonatypeiq/internal/provider/application"
@@ -27,9 +28,6 @@ import (
 	"terraform-provider-sonatypeiq/internal/provider/scm"
 	"terraform-provider-sonatypeiq/internal/provider/system"
 	"terraform-provider-sonatypeiq/internal/provider/user"
-
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -70,18 +68,18 @@ func (p *SonatypeIqProvider) Schema(ctx context.Context, req provider.SchemaRequ
 			"url": schema.StringAttribute{
 				MarkdownDescription: "Sonatype IQ Server URL, must start `http://` or `https://`, if not provided will attempt to fall back to environment variable `IQ_SERVER_URL`",
 				Optional:            true,
-				Validators:          []validator.String{stringvalidator.LengthAtLeast(8)},
+				// Validators:          []validator.String{stringvalidator.LengthAtLeast(8)},
 			},
 			"username": schema.StringAttribute{
 				MarkdownDescription: "Username for Sonatype IQ Server, requires role/permissions scoped to the resources you wish to manage, if not provided will attempt to fall back to environment variable `IQ_SERVER_USERNAME`",
 				Optional:            true,
-				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
+				// Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 			"password": schema.StringAttribute{
 				MarkdownDescription: "Password for your user for Sonatype IQ Server, if not provided will attempt to fall back to environment variable `IQ_SERVER_PASSWORD`",
 				Optional:            true,
 				Sensitive:           true,
-				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
+				// Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 		},
 	}
@@ -99,7 +97,7 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 	username := os.Getenv("IQ_SERVER_USERNAME")
 	password := os.Getenv("IQ_SERVER_PASSWORD")
 
-	if !config.Url.IsNull() {
+	if !config.Url.IsNull() && len(config.Url.ValueString()) > 0 {
 		iqUrl = config.Url.ValueString()
 	}
 
@@ -128,15 +126,15 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 		)
 	}
 
-	if len(username) == 0 {
+	if config.Username.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("username"),
 			"Username not supplied",
-			"Administrative credentials for your Sonatype IQ Server are required",
+			fmt.Sprintf("Administrative credentials for your Sonatype IQ Server are required: Config is '%s', Env is '%s'", config.Username.ValueString(), os.Getenv("IQ_SERVER_USERNAME")),
 		)
 	}
 
-	if len(password) == 0 {
+	if config.Password.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("password"),
 			"password not supplied",
