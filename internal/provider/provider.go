@@ -178,6 +178,7 @@ func (p *SonatypeIqProvider) Resources(ctx context.Context) []func() resource.Re
 		system.NewConfigProxyServerResource,
 		system.NewSystemConfigResource,
 		user.NewUserResource,
+		user.NewUserTokenResource,
 	}
 }
 
