@@ -6,11 +6,11 @@ Pull requests are welcome - we thank you in advance. All we ask is that your PR 
 
 This provider uses the Custom Provider Framework from HashiCorp. A great reference is available from HashiCorp [here](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider).
 
-Development is conducted using Go version 1.21.
+Development is conducted using Go version specified in `go.mod`.
 
 We utilise [tfplugindocs](github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs) for documentation generation, and this should be included in the `go.mod` and `go.sum`.
 
-Documentation and examples should be regenerated and included in Pull Requests - run `go generate ./...` before finalising your PR.
+Documentation and examples should be regenerated and included in Pull Requests - run `cd tools && go generate ./...` before finalising your PR.
 
 ## Linting
 
