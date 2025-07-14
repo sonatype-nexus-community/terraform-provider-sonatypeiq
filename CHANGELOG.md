@@ -4,7 +4,7 @@
 
 ENHANCEMENTS:
 
-* resource/sonatypeiq_organization: Now supports `terraform import` [GH-]
+* resource/sonatypeiq_organization: Now supports `terraform import` [GH-46]
 
 
 ## 0.10.0 July 14, 2025
