@@ -161,7 +161,7 @@ jobs:
                     --add-opens=java.base/sun.security.x509=ALL-UNNAMED \
                     --add-opens=java.base/sun.security.util=ALL-UNNAMED \
                     --add-opens=java.xml/com.sun.org.apache.xerces.internal.jaxp.datatype=ALL-UNNAMED \
-                    -jar nexus-iq-server-*.jar server config.yml 2> stderr.log
+                    -jar nexus-iq-server-*.jar server config.yml 2> stderr.log &
               working-directory: "${{ github.workspace }}/nxiq"
 
             - name: Wait for SonatypeIQ Server to be ready
