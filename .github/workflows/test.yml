@@ -148,7 +148,7 @@ jobs:
                   echo "${{ secrets.NXIQ_LICENSE }}" | base64 -d > ${{ github.workspace }}/license.lic
                   wget https://download.sonatype.com/clm/server/nexus-iq-server-${{ matrix.nxiq }}-bundle.tar.gz
                   mkdir ${{ github.workspace }}/nxiq
-                  tar xvz -f nexus-iq-server-${{ matrix.nxiq }}-linux-x86_64.tgz -C ${{ github.workspace }}/nxiq
+                  tar xvz -f nexus-iq-server-${{ matrix.nxiq }}-bundle.tar.gz -C ${{ github.workspace }}/nxiq
                   echo "licenseFile: ${{ github.workspace }}/license.lic" >> nxiq/config.yml
 
             - name: Start Sonatype IQ Server
