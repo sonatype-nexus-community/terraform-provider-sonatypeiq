@@ -6,11 +6,13 @@ name: Tests
 on:
     pull_request:
         paths-ignore:
+            - 'CHANGELOG.md'
             - 'README.md'
     push:
         branches:
             - main
         paths-ignore:
+            - 'CHANGELOG.md'
             - 'README.md'
 
 env:
@@ -92,7 +94,7 @@ jobs:
 
     # Run acceptance tests in a matrix with Terraform CLI versions
     test-parallel:
-        name: Terraform Provider Acceptance Tests
+        name: Acc. Tests (NXIQ ${{ matrix.nxiq }} + TF ${{ matrix.terraform }})
         needs: 
             - build
             - sonatype
@@ -102,35 +104,113 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
+                nxiq:
+                    - '1.186.0-01' # FIRST WITH BUNDLED JRE
+                    - '1.189.0-01'
+                    - '1.190.0-01'
+                    - '1.191.0-01'
+                    - '1.192.0-01'
+                    - '1.193.0-01' # LATEST
                 # list whatever Terraform versions here you would like to support
                 terraform:
-                    - '1.0.*'
-                    - '1.1.*'
-                    - '1.2.*'
-                    - '1.3.*'
-                    - '1.4.*'
-                    - '1.5.*'
-                    - '1.6.*'
-                    - '1.7.*'
-                    - '1.8.*'
-                    - '1.9.*'
-                    - '1.10.*'
-                    - '1.11.*'
+                    - '1.0.*' # Minimum
+                    # - '1.1.*'
+                    # - '1.2.*'
+                    # - '1.3.*'
+                    # - '1.4.*'
+                    # - '1.5.*'
+                    # - '1.6.*'
+                    # - '1.7.*'
+                    # - '1.8.*'
+                    # - '1.9.*'
+                    # - '1.10.*'
+                    # - '1.11.*' 
+                    - '1.12.*' # Latest
+                    # - '1.13.*'
+                    # - '1.14.*'
         steps:
-            - uses: actions/checkout@v4
+            - name: Set Clean TF Version
+              run: |
+                ORIG="${{ matrix.terraform }}"
+                TF_SAFE_VERSION="${ORIG//\*/}"
+                echo "TF_SAFE_VERSION=$TF_SAFE_VERSION" >> "$GITHUB_ENV"
+
+            - name: Checkout Source
+              uses: actions/checkout@v4
+
+            - uses: actions/setup-java@v4
+              with:
+                distribution: 'corretto'
+                java-version: '17'
+
+            - name: Download & Unpack Sonatype IQ Server
+              run: |
+                  echo "${{ secrets.NXIQ_LICENSE }}" | base64 -d > ${{ github.workspace }}/license.lic
+                  wget https://download.sonatype.com/clm/server/nexus-iq-server-${{ matrix.nxiq }}-bundle.tar.gz
+                  mkdir ${{ github.workspace }}/nxiq
+                  tar xvz -f nexus-iq-server-${{ matrix.nxiq }}-linux-x86_64.tgz -C ${{ github.workspace }}/nxiq
+                  echo "licenseFile: ${{ github.workspace }}/license.lic" >> nxiq/config.yml
+
+            - name: Start Sonatype IQ Server
+              run: |
+                  java \
+                    --add-opens=java.base/java.lang=ALL-UNNAMED \
+                    --add-opens=java.base/java.util=ALL-UNNAMED \
+                    --add-opens=java.base/java.security=ALL-UNNAMED \
+                    --add-opens=java.base/sun.security.rsa=ALL-UNNAMED \
+                    --add-opens=java.base/sun.security.x509=ALL-UNNAMED \
+                    --add-opens=java.base/sun.security.util=ALL-UNNAMED \
+                    --add-opens=java.xml/com.sun.org.apache.xerces.internal.jaxp.datatype=ALL-UNNAMED \
+                    -jar nexus-iq-server-*.jar server config.yml 2> stderr.log
+              working-directory: "${{ github.workspace }}/nxiq"
+
+            - name: Wait for SonatypeIQ Server to be ready
+              run: |
+                  set +e
+                  sleep 20
+                  while true; do
+                    STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8071/healthcheck?pretty=true")
+                    CURL_EXIT=$?
+
+                    echo "CURL Exit Code: $CURL_EXIT"
+
+                    if [ "$CURL_EXIT" -eq 0 ]; then
+                      if [ "$STATUS" -eq 200 ]; then
+                          echo "✅ Received 200 OK from http://localhost:8071/healthcheck?pretty=true"
+                          break
+                      else
+                          echo "⏳ Waiting for 200 OK... Current status: $STATUS for http://localhost:8071/healthcheck?pretty=true"
+                          sleep 5
+                      fi
+                    else
+                      echo "⚠️ curl returned unexpected exit code $CURL_EXIT. Retrying..."
+                      sleep 5
+                    fi
+                  done
+
             - uses: actions/setup-go@v5
               with:
                   go-version-file: 'go.mod'
                   cache: true
+
             - uses: hashicorp/setup-terraform@v3
               with:
                   terraform_version: ${{ matrix.terraform }}
                   terraform_wrapper: false
+
             - run: go mod download
+              
             - env:
-                  IQ_SERVER_URL: ${{ secrets.IQ_SERVER_URL }}
-                  IQ_SERVER_USERNAME: ${{ secrets.IQ_SERVER_USERNAME }}
-                  IQ_SERVER_PASSWORD: ${{ secrets.IQ_SERVER_PASSWORD }}
+                  IQ_SERVER_URL: "http://localhost:8070"
+                  IQ_SERVER_USERNAME: "admin"
+                  IQ_SERVER_PASSWORD: "admin123"
                   TF_ACC: '1'
               run: go test -v -cover ./...
               timeout-minutes: 10
+
+            - name: Store clm-server.log
+              if: success() || failure()
+              uses: actions/upload-artifact@v4
+              with:
+                name: "clm-server.log-niqm-${{ matrix.nxiq }}-terraform-${{ env.TF_SAFE_VERSION }}"
+                path: "${{ github.workspace }}/nxiq/log/clm-server.log"
