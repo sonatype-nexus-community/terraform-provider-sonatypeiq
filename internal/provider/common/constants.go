@@ -20,6 +20,7 @@ const (
 	DEFAULT_USER_REALM      string = "Internal"
 	OWNER_TYPE_APPLICATION  string = "application"
 	OWNER_TYPE_ORGANIZATION string = "organization"
+	ROOT_ORGANIZATION_ID    string = "ROOT_ORGANIZATION_ID"
 	USER_REALM_INTERNAL     string = "Internal"
 	USER_REALM_SAML         string = "SAML"
 	USER_REALM_OAUTH2       string = "OAUTH2"

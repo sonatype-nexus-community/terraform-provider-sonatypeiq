@@ -171,6 +171,7 @@ func (p *SonatypeIqProvider) Resources(ctx context.Context) []func() resource.Re
 	return []func() resource.Resource{
 		application.NewApplicationResource,
 		application.NewApplicationRoleMembershipResource,
+		organization.NewApplicationCategoryResource,
 		organization.NewOrganizationResource,
 		organization.NewOrganizationRoleMembershipResource,
 		scm.NewSourceControlResource,
