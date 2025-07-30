@@ -6,6 +6,10 @@ ENHANCEMENTS:
 
 * resource/sonatypeiq_organization: Now supports `terraform import` [GH-46]
 
+BUG FIXES:
+
+* Refresh Plan not empty for `sonatypeiq_source_control` due to Token masking [GH-50]
+
 
 ## 0.10.0 July 14, 2025
 
