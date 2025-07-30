@@ -8,6 +8,7 @@ ENHANCEMENTS:
 
 BUG FIXES:
 
+* Fix for using Terraform 1.12.x+ [GH-47]
 * Refresh Plan not empty for `sonatypeiq_source_control` due to Token masking [GH-50]
 * Data Source `sonatypeiq_config_saml` no longer errors when there is no SAML configuration present [GH-53]
 
