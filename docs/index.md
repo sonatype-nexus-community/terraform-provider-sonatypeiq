@@ -1,38 +1,31 @@
-# sonatypeiq Provider
+---
+layout: ""
+page_title: "Provider: Sonatype IQ"
+description: |-
+  The Sonatype IQ provider provides resources to interact with a Sonatype IQ installation that powers Sonatype Repository Firewall, Sonatype Lifecycle and Sonatype SBOM Manager.
+---
 
-When using the provider the username/password need to have the correct role/permissions assigned to them for the
-resources you intend to consume or manages.
+# Sonatype IQ Provider
+
+The `sonatypeiq` provider is used to interact with resources supported by [Sonatype IQ Server](https://help.sonatype.com/en/sonatype-iq-server.html). 
+
+The provider needs to be configured with the proper credentials before it can be used.
+
+When using the provider the username/password need to have the correct role/permissions assigned to them for the resources you intend to consume or manage.
 
 [User management](https://help.sonatype.com/en/user-management.html) instruction can be found in the official
 documentation. Creating roles is also documented [here](https://help.sonatype.com/en/role-management.html) and how to
 generate the username/tokens for a user can be found [here](https://help.sonatype.com/en/iq-server-user-tokens.html)
 
+## Compatability
+
+This Provider is tested on Sonatype IQ Server versions `186` through `193` currently.
+	
+Some resources and features may depend on the version of Sonatype IQ Server you are running. See individual Data Source and Resource documentaiton for details.
+
 ## Example Usage
 
 ```terraform
-# 
-# Copyright (c) 2019-present Sonatype, Inc.
-# 
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
-# Example of how to use the Sonatype IQ Terraform provider.
-#
-# *Warning*: The config attributes will override the environment variables (See Schema)
-#
-# If you run on a non-standard port, include this with a colon and number:
-# e.g. https://my-sonatype-iq-server.tld:9999
-
 provider "sonatypeiq" {
   url      = "https://my-sonatype-iq-server.tld"
   username = "username"
