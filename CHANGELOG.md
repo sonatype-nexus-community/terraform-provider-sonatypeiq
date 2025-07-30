@@ -2,6 +2,10 @@
 
 ## X.Y.Z (Unreleased)
 
+*TBC*
+
+## 0.11.0 July 30, 2025
+
 ENHANCEMENTS:
 
 * resource/sonatypeiq_organization: Now supports `terraform import` [GH-46]
