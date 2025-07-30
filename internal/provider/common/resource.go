@@ -95,43 +95,7 @@ type BaseResourceWithImport struct {
 	BaseResource
 }
 
-// // Create implements resource.ResourceWithImportState.
-// // Subtle: this method shadows the method (BaseResource).Create of BaseResourceWithImport.BaseResource.
-// func (b *BaseResourceWithImport) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
-// 	panic("unimplemented")
-// }
-
-// // Delete implements resource.ResourceWithImportState.
-// // Subtle: this method shadows the method (BaseResource).Delete of BaseResourceWithImport.BaseResource.
-// func (b *BaseResourceWithImport) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
-// 	panic("unimplemented")
-// }
-
 // ImportState implements resource.ResourceWithImportState.
 func (b *BaseResourceWithImport) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
 	panic("unimplemented")
 }
-
-// // Metadata implements resource.ResourceWithImportState.
-// // Subtle: this method shadows the method (BaseResource).Metadata of BaseResourceWithImport.BaseResource.
-// func (b *BaseResourceWithImport) Metadata(context.Context, resource.MetadataRequest, *resource.MetadataResponse) {
-// 	panic("unimplemented")
-// }
-
-// // Read implements resource.ResourceWithImportState.
-// // Subtle: this method shadows the method (BaseResource).Read of BaseResourceWithImport.BaseResource.
-// func (b *BaseResourceWithImport) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {
-// 	panic("unimplemented")
-// }
-
-// // Schema implements resource.ResourceWithImportState.
-// // Subtle: this method shadows the method (BaseResource).Schema of BaseResourceWithImport.BaseResource.
-// func (b *BaseResourceWithImport) Schema(context.Context, resource.SchemaRequest, *resource.SchemaResponse) {
-// 	panic("unimplemented")
-// }
-
-// // Update implements resource.ResourceWithImportState.
-// // Subtle: this method shadows the method (BaseResource).Update of BaseResourceWithImport.BaseResource.
-// func (b *BaseResourceWithImport) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
-// 	panic("unimplemented")
-// }

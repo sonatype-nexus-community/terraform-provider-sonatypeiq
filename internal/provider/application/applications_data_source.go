@@ -51,21 +51,6 @@ type applicationsDataSourceModel struct {
 	Applications []model.ApplicationModel `tfsdk:"applications"`
 }
 
-// type applicationModel struct {
-// 	ID              types.String              `tfsdk:"id"`
-// 	PublicId        types.String              `tfsdk:"public_id"`
-// 	Name            types.String              `tfsdk:"name"`
-// 	OrganizationId  types.String              `tfsdk:"organization_id"`
-// 	ContactUserName types.String              `tfsdk:"contact_user_name"`
-// 	ApplicationTags []applicationTagLinkModel `tfsdk:"application_tags"`
-// }
-
-// type applicationTagLinkModel struct {
-// 	ID            types.String `tfsdk:"id"`
-// 	TagId         types.String `tfsdk:"tag_id"`
-// 	ApplicationId types.String `tfsdk:"application_id"`
-// }
-
 // Metadata returns the data source type name.
 func (d *applicationsDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_applications"

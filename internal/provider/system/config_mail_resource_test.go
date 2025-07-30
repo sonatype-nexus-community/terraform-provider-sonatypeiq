@@ -16,42 +16,43 @@
 
 package system_test
 
-// import (
-// 	"fmt"
-// 	"testing"
+import (
+	"fmt"
+	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
+	"testing"
 
-// 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-// )
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+)
 
-// func TestAccConfigMailResource(t *testing.T) {
+func TestAccConfigMailResource(t *testing.T) {
+	resourceName := "sonatypeiq_config_mail.mail_config"
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccConfigMailResource(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Verify mail configuration
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "port", "25"),
+					resource.TestCheckResourceAttr(resourceName, "ssl_enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "start_tls_enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "system_email", "no-reply@my-domain.tld"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
 
-// 	resource.Test(t, resource.TestCase{
-// 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-// 		Steps: []resource.TestStep{
-// 			// Create and Read testing
-// 			{
-// 				Config: testAccConfigMailResource(),
-// 				Check: resource.ComposeAggregateTestCheckFunc(
-// 					// Verify mail configuration
-// 					resource.TestCheckResourceAttrSet("sonatypeiq_config_mail.mail_config", "id"),
-// 					resource.TestCheckResourceAttr("sonatypeiq_config_mail.mail_config", "port", "25"),
-// 					resource.TestCheckResourceAttr("sonatypeiq_config_mail.mail_config", "ssl_enabled", "false"),
-// 					resource.TestCheckResourceAttr("sonatypeiq_config_mail.mail_config", "start_tls_enabled", "false"),
-// 					resource.TestCheckResourceAttr("sonatypeiq_config_mail.mail_config", "system_email", "no-reply@my-domain.tld"),
-// 				),
-// 			},
-// 			// Delete testing automatically occurs in TestCase
-// 		},
-// 	})
-// }
-
-// func testAccConfigMailResource() string {
-// 	return fmt.Sprintf(providerConfig + `
-// resource "sonatypeiq_config_mail" "mail_config" {
-//   hostname          = "smtp.my-domain.tld"
-//   port              = 25
-//   ssl_enabled       = false
-//   start_tls_enabled = false
-//   system_email      = "no-reply@my-domain.tld"
-// }`)
-// }
+func testAccConfigMailResource() string {
+	return fmt.Sprintf(utils_test.ProviderConfig + `
+resource "sonatypeiq_config_mail" "mail_config" {
+  hostname          = "smtp.my-domain.tld"
+  port              = 25
+  ssl_enabled       = false
+  start_tls_enabled = false
+  system_email      = "no-reply@my-domain.tld"
+}`)
+}
