@@ -39,15 +39,6 @@ type applicationResource struct {
 	common.BaseResource
 }
 
-// type applicationModelResource struct {
-// 	ID              types.String `tfsdk:"id"`
-// 	PublicId        types.String `tfsdk:"public_id"`
-// 	Name            types.String `tfsdk:"name"`
-// 	OrganizationId  types.String `tfsdk:"organization_id"`
-// 	ContactUserName types.String `tfsdk:"contact_user_name"`
-// 	LastUpdated     types.String `tfsdk:"last_updated"`
-// }
-
 // NewApplicationResource is a helper function to simplify the provider implementation.
 func NewApplicationResource() resource.Resource {
 	return &applicationResource{}

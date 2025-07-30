@@ -51,20 +51,6 @@ type organizationsDataSourceModel struct {
 	Organizations []model.OrganizationModel `tfsdk:"organizations"`
 }
 
-// type organizationModel struct {
-// 	ID                    types.String `tfsdk:"id"`
-// 	Name                  types.String `tfsdk:"name"`
-// 	ParentOrganiziationId types.String `tfsdk:"parent_organization_id"`
-// 	Tags                  []tagModel   `tfsdk:"tags"`
-// }
-
-// type tagModel struct {
-// 	ID          types.String `tfsdk:"id"`
-// 	Name        types.String `tfsdk:"name"`
-// 	Description types.String `tfsdk:"description"`
-// 	Color       types.String `tfsdk:"color"`
-// }
-
 // Metadata returns the data source type name.
 func (d *organizationsDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_organizations"

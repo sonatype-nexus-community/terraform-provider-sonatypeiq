@@ -44,18 +44,6 @@ func TestAccSystemConfigResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("sonatypeiq_system_config.config", "last_updated"),
 				),
 			},
-			// // Update
-			// Can't test this in parallel against a Single IQ Server
-			// {
-			// 	Config: testAccSystemConfigResource(iqUrl, false),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		// Verify Application
-			// 		resource.TestCheckResourceAttrSet("sonatypeiq_system_config.config", "id"),
-			// 		resource.TestCheckResourceAttr("sonatypeiq_system_config.config", "base_url", iqUrl),
-			// 		resource.TestCheckResourceAttr("sonatypeiq_system_config.config", "force_base_url", "false"),
-			// 		resource.TestCheckResourceAttrSet("sonatypeiq_system_config.config", "last_updated"),
-			// 	),
-			// },
 			// Delete testing automatically occurs in TestCase
 		},
 	})

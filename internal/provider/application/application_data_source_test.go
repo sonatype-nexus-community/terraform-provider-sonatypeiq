@@ -25,6 +25,7 @@ import (
 )
 
 func TestAccApplicationDataSource(t *testing.T) {
+	resourceName := "data.sonatypeiq_application.app_by_public_id"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -34,10 +35,10 @@ func TestAccApplicationDataSource(t *testing.T) {
 					public_id = "sandbox-application"
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.sonatypeiq_application.app_by_public_id", "id"),
-					resource.TestCheckResourceAttr("data.sonatypeiq_application.app_by_public_id", "public_id", "sandbox-application"),
-					resource.TestCheckResourceAttr("data.sonatypeiq_application.app_by_public_id", "name", "Sandbox Application"),
-					resource.TestCheckResourceAttrSet("data.sonatypeiq_application.app_by_public_id", "organization_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "public_id", "sandbox-application"),
+					resource.TestCheckResourceAttr(resourceName, "name", "Sandbox Application"),
+					resource.TestCheckResourceAttrSet(resourceName, "organization_id"),
 				),
 			},
 		},

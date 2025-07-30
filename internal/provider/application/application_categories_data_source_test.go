@@ -19,24 +19,26 @@ package application_test
 import (
 	"testing"
 
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccApplicationCategoriesDataSource(t *testing.T) {
+	resourceName := "data.sonatypeiq_application_categories.root_cats"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Read testing
 			{
 				Config: utils_test.ProviderConfig + `data "sonatypeiq_application_categories" "root_cats" {
-					organization_id = "ROOT_ORGANIZATION_ID"
+					organization_id = "` + common.ROOT_ORGANIZATION_ID + `"
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.sonatypeiq_application_categories.root_cats", "id"),
-					resource.TestCheckResourceAttr("data.sonatypeiq_application_categories.root_cats", "organization_id", "ROOT_ORGANIZATION_ID"),
-					resource.TestCheckResourceAttrSet("data.sonatypeiq_application_categories.root_cats", "categories.#"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "organization_id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttrSet(resourceName, "categories.#"),
 				),
 			},
 		},

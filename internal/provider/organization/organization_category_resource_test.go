@@ -48,17 +48,6 @@ func TestAccOrganizationCategoryResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
 			},
-			// // Update
-			// {
-			// 	Config: testAccSystemConfigResource(iqUrl, false),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		// Verify Application
-			// 		resource.TestCheckResourceAttrSet("sonatypeiq_system_config.config", "id"),
-			// 		resource.TestCheckResourceAttr("sonatypeiq_system_config.config", "base_url", iqUrl),
-			// 		resource.TestCheckResourceAttr("sonatypeiq_system_config.config", "force_base_url", "false"),
-			// 		resource.TestCheckResourceAttrSet("sonatypeiq_system_config.config", "last_updated"),
-			// 	),
-			// },
 			// Delete testing automatically occurs in TestCase
 		},
 	})

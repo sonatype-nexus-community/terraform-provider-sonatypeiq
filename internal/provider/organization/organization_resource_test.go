@@ -18,6 +18,7 @@ package organization_test
 
 import (
 	"fmt"
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
@@ -28,6 +29,7 @@ import (
 func TestAccOrganizationResource(t *testing.T) {
 
 	orgName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	resourceName := "sonatypeiq_organization.org"
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
@@ -37,23 +39,12 @@ func TestAccOrganizationResource(t *testing.T) {
 				Config: testAccOrganizationResource(orgName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify Application
-					resource.TestCheckResourceAttrSet("sonatypeiq_organization.org", "id"),
-					resource.TestCheckResourceAttr("sonatypeiq_organization.org", "name", orgName),
-					resource.TestCheckResourceAttr("sonatypeiq_organization.org", "parent_organization_id", "ROOT_ORGANIZATION_ID"),
-					resource.TestCheckResourceAttrSet("sonatypeiq_organization.org", "last_updated"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name", orgName),
+					resource.TestCheckResourceAttr(resourceName, "parent_organization_id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
 			},
-			// // Update
-			// {
-			// 	Config: testAccSystemConfigResource(iqUrl, false),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		// Verify Application
-			// 		resource.TestCheckResourceAttrSet("sonatypeiq_system_config.config", "id"),
-			// 		resource.TestCheckResourceAttr("sonatypeiq_system_config.config", "base_url", iqUrl),
-			// 		resource.TestCheckResourceAttr("sonatypeiq_system_config.config", "force_base_url", "false"),
-			// 		resource.TestCheckResourceAttrSet("sonatypeiq_system_config.config", "last_updated"),
-			// 	),
-			// },
 			// Delete testing automatically occurs in TestCase
 		},
 	})
@@ -62,7 +53,7 @@ func TestAccOrganizationResource(t *testing.T) {
 func testAccOrganizationResource(orgName string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
 data "sonatypeiq_organization" "root" {
-  id = "ROOT_ORGANIZATION_ID"
+  id = "`+common.ROOT_ORGANIZATION_ID+`"
 }
 
 resource "sonatypeiq_organization" "org" {

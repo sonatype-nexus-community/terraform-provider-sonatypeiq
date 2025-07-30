@@ -2,7 +2,10 @@
 
 ## X.Y.Z (Unreleased)
 
-*TBC*
+FEATURES:
+
+* **New Resource:** `sonatypeiq_application_category` [GH-1]
+
 
 ## 0.11.0 July 30, 2025
 

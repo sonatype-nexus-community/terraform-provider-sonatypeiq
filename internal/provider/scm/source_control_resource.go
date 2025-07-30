@@ -38,24 +38,9 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
 
-// var _ resource.ResourceWithImportState = &sourceControlResource{}
-
 type sourceControlResource struct {
 	common.BaseResourceWithImport
 }
-
-// type sourceControlModelResource struct {
-// 	ID                              types.String `tfsdk:"owner_id"`
-// 	OwnerType                       types.String `tfsdk:"owner_type"`
-// 	RepositoryUrl                   types.String `tfsdk:"repository_url"`
-// 	BaseBranch                      types.String `tfsdk:"base_branch"`
-// 	UserName                        types.String `tfsdk:"user_name"`
-// 	RemediationPullRequestsEnabled  types.Bool   `tfsdk:"remediation_pull_requests_enabled"`
-// 	PullRequestCommentingEnabled    types.Bool   `tfsdk:"pull_request_commenting_enabled"`
-// 	SourceControlEvaluationsEnabled types.Bool   `tfsdk:"source_control_evaluation_enabled"`
-// 	Token                           types.String `tfsdk:"token"`
-// 	ScmProvider                     types.String `tfsdk:"scm_provider"` // This is provider in the rest API but provider is a reserved keyword
-// }
 
 // NewSourceControlResource is a helper function to simplify the provider implementation.
 func NewSourceControlResource() resource.Resource {

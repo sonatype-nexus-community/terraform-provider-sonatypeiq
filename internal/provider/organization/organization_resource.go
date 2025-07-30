@@ -55,28 +55,6 @@ func (r *organizationResource) Metadata(_ context.Context, req resource.Metadata
 	resp.TypeName = req.ProviderTypeName + "_organization"
 }
 
-// var tagSchemaObjectAttributes = map[string]schema.Attribute{
-// 	"id": schema.StringAttribute{
-// 		Computed: true,
-// 	},
-// 	"name": schema.StringAttribute{
-// 		Required: true,
-// 	},
-// 	"description": schema.StringAttribute{
-// 		Required: true,
-// 	},
-// 	"color": schema.StringAttribute{
-// 		Required: true,
-// 	},
-// }
-
-// var tagObjectMemberTypes = map[string]attr.Type{
-// 	"id":          types.StringType,
-// 	"name":        types.StringType,
-// 	"description": types.StringType,
-// 	"color":       types.StringType,
-// }
-
 // Schema defines the schema for the resource.
 func (r *organizationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
