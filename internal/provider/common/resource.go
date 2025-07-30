@@ -27,11 +27,12 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = &BaseResource{}
-	_ resource.ResourceWithConfigure = &BaseResource{}
+	_ resource.Resource                = &BaseResource{}
+	_ resource.ResourceWithImportState = &BaseResourceWithImport{}
+	_ resource.ResourceWithConfigure   = &BaseResource{}
 )
 
-// applicationResource is the resource implementation.
+// Base Resource is the resource implementation.
 type BaseResource struct {
 	Auth    sonatypeiq.BasicAuth
 	BaseUrl string
@@ -88,3 +89,49 @@ func (r *BaseResource) Configure(_ context.Context, req resource.ConfigureReques
 	r.BaseUrl = config.BaseUrl
 	r.Client = config.Client
 }
+
+// Base Resource with Import
+type BaseResourceWithImport struct {
+	BaseResource
+}
+
+// // Create implements resource.ResourceWithImportState.
+// // Subtle: this method shadows the method (BaseResource).Create of BaseResourceWithImport.BaseResource.
+// func (b *BaseResourceWithImport) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
+// 	panic("unimplemented")
+// }
+
+// // Delete implements resource.ResourceWithImportState.
+// // Subtle: this method shadows the method (BaseResource).Delete of BaseResourceWithImport.BaseResource.
+// func (b *BaseResourceWithImport) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
+// 	panic("unimplemented")
+// }
+
+// ImportState implements resource.ResourceWithImportState.
+func (b *BaseResourceWithImport) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
+	panic("unimplemented")
+}
+
+// // Metadata implements resource.ResourceWithImportState.
+// // Subtle: this method shadows the method (BaseResource).Metadata of BaseResourceWithImport.BaseResource.
+// func (b *BaseResourceWithImport) Metadata(context.Context, resource.MetadataRequest, *resource.MetadataResponse) {
+// 	panic("unimplemented")
+// }
+
+// // Read implements resource.ResourceWithImportState.
+// // Subtle: this method shadows the method (BaseResource).Read of BaseResourceWithImport.BaseResource.
+// func (b *BaseResourceWithImport) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {
+// 	panic("unimplemented")
+// }
+
+// // Schema implements resource.ResourceWithImportState.
+// // Subtle: this method shadows the method (BaseResource).Schema of BaseResourceWithImport.BaseResource.
+// func (b *BaseResourceWithImport) Schema(context.Context, resource.SchemaRequest, *resource.SchemaResponse) {
+// 	panic("unimplemented")
+// }
+
+// // Update implements resource.ResourceWithImportState.
+// // Subtle: this method shadows the method (BaseResource).Update of BaseResourceWithImport.BaseResource.
+// func (b *BaseResourceWithImport) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
+// 	panic("unimplemented")
+// }
