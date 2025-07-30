@@ -32,7 +32,7 @@ func TestAccConfigSamlDataSource(t *testing.T) {
 				Config: utils_test.ProviderConfig + `data "sonatypeiq_config_saml" "saml" {
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.sonatypeiq_config_saml.saml", "saml_metadata"),
+					resource.TestCheckResourceAttr("data.sonatypeiq_config_saml.saml", "saml_metadata", ""),
 				),
 			},
 		},

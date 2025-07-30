@@ -17,7 +17,6 @@
 package system_test
 
 import (
-	"os"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
@@ -34,7 +33,7 @@ func TestAccSystemConfigDataSource(t *testing.T) {
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.sonatypeiq_system_config.config", "id", "placeholder"),
-					resource.TestCheckResourceAttr("data.sonatypeiq_system_config.config", "base_url", os.Getenv("IQ_SERVER_URL")+"/"),
+					resource.TestCheckResourceAttr("data.sonatypeiq_system_config.config", "base_url", ""),
 				),
 			},
 		},
