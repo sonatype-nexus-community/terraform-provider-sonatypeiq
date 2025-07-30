@@ -5,6 +5,7 @@
 FEATURES:
 
 * **New Resource:** `sonatypeiq_application_category` [GH-1]
+* **New Resource:** `sonatypeiq_config_crowd` [GH-1]
 
 
 ## 0.11.0 July 30, 2025

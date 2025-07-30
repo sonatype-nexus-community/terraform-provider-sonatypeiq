@@ -175,6 +175,7 @@ func (p *SonatypeIqProvider) Resources(ctx context.Context) []func() resource.Re
 		organization.NewOrganizationResource,
 		organization.NewOrganizationRoleMembershipResource,
 		scm.NewSourceControlResource,
+		system.NewConfigCrowdResource,
 		system.NewConfigMailResource,
 		system.NewConfigProxyServerResource,
 		system.NewSystemConfigResource,
