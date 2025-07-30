@@ -108,7 +108,7 @@ jobs:
                     - '1.186.0-01' # FIRST WITH BUNDLED JRE
                     - '1.189.0-01'
                     - '1.190.0-01'
-                    - '1.191.0-01'
+                    # - '1.191.0-01' # Known issues fresh booting with H2 internal DB
                     - '1.192.0-01'
                     - '1.193.0-01' # LATEST
                 # list whatever Terraform versions here you would like to support
