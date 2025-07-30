@@ -18,6 +18,7 @@ package system
 
 import (
 	"context"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -83,22 +84,32 @@ func (d *configSamlDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	)
 
 	// Make API Call
-	saml_metadata, api_response, err := d.Client.ConfigSAMLAPI.GetMetadata(ctx).Execute()
+	apiResponse, httpResponse, err := d.Client.ConfigSAMLAPI.GetMetadata(ctx).Execute()
 
-	if err != nil {
+	if err != nil && httpResponse.StatusCode != http.StatusNotFound {
 		resp.Diagnostics.AddError(
 			"Unable to Read IQ System Configuration",
 			err.Error(),
 		)
+
 		return
 	}
-	if api_response.StatusCode != 200 {
-		resp.Diagnostics.AddError("Unexpected API Response", api_response.Status)
+
+	if httpResponse.StatusCode == http.StatusNotFound {
+		data.ID = types.StringValue("placeholder")
+		data.SamlMetadata = types.StringNull()
+	} else if httpResponse.StatusCode != http.StatusOK {
+		common.HandleApiError(
+			"Error Reading SAML configuration",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
 		return
 	}
 
 	data.ID = types.StringValue("placeholder")
-	data.SamlMetadata = types.StringValue(saml_metadata)
+	data.SamlMetadata = types.StringValue(apiResponse)
 
 	// Set state
 	diags := resp.State.Set(ctx, &data)
