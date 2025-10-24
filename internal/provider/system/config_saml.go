@@ -251,7 +251,31 @@ func (r *securitySamlResource) upsert(ctx context.Context, plan model.SecuritySa
 		return
 	}
 
-	diags := respState.Set(ctx, plan)
+	// Call Read to get actual configured state to put into State
+	apiResponse, httpResponse, err := r.Client.ConfigSAMLAPI.GetSamlConfiguration(ctx).Execute()
+	if err != nil {
+		if httpResponse != nil && httpResponse.StatusCode == http.StatusNotFound {
+			respState.RemoveResource(ctx)
+			common.HandleApiWarning(
+				"SAML Configuration did not exist",
+				&err,
+				httpResponse,
+				respDiags,
+			)
+		} else {
+			common.HandleApiError(
+				"Failed to read SAML configuration",
+				&err,
+				httpResponse,
+				respDiags,
+			)
+		}
+		return
+	}
+
+	state := model.SecuritySamlModel{}
+	state.MapFromApi(apiResponse)
+	diags := respState.Set(ctx, state)
 	respDiags.Append(diags...)
 }
 
