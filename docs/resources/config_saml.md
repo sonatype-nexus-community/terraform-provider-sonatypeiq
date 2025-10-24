@@ -31,6 +31,7 @@ resource "sonatypeiq_config_saml" "saml_config" {
 
 ### Required
 
+- `entity_id` (String) SAML Entity ID (typically a URI)
 - `identity_provider_name` (String) The name of the Identity Provider that is displayed on the login page when SAML is configured
 - `idp_metadata` (String) SAML Identity Provider Metadata XML
 - `username_attribute` (String) IdP field mappings for username
@@ -38,7 +39,6 @@ resource "sonatypeiq_config_saml" "saml_config" {
 ### Optional
 
 - `email_attribute` (String) IdP field mappings for user's email
-- `entity_id` (String) SAML Entity ID (typically a URI)
 - `first_name_attribute` (String) IdP field mappings for user's given name
 - `groups_attribute` (String) IdP field mappings for user's groups
 - `last_name_attribute` (String) IdP field mappings for user's family name

@@ -28,6 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 
@@ -84,30 +85,38 @@ func (r *securitySamlResource) Schema(_ context.Context, _ resource.SchemaReques
 			"first_name_attribute": schema.StringAttribute{
 				Description: "IdP field mappings for user's given name",
 				Optional:    true,
+				Computed:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 				},
+				Default: stringdefault.StaticString(common.SAML_DEFAULT_FIRST_NAME_ATTRIBUTE),
 			},
 			"last_name_attribute": schema.StringAttribute{
 				Description: "IdP field mappings for user's family name",
 				Optional:    true,
+				Computed:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 				},
+				Default: stringdefault.StaticString(common.SAML_DEFAULT_LAST_NAME_ATTRIBUTE),
 			},
 			"email_attribute": schema.StringAttribute{
 				Description: "IdP field mappings for user's email",
 				Optional:    true,
+				Computed:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 				},
+				Default: stringdefault.StaticString(common.SAML_DEFAULT_EMAIL_ATTRIBUTE),
 			},
 			"groups_attribute": schema.StringAttribute{
 				Description: "IdP field mappings for user's groups",
 				Optional:    true,
+				Computed:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 				},
+				Default: stringdefault.StaticString(common.SAML_DEFAULT_GROUPS_ATTRIBUTE),
 			},
 			"validate_response_signature": schema.BoolAttribute{
 				Description: "Validate SAML response signature",
@@ -119,7 +128,7 @@ func (r *securitySamlResource) Schema(_ context.Context, _ resource.SchemaReques
 			},
 			"entity_id": schema.StringAttribute{
 				Description: "SAML Entity ID (typically a URI)",
-				Optional:    true,
+				Required:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 				},

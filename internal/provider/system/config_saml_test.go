@@ -101,8 +101,10 @@ func TestAccSecuritySamlResourceMinimal(t *testing.T) {
 			{
 				Config: testAccSecuritySamlResourceConfigMinimal(randomSuffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(securitySamlResourceName, "identity_provider_name", fmt.Sprintf("Test-IDP-%s", randomSuffix)),
 					resource.TestCheckResourceAttr(securitySamlResourceName, "username_attribute", "username"),
 					resource.TestCheckResourceAttrSet(securitySamlResourceName, "idp_metadata"),
+					resource.TestCheckResourceAttr(securitySamlResourceName, "entity_id", fmt.Sprintf("updated-entity-%s", randomSuffix)),
 				),
 			},
 		},
@@ -149,8 +151,9 @@ resource "%s" "test" {
   identity_provider_name = "Test-IDP-%s"
   idp_metadata = %s
   username_attribute = "username"
+  entity_id = "updated-entity-%s"
 }
-`, securitySamlResourceType, randomSuffix, testSamlMetadata())
+`, securitySamlResourceType, randomSuffix, testSamlMetadata(), randomSuffix)
 }
 
 func testSamlMetadata() string {
