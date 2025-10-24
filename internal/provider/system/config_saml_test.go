@@ -41,6 +41,7 @@ func TestAccSecuritySamlResourceBasic(t *testing.T) {
 			{
 				Config: testAccSecuritySamlResourceConfigBasic(randomSuffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(securitySamlResourceName, "identity_provider_name", fmt.Sprintf("Test-IDP-%s", randomSuffix)),
 					resource.TestCheckResourceAttr(securitySamlResourceName, "username_attribute", "username"),
 					resource.TestCheckResourceAttr(securitySamlResourceName, "first_name_attribute", "firstName"),
 					resource.TestCheckResourceAttr(securitySamlResourceName, "last_name_attribute", "lastName"),
@@ -66,6 +67,7 @@ func TestAccSecuritySamlResourceUpdate(t *testing.T) {
 			{
 				Config: testAccSecuritySamlResourceConfigBasic(randomSuffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(securitySamlResourceName, "identity_provider_name", fmt.Sprintf("Test-IDP-%s", randomSuffix)),
 					resource.TestCheckResourceAttr(securitySamlResourceName, "username_attribute", "username"),
 					resource.TestCheckResourceAttr(securitySamlResourceName, "validate_response_signature", "true"),
 					resource.TestCheckResourceAttr(securitySamlResourceName, "entity_id", fmt.Sprintf("test-entity-%s", randomSuffix)),
@@ -75,6 +77,7 @@ func TestAccSecuritySamlResourceUpdate(t *testing.T) {
 			{
 				Config: testAccSecuritySamlResourceConfigUpdated(randomSuffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(securitySamlResourceName, "identity_provider_name", fmt.Sprintf("Test-IDP-%s", randomSuffix)),
 					resource.TestCheckResourceAttr(securitySamlResourceName, "username_attribute", "updatedUsername"),
 					resource.TestCheckResourceAttr(securitySamlResourceName, "first_name_attribute", "updatedFirstName"),
 					resource.TestCheckResourceAttr(securitySamlResourceName, "last_name_attribute", "updatedLastName"),
@@ -109,6 +112,7 @@ func TestAccSecuritySamlResourceMinimal(t *testing.T) {
 func testAccSecuritySamlResourceConfigBasic(randomSuffix string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
 resource "%s" "test" {
+  identity_provider_name = "Test-IDP-%s"
   idp_metadata = %s
   username_attribute = "username"
   first_name_attribute = "firstName"
@@ -119,12 +123,13 @@ resource "%s" "test" {
   validate_assertion_signature = false
   entity_id = "test-entity-%s"
 }
-`, securitySamlResourceType, testSamlMetadata(), randomSuffix)
+`, securitySamlResourceType, randomSuffix, testSamlMetadata(), randomSuffix)
 }
 
 func testAccSecuritySamlResourceConfigUpdated(randomSuffix string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
 resource "%s" "test" {
+  identity_provider_name = "Test-IDP-%s"
   idp_metadata = %s
   username_attribute = "updatedUsername"
   first_name_attribute = "updatedFirstName"
@@ -135,16 +140,17 @@ resource "%s" "test" {
   validate_assertion_signature = true
   entity_id = "updated-entity-%s"
 }
-`, securitySamlResourceType, testSamlMetadata(), randomSuffix)
+`, securitySamlResourceType, randomSuffix, testSamlMetadata(), randomSuffix)
 }
 
 func testAccSecuritySamlResourceConfigMinimal(randomSuffix string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
 resource "%s" "test" {
+  identity_provider_name = "Test-IDP-%s"
   idp_metadata = %s
   username_attribute = "username"
 }
-`, securitySamlResourceType, testSamlMetadata())
+`, securitySamlResourceType, randomSuffix, testSamlMetadata())
 }
 
 func testSamlMetadata() string {
