@@ -52,10 +52,10 @@ Phew, that was easier than I thought. Last but not least of all - have fun!
 
 
 [shield_gh-workflow-test]: https://img.shields.io/github/actions/workflow/status/sonatype-nexus-community/terraform-provider-sonatypeiq/test.yml?branch=main&logo=GitHub&logoColor=white "build"
-[shield_tfr-version]: https://img.shields.io/badge/Terraform%20Registry-8A2BE2
+[shield_tfr-version]: https://img.shields.io/badge/Terraform%20Registry-0.11.0-8A2BE2
 [shield_license]: https://img.shields.io/github/license/sonatype-nexus-community/terraform-provider-sonatypeiq?logo=open%20source%20initiative&logoColor=white "license"
 [shield_tf_version]: https://img.shields.io/badge/Terraform-1.0.0+-blue
-[shield_nxiq_version]: https://img.shields.io/badge/Sonatype_IQ-186+-blue
+[shield_nxiq_version]: https://img.shields.io/badge/Sonatype_IQ-186&nbsp;&ndash;&nbsp;196-blue
 
 [link_tfr]: https://registry.terraform.io/providers/sonatype-nexus-community/sonatypeiq/latest
 [link_gh-workflow-test]: https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq/actions/workflows/test.yml?query=branch%3Amain
