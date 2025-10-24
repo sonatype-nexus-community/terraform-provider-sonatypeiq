@@ -29,15 +29,15 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 5
         steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-go@v5
+            - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
+            - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
               with:
                   go-version-file: 'go.mod'
                   cache: true
             - run: go mod download
             - run: go build -v .
             - name: Run linters
-              uses: golangci/golangci-lint-action@v8
+              uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8
               with:
                 version: latest
 
@@ -45,9 +45,8 @@ jobs:
         name: Sonatype Scan
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-              
-            - uses: actions/setup-go@v5
+            - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
+            - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
               with:
                 go-version-file: 'go.mod'
                 cache: true
@@ -71,14 +70,13 @@ jobs:
         name: Ensure Docs are Generated
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-              
-            - uses: actions/setup-go@v5
+            - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
+            - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
               with:
                   go-version-file: 'go.mod'
                   cache: true
 
-            - uses: hashicorp/setup-terraform@v3
+            - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
               with:
                 terraform_version: 1.4.5
                 terraform_wrapper: false
@@ -106,11 +104,14 @@ jobs:
             matrix:
                 nxiq:
                     - '1.186.0-01' # FIRST WITH BUNDLED JRE
-                    - '1.189.0-01'
-                    - '1.190.0-01'
+                    #- '1.189.0-01'
+                    #- '1.190.0-01'
                     # - '1.191.0-01' # Known issues fresh booting with H2 internal DB
-                    - '1.192.0-01'
-                    - '1.193.0-01' # LATEST
+                    #- '1.192.0-01'
+                    - '1.193.0-01'
+                    - '1.194.0-01'
+                    - '1.195.0-01'
+                    - '1.196.0-01' # LATEST
                 # list whatever Terraform versions here you would like to support
                 terraform:
                     - '1.0.*' # Minimum
@@ -125,8 +126,8 @@ jobs:
                     # - '1.9.*'
                     # - '1.10.*'
                     # - '1.11.*' 
-                    - '1.12.*' # Latest
-                    # - '1.13.*'
+                    # - '1.12.*' 
+                    - '1.13.*' # Latest
                     # - '1.14.*'
         steps:
             - name: Set Clean TF Version
@@ -136,9 +137,9 @@ jobs:
                 echo "TF_SAFE_VERSION=$TF_SAFE_VERSION" >> "$GITHUB_ENV"
 
             - name: Checkout Source
-              uses: actions/checkout@v4
+              uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
 
-            - uses: actions/setup-java@v4
+            - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
               with:
                 distribution: 'corretto'
                 java-version: '17'
@@ -188,12 +189,12 @@ jobs:
                     fi
                   done
 
-            - uses: actions/setup-go@v5
+            - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
               with:
                   go-version-file: 'go.mod'
                   cache: true
 
-            - uses: hashicorp/setup-terraform@v3
+            - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
               with:
                   terraform_version: ${{ matrix.terraform }}
                   terraform_wrapper: false
@@ -210,7 +211,7 @@ jobs:
 
             - name: Store clm-server.log
               if: success() || failure()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
               with:
                 name: "clm-server.log-niqm-${{ matrix.nxiq }}-terraform-${{ env.TF_SAFE_VERSION }}"
                 path: "${{ github.workspace }}/nxiq/log/clm-server.log"

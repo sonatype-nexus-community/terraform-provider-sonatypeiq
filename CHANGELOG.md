@@ -8,6 +8,8 @@ FEATURES:
 * **New Resource:** `sonatypeiq_config_crowd` [GH-1]
 * **New Resource:** `sonatypeiq_config_product_license` [GH-1]
 
+NOTES:
+* Tested against Sonatype IQ Server 194, 195 and 196.
 
 ## 0.11.0 July 30, 2025
 
