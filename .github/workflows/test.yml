@@ -106,11 +106,14 @@ jobs:
             matrix:
                 nxiq:
                     - '1.186.0-01' # FIRST WITH BUNDLED JRE
-                    - '1.189.0-01'
-                    - '1.190.0-01'
+                    #- '1.189.0-01'
+                    #- '1.190.0-01'
                     # - '1.191.0-01' # Known issues fresh booting with H2 internal DB
-                    - '1.192.0-01'
-                    - '1.193.0-01' # LATEST
+                    #- '1.192.0-01'
+                    - '1.193.0-01'
+                    - '1.194.0-01'
+                    - '1.195.0-01'
+                    - '1.196.0-01' # LATEST
                 # list whatever Terraform versions here you would like to support
                 terraform:
                     - '1.0.*' # Minimum
@@ -125,8 +128,8 @@ jobs:
                     # - '1.9.*'
                     # - '1.10.*'
                     # - '1.11.*' 
-                    - '1.12.*' # Latest
-                    # - '1.13.*'
+                    # - '1.12.*' 
+                    - '1.13.*' # Latest
                     # - '1.14.*'
         steps:
             - name: Set Clean TF Version
