@@ -36,10 +36,6 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
 
-const (
-	stateDataErrorMessage = "Getting state data has errors: %v"
-)
-
 // securitySamlResource is the resource implementation.
 type securitySamlResource struct {
 	common.BaseResourceWithImport
