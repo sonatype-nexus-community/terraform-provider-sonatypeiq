@@ -172,15 +172,7 @@ func (r *securitySamlResource) Delete(ctx context.Context, req resource.DeleteRe
 	)
 
 	httpResponse, err := r.Client.ConfigSAMLAPI.DeleteSamlConfiguration(ctx).Execute()
-	if err != nil {
-		common.HandleApiError(
-			"Error deleting SAML configuration",
-			&err,
-			httpResponse,
-			&resp.Diagnostics,
-		)
-		return
-	} else if httpResponse.StatusCode != http.StatusNoContent {
+	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
 		common.HandleApiError(
 			"Error deleting SAML configuration",
 			&err,
