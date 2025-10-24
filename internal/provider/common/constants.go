@@ -17,12 +17,16 @@
 package common
 
 const (
-	DEFAULT_USER_REALM      string = "Internal"
-	OWNER_TYPE_APPLICATION  string = "application"
-	OWNER_TYPE_ORGANIZATION string = "organization"
-	ROOT_ORGANIZATION_ID    string = "ROOT_ORGANIZATION_ID"
-	USER_REALM_INTERNAL     string = "Internal"
-	USER_REALM_SAML         string = "SAML"
-	USER_REALM_OAUTH2       string = "OAUTH2"
-	USER_REALM_CROWD        string = "CROWD"
+	DEFAULT_USER_REALM                string = "Internal"
+	OWNER_TYPE_APPLICATION            string = "application"
+	OWNER_TYPE_ORGANIZATION           string = "organization"
+	ROOT_ORGANIZATION_ID              string = "ROOT_ORGANIZATION_ID"
+	SAML_DEFAULT_EMAIL_ATTRIBUTE      string = "email"
+	SAML_DEFAULT_FIRST_NAME_ATTRIBUTE string = "firstName"
+	SAML_DEFAULT_GROUPS_ATTRIBUTE     string = "groups"
+	SAML_DEFAULT_LAST_NAME_ATTRIBUTE  string = "lastName"
+	USER_REALM_INTERNAL               string = "Internal"
+	USER_REALM_SAML                   string = "SAML"
+	USER_REALM_OAUTH2                 string = "OAUTH2"
+	USER_REALM_CROWD                  string = "CROWD"
 )
