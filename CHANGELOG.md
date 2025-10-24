@@ -2,6 +2,14 @@
 
 ## X.Y.Z (Unreleased)
 
+
+## 0.12.1 October 24, 2025
+
+NOTES:
+* Updated documentation to call out tested against Sonatype IQ up to and included 196.
+
+## 0.12.0 October 24, 2025
+
 FEATURES:
 
 * **New Resource:** `sonatypeiq_application_category` [GH-1]
