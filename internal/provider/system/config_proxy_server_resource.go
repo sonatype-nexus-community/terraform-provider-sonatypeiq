@@ -25,11 +25,11 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // configProxyServerResource is the resource implementation.
@@ -63,41 +63,14 @@ func (r *configProxyServerResource) Schema(_ context.Context, _ resource.SchemaR
 	resp.Schema = schema.Schema{
 		Description: "Manage outbound proxy server configuration for IQ Server",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"hostname": schema.StringAttribute{
-				Description: "Hostname of the Proxy Server",
-				Required:    true,
-			},
-			"port": schema.Int64Attribute{
-				Description: "Port Number for the Proxy Server",
-				Required:    true,
-			},
-			"username": schema.StringAttribute{
-				Description: "Username for the Proxy Server",
-				Optional:    true,
-			},
-			"password": schema.StringAttribute{
-				Description: "Password for the Proxy Server",
-				Optional:    true,
-				Sensitive:   true,
-			},
-			"password_is_included": schema.BoolAttribute{
-				Description: "Whether the password is included",
-				Default:     booldefault.StaticBool(false),
-				Computed:    true,
-				Optional:    true,
-			},
-			"exclude_hosts": schema.SetAttribute{
-				Description: "Optional list of hosts to exclude communication via Proxy Server",
-				Computed:    true,
-				Optional:    true,
-				ElementType: types.StringType,
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"id":                   sharedrschema.ResourceComputedString(""),
+			"hostname":             sharedrschema.ResourceRequiredString("Hostname of the Proxy Server"),
+			"port":                 sharedrschema.ResourceRequiredInt64("Port Number for the Proxy Server"),
+			"username":             sharedrschema.ResourceOptionalString("Username for the Proxy Server"),
+			"password":             sharedrschema.ResourceSensitiveString("Password for the Proxy Server"),
+			"password_is_included": sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether the password is included", false),
+			"exclude_hosts":        sharedrschema.ResourceComputedOptionalStringSet("Optional list of hosts to exclude communication via Proxy Server"),
+			"last_updated":         sharedrschema.ResourceComputedString(""),
 		},
 	}
 }

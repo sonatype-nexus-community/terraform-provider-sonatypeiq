@@ -29,6 +29,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // systemConfigResource is the resource implementation.
@@ -58,20 +59,10 @@ func (r *systemConfigResource) Schema(_ context.Context, _ resource.SchemaReques
 	resp.Schema = schema.Schema{
 		Description: "Use this data source to manage System Configuration",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"base_url": schema.StringAttribute{
-				Description: "Base URL for Sonatype IQ Server. See https://help.sonatype.com/en/configuration-rest-api.html#base-url--required-",
-				Required:    true,
-			},
-			"force_base_url": schema.BoolAttribute{
-				Description: "Should the Base URL be forced? See https://help.sonatype.com/en/configuration-rest-api.html#force-the-base-url",
-				Required:    true,
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"id":             sharedrschema.ResourceComputedString(""),
+			"base_url":       sharedrschema.ResourceRequiredString("Base URL for Sonatype IQ Server. See https://help.sonatype.com/en/configuration-rest-api.html#base-url--required-"),
+			"force_base_url": sharedrschema.ResourceRequiredBool("Should the Base URL be forced? See https://help.sonatype.com/en/configuration-rest-api.html#force-the-base-url"),
+			"last_updated":   sharedrschema.ResourceComputedString(""),
 		},
 	}
 }

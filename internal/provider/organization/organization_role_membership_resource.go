@@ -31,6 +31,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // organizatonRoleMembershipResource is the resource implementation.
@@ -60,37 +61,11 @@ func (r *organizationRoleMembershipResource) Metadata(_ context.Context, req res
 func (r *organizationRoleMembershipResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"role_id": schema.StringAttribute{
-				Required:    true,
-				Description: "The role ID",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"organization_id": schema.StringAttribute{
-				Required:    true,
-				Description: "The organization ID",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"user_name": schema.StringAttribute{
-				Optional:    true,
-				Description: "The username of the user (mutually exclusive with group_name)",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"group_name": schema.StringAttribute{
-				Optional:    true,
-				Description: "The group name of the group (mutually exclusive with user_name)",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			"id":              sharedrschema.ResourceComputedString("The role membership ID"),
+			"role_id":         sharedrschema.ResourceRequiredStringWithPlanModifier("The role ID", []planmodifier.String{stringplanmodifier.RequiresReplace()}),
+			"organization_id": sharedrschema.ResourceRequiredStringWithPlanModifier("The organization ID", []planmodifier.String{stringplanmodifier.RequiresReplace()}),
+			"user_name":       sharedrschema.ResourceOptionalStringWithPlanModifier("The username of the user (mutually exclusive with group_name)", stringplanmodifier.RequiresReplace()),
+			"group_name":      sharedrschema.ResourceOptionalStringWithPlanModifier("The group name of the group (mutually exclusive with user_name)", stringplanmodifier.RequiresReplace()),
 		},
 	}
 }

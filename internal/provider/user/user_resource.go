@@ -25,11 +25,11 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // userResource is the resource implementation.
@@ -69,38 +69,17 @@ func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	resp.Schema = schema.Schema{
 		Description: "Use this data source to manage Users",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"username": schema.StringAttribute{
-				Description: "Username used to log in to Sonatype IQ Server",
-				Required:    true,
-			},
-			"password": schema.StringAttribute{
-				Description: "Password used to log in to Sonatype IQ Server",
-				Optional:    true,
-				Sensitive:   true,
-			},
-			"first_name": schema.StringAttribute{
-				Description: "Users first name",
-				Required:    true,
-			},
-			"last_name": schema.StringAttribute{
-				Description: "Users last name",
-				Required:    true,
-			},
-			"email": schema.StringAttribute{
-				Description: "Users email address",
-				Required:    true,
-			},
-			"realm": schema.StringAttribute{
-				Description: fmt.Sprintf("Realm the User belongs to. Only '%s' is supported at this time.", common.DEFAULT_USER_REALM),
-				Default:     stringdefault.StaticString(common.DEFAULT_USER_REALM),
-				Computed:    true,
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"id":         sharedrschema.ResourceComputedString("The user ID"),
+			"username":   sharedrschema.ResourceRequiredString("Username used to log in to Sonatype IQ Server"),
+			"password":   sharedrschema.ResourceSensitiveString("Password used to log in to Sonatype IQ Server"),
+			"first_name": sharedrschema.ResourceRequiredString("Users first name"),
+			"last_name":  sharedrschema.ResourceRequiredString("Users last name"),
+			"email":      sharedrschema.ResourceRequiredString("Users email address"),
+			"realm": sharedrschema.ResourceOptionalStringWithDefault(
+				fmt.Sprintf("Realm the User belongs to. Only '%s' is supported at this time.", common.DEFAULT_USER_REALM),
+				common.DEFAULT_USER_REALM,
+			),
+			"last_updated": sharedrschema.ResourceComputedString("String representation of the date/time the resource was last changed by Terraform"),
 		},
 	}
 }

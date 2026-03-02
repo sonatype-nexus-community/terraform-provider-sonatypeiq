@@ -24,16 +24,15 @@ import (
 	"terraform-provider-sonatypeiq/internal/provider/model"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // applicationCategoryResource is the resource implementation.
@@ -56,34 +55,15 @@ func (r *applicationCategoryResource) Schema(_ context.Context, _ resource.Schem
 	resp.Schema = schema.Schema{
 		Description: "Use this resource to manage Application Categories/Tags which can then be applied to Applications.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Internal ID of the Application Category",
-				Computed:    true,
-				Required:    false,
-				Optional:    false,
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the Application Category",
-				Required:    true,
-			},
-			"description": schema.StringAttribute{
-				Description: "Description of the Application Category",
-				Required:    true,
-			},
-			"organization_id": schema.StringAttribute{
-				Description: "Internal ID of the Organization to which this Application Category belongs. Use `ROOT_ORGANIZATION_ID` for the Root Organization.",
-				Required:    true,
-			},
-			"color": schema.StringAttribute{
-				Description: "Color of the Application Category",
-				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.OneOf(model.AllColors()...),
-				},
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"id":              sharedrschema.ResourceComputedString("Internal ID of the Application Category"),
+			"name":            sharedrschema.ResourceRequiredString("Name of the Application Category"),
+			"description":     sharedrschema.ResourceRequiredString("Description of the Application Category"),
+			"organization_id": sharedrschema.ResourceRequiredString("Internal ID of the Organization to which this Application Category belongs. Use `ROOT_ORGANIZATION_ID` for the Root Organization."),
+			"color": sharedrschema.ResourceRequiredStringEnum(
+				"Color of the Application Category",
+				model.AllColors()...,
+			),
+			"last_updated": sharedrschema.ResourceComputedString("String representation of the date/time the resource was last changed by Terraform"),
 		},
 	}
 }

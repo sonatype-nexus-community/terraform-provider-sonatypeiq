@@ -28,7 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -37,6 +36,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 type sourceControlResource struct {
@@ -57,25 +57,12 @@ func (r *sourceControlResource) Metadata(_ context.Context, req resource.Metadat
 func (r *sourceControlResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"owner_id": schema.StringAttribute{
-				Required:            true,
-				MarkdownDescription: "Must be a valid organization or application ID, for the root organization use `ROOT_ORGANIZATION_ID`",
-			},
-			"owner_type": schema.StringAttribute{
-				Required:            true,
-				MarkdownDescription: "The type of the owner, must be one of 'organization' or 'application'.",
-				Validators: []validator.String{
-					stringvalidator.OneOf("organization", "application"),
-				},
-			},
-			"repository_url": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The SCM provider URL for the repository, only valid for `owner_type` of `application`",
-			},
-			"base_branch": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The default branch to use.",
-			},
+			"owner_id":                          sharedrschema.ResourceRequiredString("Must be a valid organization or application ID, for the root organization use `ROOT_ORGANIZATION_ID`"),
+			"owner_type":                        sharedrschema.ResourceRequiredStringEnum("The type of the owner, must be one of 'organization' or 'application'.", "organization", "application"),
+			"repository_url":                    sharedrschema.ResourceOptionalString("The SCM provider URL for the repository, only valid for `owner_type` of `application`"),
+			"base_branch":                       sharedrschema.ResourceOptionalString("The default branch to use."),
+			"pull_request_commenting_enabled":   sharedrschema.ResourceOptionalBool("Set to true to enable the Pull Request Commenting feature."),
+			"source_control_evaluation_enabled": sharedrschema.ResourceOptionalBool("Set to true to enable Nexus IQ triggered source control evaluations."),
 			"user_name": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The user name to use when setting `scm_provider` to `bitbucket`.",
@@ -83,23 +70,7 @@ func (r *sourceControlResource) Schema(_ context.Context, _ resource.SchemaReque
 					stringvalidator.AlsoRequires(path.MatchRoot("scm_provider")),
 				},
 			},
-			"remediation_pull_requests_enabled": schema.BoolAttribute{
-				Optional:            true,
-				Computed:            true,
-				MarkdownDescription: "Set to true to enable the Automated Pull Requests feature.",
-				Default:             booldefault.StaticBool(true),
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"pull_request_commenting_enabled": schema.BoolAttribute{
-				Optional:            true,
-				MarkdownDescription: "Set to true to enable the Pull Request Commenting feature.",
-			},
-			"source_control_evaluation_enabled": schema.BoolAttribute{
-				Optional:            true,
-				MarkdownDescription: "Set to true to enable Nexus IQ triggered source control evaluations.",
-			},
+			"remediation_pull_requests_enabled": sharedrschema.ResourceComputedOptionalBoolWithDefaultAndPlanModifier("Set to true to enable the Automated Pull Requests feature.", true, boolplanmodifier.UseStateForUnknown()),
 			"scm_provider": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The type of SCM Provider, must be one of 'azure, bitbucket, github or gitlab'. This is required when the organization is set to `ROOT_ORGANIZATION_ID`",

@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -59,13 +60,8 @@ func (d *configSamlDataSource) Schema(_ context.Context, req datasource.SchemaRe
 	resp.Schema = schema.Schema{
 		Description: "Use this data source to get SAML Metadata for Sonatype IQ Server",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"saml_metadata": schema.StringAttribute{
-				Description: "SAML Metadata for Sonatype IQ Server",
-				Computed:    true,
-			},
+			"id":            sharedrschema.DataSourceComputedString(""),
+			"saml_metadata": sharedrschema.DataSourceComputedString("SAML Metadata for Sonatype IQ Server"),
 		},
 	}
 }

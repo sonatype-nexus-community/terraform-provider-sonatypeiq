@@ -30,6 +30,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 type organizationModelResouce struct {
@@ -60,31 +61,16 @@ func (r *organizationResource) Schema(_ context.Context, _ resource.SchemaReques
 	resp.Schema = schema.Schema{
 		Description: "Use this resource to manage Organizations",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Internal ID of the Organization",
-				Computed:    true,
-				Required:    false,
-				Optional:    false,
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the Organization",
-				Computed:    true,
-				Optional:    true,
-			},
-			"parent_organization_id": schema.StringAttribute{
-				Description: "Internal ID of the Parent Organization if this Organization has a Parent Organization",
-				Computed:    true,
-				Optional:    true,
-			},
+			"id":                     sharedrschema.ResourceComputedString("Internal ID of the Organization"),
+			"name":                   sharedrschema.ResourceComputedOptionalString("Name of the Organization"),
+			"parent_organization_id": sharedrschema.ResourceComputedOptionalString("Internal ID of the Parent Organization if this Organization has a Parent Organization"),
 			// "tags": schema.ListNestedAttribute{
 			// 	Optional: true,
 			// 	NestedObject: schema.NestedAttributeObject{
 			// 		Attributes: tagSchemaObjectAttributes,
 			// 	},
 			// },
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"last_updated": sharedrschema.ResourceComputedString("String representation of the date/time the resource was last changed by Terraform"),
 		},
 	}
 }

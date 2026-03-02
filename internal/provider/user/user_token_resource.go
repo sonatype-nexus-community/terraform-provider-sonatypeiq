@@ -32,6 +32,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // userTokenResource is the resource implementation.
@@ -69,18 +70,9 @@ func (r *userTokenResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			// 	Description: "The authentication Realm that this User belongs to",
 			// 	Computed:    true,
 			// },
-			"user_code": schema.StringAttribute{
-				Description: "User Code portion of the User Token",
-				Computed:    true,
-			},
-			"pass_code": schema.StringAttribute{
-				Description: "Pass Code portion of the User Token",
-				Computed:    true,
-				Sensitive:   true,
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"user_code":    sharedrschema.ResourceComputedString("User Code portion of the User Token"),
+			"pass_code":    sharedrschema.ResourceComputedSensitiveString("Pass Code portion of the User Token"),
+			"last_updated": sharedrschema.ResourceComputedString("String representation of the date/time the resource was last changed by Terraform"),
 		},
 	}
 }

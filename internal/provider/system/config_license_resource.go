@@ -31,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
@@ -58,16 +59,8 @@ func (r *systemConfigProductLicenseResource) Schema(_ context.Context, _ resourc
 	resp.Schema = schema.Schema{
 		Description: "Configure and Sonatype IQ License",
 		Attributes: map[string]schema.Attribute{
-			"license_data": schema.StringAttribute{
-				Description: "Base64 encoded license data",
-				Required:    true,
-				Optional:    false,
-				Sensitive:   true,
-			},
-			// Meta
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"license_data": sharedrschema.ResourceSensitiveRequiredString("Base64 encoded license data"),
+			"last_updated": sharedrschema.ResourceComputedString(""),
 		},
 	}
 }

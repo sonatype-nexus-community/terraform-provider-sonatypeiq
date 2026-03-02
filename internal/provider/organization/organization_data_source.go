@@ -29,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -71,10 +72,9 @@ func (d *organizationDataSource) Schema(_ context.Context, req datasource.Schema
 				Description: "Internal ID of the Parent Organization if this Organization has a Parent Organization",
 				Computed:    true,
 			},
-			"tags": schema.ListNestedAttribute{
-				Description: "List of Tags associated to this Organization",
-				Computed:    true,
-				NestedObject: schema.NestedAttributeObject{
+			"tags": sharedrschema.DataSourceComputedListNestedAttribute(
+				"List of Tags associated to this Organization",
+				schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
 							Description: "Internal ID of the Tag",
@@ -94,7 +94,7 @@ func (d *organizationDataSource) Schema(_ context.Context, req datasource.Schema
 						},
 					},
 				},
-			},
+			),
 		},
 	}
 }

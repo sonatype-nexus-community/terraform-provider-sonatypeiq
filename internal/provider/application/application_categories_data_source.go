@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -62,16 +63,16 @@ func (d *applicationCategoriesDataSource) Schema(_ context.Context, req datasour
 		Description: "Use this data source to get Application Categories for an Organization",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "Placeholder ID",
 			},
 			"organization_id": schema.StringAttribute{
 				Description: "Internal ID of the Organization to which this Application belongs - use 'ROOT_ORGANIZATION_ID' for the Root Organization",
 				Required:    true,
 			},
-			"categories": schema.ListNestedAttribute{
-				Description: "List of Categories defined for this Organization",
-				Computed:    true,
-				NestedObject: schema.NestedAttributeObject{
+			"categories": sharedrschema.DataSourceComputedListNestedAttribute(
+				"List of Categories defined for this Organization",
+				schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
 							Description: "Internal ID of the Tag",
@@ -91,7 +92,7 @@ func (d *applicationCategoriesDataSource) Schema(_ context.Context, req datasour
 						},
 					},
 				},
-			},
+			),
 		},
 	}
 }

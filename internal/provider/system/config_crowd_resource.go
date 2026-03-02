@@ -32,6 +32,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // configCrowdResource is the resource implementation.
@@ -54,22 +55,10 @@ func (r *configCrowdResource) Schema(_ context.Context, _ resource.SchemaRequest
 	resp.Schema = schema.Schema{
 		Description: "Manage Atlassian Crowd server configuration for IQ Server",
 		Attributes: map[string]schema.Attribute{
-			"server_url": schema.StringAttribute{
-				Description: "Crowd Server URL",
-				Required:    true,
-			},
-			"application_name": schema.StringAttribute{
-				Description: "Crowd Application Name",
-				Required:    true,
-			},
-			"application_password": schema.StringAttribute{
-				Description: "Crowd Application Password",
-				Required:    true,
-				Sensitive:   true,
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"server_url":           sharedrschema.ResourceRequiredString("Crowd Server URL"),
+			"application_name":     sharedrschema.ResourceRequiredString("Crowd Application Name"),
+			"application_password": sharedrschema.ResourceSensitiveRequiredString("Crowd Application Password"),
+			"last_updated":         sharedrschema.ResourceComputedString(""),
 		},
 	}
 }

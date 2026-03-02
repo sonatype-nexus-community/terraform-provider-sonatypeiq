@@ -29,6 +29,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -81,10 +82,9 @@ func (d *applicationDataSource) Schema(_ context.Context, req datasource.SchemaR
 				Computed:    true,
 				Optional:    true,
 			},
-			"application_tags": schema.ListNestedAttribute{
-				Description: "List of Tags applied to this Application",
-				Computed:    true,
-				NestedObject: schema.NestedAttributeObject{
+			"application_tags": sharedrschema.DataSourceComputedListNestedAttribute(
+				"List of Tags applied to this Application",
+				schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
 							Description: "Internal ID of the Application-Tag link",
@@ -100,7 +100,7 @@ func (d *applicationDataSource) Schema(_ context.Context, req datasource.SchemaR
 						},
 					},
 				},
-			},
+			),
 		},
 	}
 }

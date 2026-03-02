@@ -25,6 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -59,19 +60,9 @@ func (d *systemConfigDataSource) Schema(_ context.Context, req datasource.Schema
 	resp.Schema = schema.Schema{
 		Description: "Use this data source to get System Configuration",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"base_url": schema.StringAttribute{
-				Description: "Base URL for Sonatype IQ Server",
-				Computed:    true,
-				Optional:    true,
-			},
-			"force_base_url": schema.BoolAttribute{
-				Description: "Should the Base URL be forced?",
-				Computed:    true,
-				Optional:    true,
-			},
+			"id":             sharedrschema.DataSourceComputedString(""),
+			"base_url":       sharedrschema.DataSourceOptionalString("Base URL for Sonatype IQ Server"),
+			"force_base_url": sharedrschema.DataSourceComputedOptionalBool("Should the Base URL be forced?"),
 		},
 	}
 }

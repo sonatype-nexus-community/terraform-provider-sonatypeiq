@@ -25,12 +25,11 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 const (
@@ -72,53 +71,16 @@ func (r *configMailResource) Schema(_ context.Context, _ resource.SchemaRequest,
 	resp.Schema = schema.Schema{
 		Description: "Manage outbound email server configuration for IQ Server",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"hostname": schema.StringAttribute{
-				Description: "Hostname of the SMTP server",
-				Required:    true,
-			},
-			"port": schema.Int64Attribute{
-				Description: "Port Number for the SMTP server",
-				Default:     int64default.StaticInt64(mailDefaultPort),
-				Computed:    true,
-				Optional:    true,
-			},
-			"username": schema.StringAttribute{
-				Description: "Username for the SMTP server",
-				Optional:    true,
-			},
-			"password": schema.StringAttribute{
-				Description: "Password for the SMTP server",
-				Optional:    true,
-				Sensitive:   true,
-			},
-			"password_is_included": schema.BoolAttribute{
-				Description: "Whether the password is included",
-				Default:     booldefault.StaticBool(false),
-				Computed:    true,
-				Optional:    true,
-			},
-			"ssl_enabled": schema.BoolAttribute{
-				Description: "Whether SSL is enabled to SMTP server",
-				Default:     booldefault.StaticBool(mailDefaultSSLEnabled),
-				Computed:    true,
-				Optional:    true,
-			},
-			"start_tls_enabled": schema.BoolAttribute{
-				Description: "Whether STARTTLS is enabled to SMTP server",
-				Default:     booldefault.StaticBool(mailDefaultStartTLSEnabled),
-				Computed:    true,
-				Optional:    true,
-			},
-			"system_email": schema.StringAttribute{
-				Description: "The email address emails sent by Sonatype IQ Server will appear FROM",
-				Required:    true,
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"id":                   sharedrschema.ResourceComputedString(""),
+			"hostname":             sharedrschema.ResourceRequiredString("Hostname of the SMTP server"),
+			"port":                 sharedrschema.ResourceComputedOptionalInt64WithDefault("Port Number for the SMTP server", mailDefaultPort),
+			"username":             sharedrschema.ResourceOptionalString("Username for the SMTP server"),
+			"password":             sharedrschema.ResourceSensitiveString("Password for the SMTP server"),
+			"password_is_included": sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether the password is included", false),
+			"ssl_enabled":          sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether SSL is enabled to SMTP server", mailDefaultSSLEnabled),
+			"start_tls_enabled":    sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether STARTTLS is enabled to SMTP server", mailDefaultStartTLSEnabled),
+			"system_email":         sharedrschema.ResourceRequiredString("The email address emails sent by Sonatype IQ Server will appear FROM"),
+			"last_updated":         sharedrschema.ResourceComputedString(""),
 		},
 	}
 }

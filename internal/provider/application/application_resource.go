@@ -30,6 +30,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 var _ resource.ResourceWithImportState = &applicationResource{}
@@ -53,30 +54,12 @@ func (r *applicationResource) Metadata(_ context.Context, req resource.MetadataR
 func (r *applicationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Internal ID of the Application",
-				Computed:    true,
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the Application",
-				Required:    true,
-			},
-			"public_id": schema.StringAttribute{
-				Description: "Public ID of the Application",
-				Required:    true,
-			},
-			"organization_id": schema.StringAttribute{
-				Description: "Internal ID of the Organization to which this Application belongs",
-				Required:    true,
-			},
-			"contact_user_name": schema.StringAttribute{
-				Description: "User Name of the Contact for the Application",
-				Optional:    true,
-			},
-			"last_updated": schema.StringAttribute{
-				Description: "String representation of the date/time the resource was last changed by Terraform",
-				Computed:    true,
-			},
+			"id":                sharedrschema.ResourceComputedString("Internal ID of the Application"),
+			"name":              sharedrschema.ResourceRequiredString("Name of the Application"),
+			"public_id":         sharedrschema.ResourceRequiredString("Public ID of the Application"),
+			"organization_id":   sharedrschema.ResourceRequiredString("Internal ID of the Organization to which this Application belongs"),
+			"contact_user_name": sharedrschema.ResourceOptionalString("User Name of the Contact for the Application"),
+			"last_updated":      sharedrschema.ResourceComputedString("String representation of the date/time the resource was last changed by Terraform"),
 		},
 	}
 }

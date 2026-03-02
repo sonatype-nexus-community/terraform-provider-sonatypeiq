@@ -29,6 +29,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // applicationRoleMembershipResource is the resource implementation.
@@ -58,25 +59,11 @@ func (r *applicationRoleMembershipResource) Metadata(_ context.Context, req reso
 func (r *applicationRoleMembershipResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"role_id": schema.StringAttribute{
-				Required:    true,
-				Description: "The role ID",
-			},
-			"application_id": schema.StringAttribute{
-				Required:    true,
-				Description: "The application ID",
-			},
-			"user_name": schema.StringAttribute{
-				Optional:    true,
-				Description: "The username of the user (mutually exclusive with group_name)",
-			},
-			"group_name": schema.StringAttribute{
-				Optional:    true,
-				Description: "The group name of the group (mutually exclusive with user_name)",
-			},
+			"id":             sharedrschema.ResourceComputedString("The role membership ID"),
+			"role_id":        sharedrschema.ResourceRequiredString("The role ID"),
+			"application_id": sharedrschema.ResourceRequiredString("The application ID"),
+			"user_name":      sharedrschema.ResourceOptionalString("The username of the user (mutually exclusive with group_name)"),
+			"group_name":     sharedrschema.ResourceOptionalString("The group name of the group (mutually exclusive with user_name)"),
 		},
 	}
 }

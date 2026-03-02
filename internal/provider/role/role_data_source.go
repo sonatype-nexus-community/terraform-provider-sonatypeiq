@@ -27,6 +27,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -60,13 +61,8 @@ func (d *roleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 	resp.Schema = schema.Schema{
 		Description: "Use this data source to get a role",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"name": schema.StringAttribute{
-				Description: "The role name",
-				Required:    true,
-			},
+			"id":   sharedrschema.ResourceComputedString("The role ID"),
+			"name": sharedrschema.ResourceRequiredString("The role name"),
 		},
 	}
 }

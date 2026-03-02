@@ -29,6 +29,7 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -63,12 +64,12 @@ func (d *organizationsDataSource) Schema(_ context.Context, _ datasource.SchemaR
 		Description: "Use this data source to get all Organizations",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"organizations": schema.ListNestedAttribute{
-				Description: "List of Organizations",
 				Computed:    true,
-				NestedObject: schema.NestedAttributeObject{
+				Description: "Placeholder ID",
+			},
+			"organizations": sharedrschema.DataSourceComputedListNestedAttribute(
+				"List of Organizations",
+				schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
 							Description: "Internal ID of the Organization",
@@ -82,10 +83,9 @@ func (d *organizationsDataSource) Schema(_ context.Context, _ datasource.SchemaR
 							Description: "Internal ID of the Organization to which this Organization belongs",
 							Computed:    true,
 						},
-						"tags": schema.ListNestedAttribute{
-							Description: "List of any Tags associated to this Organization",
-							Computed:    true,
-							NestedObject: schema.NestedAttributeObject{
+						"tags": sharedrschema.DataSourceComputedListNestedAttribute(
+							"List of any Tags associated to this Organization",
+							schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"id": schema.StringAttribute{
 										Description: "Internal ID of the Tag",
@@ -105,10 +105,10 @@ func (d *organizationsDataSource) Schema(_ context.Context, _ datasource.SchemaR
 									},
 								},
 							},
-						},
+						),
 					},
 				},
-			},
+			),
 		},
 	}
 }
