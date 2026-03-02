@@ -18,7 +18,6 @@ package system
 
 import (
 	"context"
-	"io"
 	"math/rand"
 	"strconv"
 	"terraform-provider-sonatypeiq/internal/provider/common"
@@ -30,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // configProxyServerResource is the resource implementation.
@@ -143,10 +143,11 @@ func (r *configProxyServerResource) Create(ctx context.Context, req resource.Cre
 
 	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error creating Proxy Server Configuration",
-			"Could not create Proxy Server Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -183,12 +184,14 @@ func (r *configProxyServerResource) Read(ctx context.Context, req resource.ReadR
 	proxy_config, api_response, err := r.Client.ConfigProxyServerAPI.GetConfiguration3(ctx).Execute()
 
 	if err != nil {
-		if api_response.StatusCode == 404 {
+		if sharederr.IsNotFound(api_response.StatusCode) {
 			resp.State.RemoveResource(ctx)
 		} else {
-			resp.Diagnostics.AddError(
+			sharederr.HandleAPIError(
 				"Error Reading IQ Proxy Server Configuration",
-				"Could not read Proxy Server Configuration: "+err.Error(),
+				&err,
+				api_response,
+				&resp.Diagnostics,
 			)
 		}
 		return
@@ -250,10 +253,11 @@ func (r *configProxyServerResource) Update(ctx context.Context, req resource.Upd
 
 	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error updating Proxy Server Configuration",
-			"Could not update Proxy Server Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -281,10 +285,11 @@ func (r *configProxyServerResource) Delete(ctx context.Context, req resource.Del
 	api_response, err := r.Client.ConfigProxyServerAPI.DeleteConfiguration3(ctx).Execute()
 
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error deleting Proxy Server Configuration",
-			"Could not delete  Proxy Server Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}

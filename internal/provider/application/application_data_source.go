@@ -28,6 +28,7 @@ import (
 	"terraform-provider-sonatypeiq/internal/provider/model"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -129,14 +130,11 @@ func (d *applicationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		app, r, err = d.Client.ApplicationsAPI.GetApplication(ctx, data.ID.ValueString()).Execute()
 
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to Read IQ Application by ID",
-				err.Error(),
-			)
+			sharederr.HandleAPIError("Unable to read IQ Application by ID", &err, r, &resp.Diagnostics)
 			return
 		}
-		if r.StatusCode != 200 {
-			resp.Diagnostics.AddError("Unexpected API Response", r.Status)
+		if r.StatusCode != http.StatusOK {
+			sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Application", r, err)
 			return
 		}
 
@@ -147,29 +145,26 @@ func (d *applicationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		get_apps_req = get_apps_req.PublicId([]string{data.PublicId.ValueString()})
 		apps, r, err = get_apps_req.Execute()
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to Read IQ Application by Public ID",
-				err.Error(),
-			)
+			sharederr.HandleAPIError("Unable to read IQ Application by Public ID", &err, r, &resp.Diagnostics)
 			return
 		}
-		if r.StatusCode != 200 {
-			resp.Diagnostics.AddError("Unexpected API Response", r.Status)
+		if r.StatusCode != http.StatusOK {
+			sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Application", r, err)
 			return
 		}
 		if len(apps.Applications) == 1 {
 			app = &apps.Applications[0]
 		} else if len(apps.Applications) > 1 {
-			resp.Diagnostics.AddError("More than one Applications matched the Public ID", r.Status)
+			sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Application Public ID", "More than one Application matched the provided Public ID")
 			return
 		}
 	} else {
-		resp.Diagnostics.AddError("No Application ID or Public ID provided ", "ID or Public ID must be provided")
+		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Application Lookup", "ID or Public ID must be provided")
 		return
 	}
 
 	if app == nil {
-		resp.Diagnostics.AddError("No Application found", "No Application found with the provided ID or Public ID")
+		sharederr.AddNotFoundDiagnostic(&resp.Diagnostics, "Application", data.ID.ValueString())
 		return
 	}
 

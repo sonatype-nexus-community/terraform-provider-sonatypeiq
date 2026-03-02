@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto/sha1"
 	"fmt"
-	"io"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"time"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // userResource is the resource implementation.
@@ -117,17 +117,11 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	// Validation
 	if plan.Password.IsNull() || plan.Password.IsUnknown() {
-		resp.Diagnostics.AddError(
-			"No Password supplied",
-			"Password is required when creating a User",
-		)
+		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Password", "Password is required when creating a User")
 		return
 	}
 	if !plan.Realm.Equal(types.StringValue(common.DEFAULT_USER_REALM)) {
-		resp.Diagnostics.AddError(
-			"Unsupported Realm",
-			fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM),
-		)
+		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Realm", fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM))
 		return
 	}
 
@@ -152,10 +146,11 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	// Call API
 	if err != nil || api_response.StatusCode != 204 {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error creating User",
-			"Could not create User, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -190,10 +185,11 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	user, api_response, err := r.Client.UsersAPI.Get1(ctx, state.Username.ValueString()).Execute()
 
 	if err != nil || api_response.StatusCode != 200 {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error reading User",
-			"Could not read User, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -229,16 +225,10 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	// Validation
 	if !plan.Password.IsNull() || !plan.Password.IsUnknown() {
-		resp.Diagnostics.AddWarning(
-			"Cannot change User Password - will be skipped",
-			"Changing User Password is not supported by Sonatype IQ Server",
-		)
+		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Password", "Changing User Password is not supported by Sonatype IQ Server")
 	}
 	if !plan.Realm.Equal(types.StringValue("Internal")) {
-		resp.Diagnostics.AddError(
-			"Unsupported Realm",
-			fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM),
-		)
+		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Realm", fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM))
 		return
 	}
 
@@ -266,10 +256,11 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	// Call API
 	if err != nil || api_response.StatusCode != 200 {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error updating User",
-			"Could not update User, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -311,10 +302,11 @@ func (r *userResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	// Call Delete API
 	api_response, err := r.Client.UsersAPI.Delete1(ctx, plan.Username.ValueString()).Execute()
 	if err != nil || api_response.StatusCode != 204 {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error deleting User",
-			"Could not delete User, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}

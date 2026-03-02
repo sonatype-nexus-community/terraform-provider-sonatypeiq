@@ -30,6 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
@@ -138,7 +139,7 @@ func (r *systemConfigProductLicenseResource) Delete(ctx context.Context, req res
 
 	// Handle Error
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Error removing Product License",
 			&err,
 			httpResponse,
@@ -189,7 +190,7 @@ func (r *systemConfigProductLicenseResource) updateProductLicense(ctx context.Co
 
 	// Handle Error
 	if err != nil || httpReponse.StatusCode != http.StatusOK {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Error installing Product License",
 			&err,
 			httpReponse,

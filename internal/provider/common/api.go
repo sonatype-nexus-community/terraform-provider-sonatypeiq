@@ -16,33 +16,19 @@
 package common
 
 import (
-	"fmt"
-	"io"
-	"log"
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
+// HandleApiError delegates to the shared library's HandleAPIError function for centralized error handling
+// with network error detection and standardized diagnostics formatting
 func HandleApiError(message string, err *error, httpResponse *http.Response, respDiags *diag.Diagnostics) {
-	respDiags.AddError(
-		message,
-		fmt.Sprintf("%s: %s: %s", message, httpResponse.Status, getResponseBody(httpResponse)),
-	)
+	sharederr.HandleAPIError(message, err, httpResponse, respDiags)
 }
 
+// HandleApiWarning delegates to the shared library's HandleAPIWarning function for non-critical API issues
 func HandleApiWarning(message string, err *error, httpResponse *http.Response, respDiags *diag.Diagnostics) {
-	respDiags.AddWarning(
-		"LDAP Connection does not exist",
-		fmt.Sprintf("%s: %s: %s", message, httpResponse.Status, getResponseBody(httpResponse)),
-	)
-}
-
-func getResponseBody(httpResponse *http.Response) []byte {
-	body, _ := io.ReadAll(httpResponse.Body)
-	err := httpResponse.Body.Close()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	return body
+	sharederr.HandleAPIWarning(message, err, httpResponse, respDiags)
 }

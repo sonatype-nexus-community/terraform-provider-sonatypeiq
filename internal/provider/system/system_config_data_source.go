@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -99,14 +100,16 @@ func (d *systemConfigDataSource) Read(ctx context.Context, req datasource.ReadRe
 	config, r, err := config_request.Execute()
 
 	if err != nil {
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Unable to Read IQ System Configuration",
-			err.Error(),
+			&err,
+			r,
+			&resp.Diagnostics,
 		)
 		return
 	}
 	if r.StatusCode != 200 {
-		resp.Diagnostics.AddError("Unexpected API Response", r.Status)
+		sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "Read System Configuration", "System Configuration", r, err)
 		return
 	}
 

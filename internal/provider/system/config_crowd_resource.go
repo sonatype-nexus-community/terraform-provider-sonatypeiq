@@ -31,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // configCrowdResource is the resource implementation.
@@ -115,7 +116,7 @@ func (r *configCrowdResource) Read(ctx context.Context, req resource.ReadRequest
 
 	// Handle any errors
 	if err != nil && httpResponse.StatusCode != http.StatusNotFound {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Unable to read Crowd configuration",
 			&err,
 			httpResponse,
@@ -164,16 +165,11 @@ func (r *configCrowdResource) Delete(ctx context.Context, req resource.DeleteReq
 	httpResponse, err := r.Client.ConfigCrowdAPI.DeleteCrowdConfiguration(ctx).Execute()
 
 	if err != nil {
-		if httpResponse.StatusCode == http.StatusNotFound {
+		if sharederr.IsNotFound(httpResponse.StatusCode) {
 			resp.State.RemoveResource(ctx)
-			common.HandleApiWarning(
-				"There is no current Crowd configuration",
-				&err,
-				httpResponse,
-				&resp.Diagnostics,
-			)
+			sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Crowd configuration", "There is no current Crowd configuration")
 		} else {
-			common.HandleApiError(
+			sharederr.HandleAPIError(
 				"Failed to delete Crowd configuration",
 				&err,
 				httpResponse,
@@ -184,7 +180,7 @@ func (r *configCrowdResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	if httpResponse.StatusCode != http.StatusNoContent {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Unexpected response code deleting Crowd configuration",
 			&err,
 			httpResponse,
@@ -208,7 +204,7 @@ func (r *configCrowdResource) doUpsert(ctx context.Context, model *model.ConfigC
 
 	// Handle Errors
 	if err != nil {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Error creating Crowd configuration",
 			&err,
 			httpResponse,
@@ -217,7 +213,7 @@ func (r *configCrowdResource) doUpsert(ctx context.Context, model *model.ConfigC
 		return
 	}
 	if httpResponse.StatusCode != http.StatusNoContent {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Creation of Crowd configuration unsuccesful",
 			&err,
 			httpResponse,

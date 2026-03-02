@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -83,11 +84,13 @@ func (d *roleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		d.Auth,
 	)
 
-	roleList, _, err := d.Client.RolesAPI.GetRoles(ctx).Execute()
+	roleList, httpResponse, err := d.Client.RolesAPI.GetRoles(ctx).Execute()
 	if err != nil {
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Unable to Read IQ Roles",
-			err.Error(),
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -99,10 +102,7 @@ func (d *roleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	if data.ID.IsNull() {
-		resp.Diagnostics.AddError(
-			"Unable to find role",
-			fmt.Sprintf("Role '%s' does not exist", data.Name.ValueString()),
-		)
+		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Role", fmt.Sprintf("Role '%s' does not exist", data.Name.ValueString()))
 		return
 	}
 

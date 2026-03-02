@@ -36,6 +36,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 type sourceControlResource struct {
@@ -148,7 +149,7 @@ func (r *sourceControlResource) Create(ctx context.Context, req resource.CreateR
 
 	// Handle Error
 	if err != nil || httpResponse.StatusCode != http.StatusOK {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Error creating Source Control configuration",
 			&err,
 			httpResponse,
@@ -192,16 +193,11 @@ func (r *sourceControlResource) Read(ctx context.Context, req resource.ReadReque
 	).Execute()
 
 	if err != nil {
-		if httpResponse.StatusCode == 404 {
+		if sharederr.IsNotFound(httpResponse.StatusCode) {
 			resp.State.RemoveResource(ctx)
-			common.HandleApiWarning(
-				"Source Control configuration does not exist",
-				&err,
-				httpResponse,
-				&resp.Diagnostics,
-			)
+			sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Source Control configuration", "Configuration does not exist")
 		} else {
-			common.HandleApiError(
+			sharederr.HandleAPIError(
 				"Error Reading Source Control configuration",
 				&err,
 				httpResponse,
@@ -256,7 +252,7 @@ func (r *sourceControlResource) Update(ctx context.Context, req resource.UpdateR
 
 	// Handle Error
 	if err != nil || httpResponse.StatusCode != http.StatusOK {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Error updating Source Control configuration",
 			&err,
 			httpResponse,
@@ -297,7 +293,7 @@ func (r *sourceControlResource) Delete(ctx context.Context, req resource.DeleteR
 
 	// Handle Error
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Error removing Source Control configuration",
 			&err,
 			httpResponse,

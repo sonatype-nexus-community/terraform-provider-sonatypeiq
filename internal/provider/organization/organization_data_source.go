@@ -28,6 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -122,14 +123,16 @@ func (d *organizationDataSource) Read(ctx context.Context, req datasource.ReadRe
 		// Lookup By Org ID
 		org, r, err = d.Client.OrganizationsAPI.GetOrganization(ctx, data.ID.ValueString()).Execute()
 		if err != nil {
-			resp.Diagnostics.AddError(
+			sharederr.HandleAPIError(
 				"Unable to Read IQ Organization by ID",
-				err.Error(),
+				&err,
+				r,
+				&resp.Diagnostics,
 			)
 			return
 		}
 		if r.StatusCode != 200 {
-			resp.Diagnostics.AddError("Unexpected API Response", r.Status)
+			sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "Read Organization", "Organization", r, err)
 			return
 		}
 
@@ -140,29 +143,31 @@ func (d *organizationDataSource) Read(ctx context.Context, req datasource.ReadRe
 		get_orgs_req = get_orgs_req.OrganizationName([]string{data.Name.ValueString()})
 		orgs, r, err = get_orgs_req.Execute()
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unable to Read IQ Organization by ID",
-				err.Error(),
+			sharederr.HandleAPIError(
+				"Unable to Read IQ Organization by Name",
+				&err,
+				r,
+				&resp.Diagnostics,
 			)
 			return
 		}
 		if r.StatusCode != 200 {
-			resp.Diagnostics.AddError("Unexpected API Response", r.Status)
+			sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "Read Organizations", "Organization", r, err)
 			return
 		}
 		if len(orgs.Organizations) == 1 {
 			org = &orgs.Organizations[0]
 		} else if len(orgs.Organizations) > 1 {
-			resp.Diagnostics.AddError("More than one Organization matched the supplied name", r.Status)
+			sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Organization", "More than one Organization matched the supplied name")
 			return
 		}
 	} else {
-		resp.Diagnostics.AddError("No Organization ID or Name provided ", "ID or Name must be provided")
+		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Organization", "ID or Name must be provided")
 		return
 	}
 
 	if org == nil {
-		resp.Diagnostics.AddError("No Organization found", "No Organization found with the provided ID or Name")
+		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Organization", "No Organization found with the provided ID or Name")
 		return
 	}
 

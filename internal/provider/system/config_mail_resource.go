@@ -18,7 +18,6 @@ package system
 
 import (
 	"context"
-	"io"
 	"math/rand"
 	"strconv"
 	"terraform-provider-sonatypeiq/internal/provider/common"
@@ -31,6 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 const (
@@ -163,10 +163,11 @@ func (r *configMailResource) Create(ctx context.Context, req resource.CreateRequ
 
 	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error creating Mail Configuration",
-			"Could not create Mail Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -203,12 +204,14 @@ func (r *configMailResource) Read(ctx context.Context, req resource.ReadRequest,
 	mail_config, api_response, err := r.Client.ConfigMailAPI.GetConfiguration2(ctx).Execute()
 
 	if err != nil {
-		if api_response.StatusCode == 404 {
+		if sharederr.IsNotFound(api_response.StatusCode) {
 			resp.State.RemoveResource(ctx)
 		} else {
-			resp.Diagnostics.AddError(
+			sharederr.HandleAPIError(
 				"Error Reading IQ Mail Configuration",
-				"Could not read Mail Configuration: "+err.Error(),
+				&err,
+				api_response,
+				&resp.Diagnostics,
 			)
 		}
 		return
@@ -274,10 +277,11 @@ func (r *configMailResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error updating Mail Configuration",
-			"Could not update Mail Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -306,10 +310,11 @@ func (r *configMailResource) Delete(ctx context.Context, req resource.DeleteRequ
 	api_response, err := r.Client.ConfigMailAPI.DeleteConfiguration2(ctx).Execute()
 
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error deleting Mail Configuration",
-			"Could not delete  Mail Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}

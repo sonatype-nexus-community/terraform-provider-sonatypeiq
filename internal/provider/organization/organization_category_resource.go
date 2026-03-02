@@ -33,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // applicationCategoryResource is the resource implementation.
@@ -112,7 +113,7 @@ func (r *applicationCategoryResource) Create(ctx context.Context, req resource.C
 
 	// Handle Errors
 	if err != nil {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Error creating Application Category",
 			&err,
 			httpResponse,
@@ -121,7 +122,7 @@ func (r *applicationCategoryResource) Create(ctx context.Context, req resource.C
 		return
 	}
 	if httpResponse.StatusCode != http.StatusOK {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Creation of Application Category unsuccesful",
 			&err,
 			httpResponse,
@@ -161,7 +162,7 @@ func (r *applicationCategoryResource) Read(ctx context.Context, req resource.Rea
 
 	// Handle any errors
 	if err != nil {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Unable to read Application Categories",
 			&err,
 			httpResponse,
@@ -172,12 +173,7 @@ func (r *applicationCategoryResource) Read(ctx context.Context, req resource.Rea
 
 	if len(apiResponse) == 0 {
 		resp.State.RemoveResource(ctx)
-		common.HandleApiWarning(
-			"No Application Categories exist",
-			&err,
-			httpResponse,
-			&resp.Diagnostics,
-		)
+		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Application Categories", "No Application Categories exist")
 		return
 	}
 
@@ -192,12 +188,7 @@ func (r *applicationCategoryResource) Read(ctx context.Context, req resource.Rea
 
 	if !found {
 		resp.State.RemoveResource(ctx)
-		common.HandleApiWarning(
-			fmt.Sprintf("Application Category with ID %s does not exist", state.ID.ValueString()),
-			&err,
-			httpResponse,
-			&resp.Diagnostics,
-		)
+		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Application Category", fmt.Sprintf("Application Category with ID %s does not exist", state.ID.ValueString()))
 		return
 	}
 
@@ -240,7 +231,7 @@ func (r *applicationCategoryResource) Update(ctx context.Context, req resource.U
 
 	// Handle Errors
 	if err != nil {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Error updating Application Category",
 			&err,
 			httpResponse,
@@ -249,7 +240,7 @@ func (r *applicationCategoryResource) Update(ctx context.Context, req resource.U
 		return
 	}
 	if httpResponse.StatusCode != http.StatusOK {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Updating Application Category unsuccesful",
 			&err,
 			httpResponse,
@@ -288,16 +279,11 @@ func (r *applicationCategoryResource) Delete(ctx context.Context, req resource.D
 	).Execute()
 
 	if err != nil {
-		if httpResponse.StatusCode == http.StatusNotFound {
+		if sharederr.IsNotFound(httpResponse.StatusCode) {
 			resp.State.RemoveResource(ctx)
-			common.HandleApiWarning(
-				"Application Category does not exist in Organization with ID in state",
-				&err,
-				httpResponse,
-				&resp.Diagnostics,
-			)
+			sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Application Category", "Application Category does not exist in Organization with ID in state")
 		} else {
-			common.HandleApiError(
+			sharederr.HandleAPIError(
 				"Failed to delete Application Category",
 				&err,
 				httpResponse,
@@ -308,7 +294,7 @@ func (r *applicationCategoryResource) Delete(ctx context.Context, req resource.D
 	}
 
 	if httpResponse.StatusCode != http.StatusNoContent {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Unexpected response code deleting Application Category",
 			&err,
 			httpResponse,

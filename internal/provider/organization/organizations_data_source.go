@@ -28,6 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -122,11 +123,13 @@ func (d *organizationsDataSource) Read(ctx context.Context, req datasource.ReadR
 		d.Auth,
 	)
 
-	orgList, _, err := d.Client.OrganizationsAPI.GetOrganizations(ctx).Execute()
+	orgList, httpResponse, err := d.Client.OrganizationsAPI.GetOrganizations(ctx).Execute()
 	if err != nil {
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Unable to Read IQ Organizations",
-			err.Error(),
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}

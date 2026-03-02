@@ -19,8 +19,6 @@ package organization
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
@@ -32,6 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // organizatonRoleMembershipResource is the resource implementation.
@@ -139,10 +138,11 @@ func (r *organizationRoleMembershipResource) Create(ctx context.Context, req res
 
 	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(apiResponse.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error creating organization role membership",
-			"Could not create organization role membership, unexpected error: "+apiResponse.Status+": "+string(error_body),
+			&err,
+			apiResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -182,12 +182,14 @@ func (r *organizationRoleMembershipResource) Read(ctx context.Context, req resou
 
 	// Check if we received a list of role mappings.
 	if err != nil {
-		if apiResponse.StatusCode == http.StatusNotFound {
+		if sharederr.IsNotFound(apiResponse.StatusCode) {
 			resp.State.RemoveResource(ctx)
 		} else {
-			resp.Diagnostics.AddError(
+			sharederr.HandleAPIError(
 				"Error Reading IQ organization role membership",
-				"Could not read organization role membership with ID "+data.ID.ValueString()+": "+err.Error(),
+				&err,
+				apiResponse,
+				&resp.Diagnostics,
 			)
 		}
 		return
@@ -258,10 +260,11 @@ func (r *organizationRoleMembershipResource) Delete(ctx context.Context, req res
 	apiRequest := r.Client.RoleMembershipsAPI.RevokeRoleMembershipApplicationOrOrganization(ctx, "organization", data.OrganizationId.ValueString(), data.RoleId.ValueString(), memberType, memberName)
 	apiResponse, err := r.Client.RoleMembershipsAPI.RevokeRoleMembershipApplicationOrOrganizationExecute(apiRequest)
 	if err != nil {
-		error_body, _ := io.ReadAll(apiResponse.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error deleting organization role membership",
-			"Could not delete organization role membership, unexpected error: "+apiResponse.Status+": "+string(error_body),
+			&err,
+			apiResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}

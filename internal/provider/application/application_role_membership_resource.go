@@ -19,8 +19,6 @@ package application
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
@@ -30,6 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // applicationRoleMembershipResource is the resource implementation.
@@ -125,10 +124,11 @@ func (r *applicationRoleMembershipResource) Create(ctx context.Context, req reso
 
 	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(apiResponse.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error creating application role membership",
-			"Could not create application role membership, unexpected error: "+apiResponse.Status+": "+string(error_body),
+			&err,
+			apiResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -168,12 +168,14 @@ func (r *applicationRoleMembershipResource) Read(ctx context.Context, req resour
 
 	// Check if we received a list of role mappings.
 	if err != nil {
-		if apiResponse.StatusCode == http.StatusNotFound {
+		if sharederr.IsNotFound(apiResponse.StatusCode) {
 			resp.State.RemoveResource(ctx)
 		} else {
-			resp.Diagnostics.AddError(
+			sharederr.HandleAPIError(
 				"Error Reading IQ application role membership",
-				"Could not read application role membership with ID "+data.ID.ValueString()+": "+err.Error(),
+				&err,
+				apiResponse,
+				&resp.Diagnostics,
 			)
 		}
 		return
@@ -244,10 +246,11 @@ func (r *applicationRoleMembershipResource) Delete(ctx context.Context, req reso
 	apiRequest := r.Client.RoleMembershipsAPI.RevokeRoleMembershipApplicationOrOrganization(ctx, "application", data.ApplicationId.ValueString(), data.RoleId.ValueString(), memberType, memberName)
 	apiResponse, err := r.Client.RoleMembershipsAPI.RevokeRoleMembershipApplicationOrOrganizationExecute(apiRequest)
 	if err != nil {
-		error_body, _ := io.ReadAll(apiResponse.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error deleting application role membership",
-			"Could not delete application role membership, unexpected error: "+apiResponse.Status+": "+string(error_body),
+			&err,
+			apiResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}

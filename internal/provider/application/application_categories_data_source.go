@@ -18,6 +18,7 @@ package application
 
 import (
 	"context"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -113,14 +115,11 @@ func (d *applicationCategoriesDataSource) Read(ctx context.Context, req datasour
 	categories, api_response, err := d.Client.ApplicationCategoriesAPI.GetTags(ctx, data.OrganiziationId.ValueString()).Execute()
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read IQ Application Categories for Organization",
-			err.Error(),
-		)
+		sharederr.HandleAPIError("Unable to read IQ Application Categories for Organization", &err, api_response, &resp.Diagnostics)
 		return
 	}
-	if api_response.StatusCode != 200 {
-		resp.Diagnostics.AddError("Unexpected API Response", api_response.Status)
+	if api_response.StatusCode != http.StatusOK {
+		sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Application Categories", api_response, err)
 		return
 	}
 

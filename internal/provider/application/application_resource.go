@@ -18,7 +18,6 @@ package application
 
 import (
 	"context"
-	"io"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 	"time"
@@ -30,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 var _ resource.ResourceWithImportState = &applicationResource{}
@@ -109,11 +109,7 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 
 	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
-			"Error creating Application",
-			"Could not create Application, unexpected error: "+api_response.Status+": "+string(error_body),
-		)
+		sharederr.HandleAPIError("Error creating Application", &err, api_response, &resp.Diagnostics)
 		return
 	}
 
@@ -149,13 +145,10 @@ func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest
 	application, api_response, err := r.Client.ApplicationsAPI.GetApplication(ctx, state.ID.ValueString()).Execute()
 
 	if err != nil {
-		if api_response.StatusCode == 404 {
+		if sharederr.IsNotFound(api_response.StatusCode) {
 			resp.State.RemoveResource(ctx)
 		} else {
-			resp.Diagnostics.AddError(
-				"Error Reading IQ Application",
-				"Could not read Application with ID "+state.ID.ValueString()+": "+err.Error(),
-			)
+			sharederr.HandleAPIError("Error Reading IQ Application", &err, api_response, &resp.Diagnostics)
 		}
 		return
 	} else {
@@ -200,10 +193,7 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 	if !plan.OrganizationId.Equal(state.OrganizationId) {
 		_, apiResponse, err := r.Client.ApplicationsAPI.MoveApplication(ctx, state.ID.ValueString(), plan.OrganizationId.ValueString()).Execute()
 		if err != nil {
-			errorBody, _ := io.ReadAll(apiResponse.Body)
-			resp.Diagnostics.AddError(
-				"Error moving application", "Could not move the application("+state.ID.ValueString()+") to new organization("+plan.OrganizationId.String()+"): "+apiResponse.Status+": "+string(errorBody),
-			)
+			sharederr.HandleAPIError("Error moving application", &err, apiResponse, &resp.Diagnostics)
 			return
 		}
 	}
@@ -219,11 +209,7 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 
 	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
-			"Error updating Application",
-			"Could not update Application, unexpected error: "+api_response.Status+": "+string(error_body),
-		)
+		sharederr.HandleAPIError("Error updating Application", &err, api_response, &resp.Diagnostics)
 		return
 	}
 
@@ -256,11 +242,7 @@ func (r *applicationResource) Delete(ctx context.Context, req resource.DeleteReq
 
 	api_response, err := r.Client.ApplicationsAPI.DeleteApplication(ctx, state.ID.ValueString()).Execute()
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
-			"Error deleting Application",
-			"Could not delete Application, unexpected error: "+api_response.Status+": "+string(error_body),
-		)
+		sharederr.HandleAPIError("Error deleting Application", &err, api_response, &resp.Diagnostics)
 		return
 	}
 }

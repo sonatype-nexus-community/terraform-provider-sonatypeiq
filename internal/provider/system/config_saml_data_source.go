@@ -25,6 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -87,9 +88,11 @@ func (d *configSamlDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	apiResponse, httpResponse, err := d.Client.ConfigSAMLAPI.GetMetadata(ctx).Execute()
 
 	if err != nil && httpResponse.StatusCode != http.StatusNotFound {
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Unable to Read IQ System Configuration",
-			err.Error(),
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
 		)
 
 		return
@@ -99,7 +102,7 @@ func (d *configSamlDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		data.ID = types.StringValue("placeholder")
 		data.SamlMetadata = types.StringNull()
 	} else if httpResponse.StatusCode != http.StatusOK {
-		common.HandleApiError(
+		sharederr.HandleAPIError(
 			"Error Reading SAML configuration",
 			&err,
 			httpResponse,

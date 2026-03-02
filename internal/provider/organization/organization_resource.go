@@ -19,7 +19,6 @@ package organization
 import (
 	"context"
 	"fmt"
-	"io"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"time"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 type organizationModelResouce struct {
@@ -136,11 +136,7 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 
 	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
-			"Error creating Organization",
-			"Could not create Organization, unexpected error: "+api_response.Status+": "+string(error_body),
-		)
+		sharederr.HandleAPIError("Error creating Organization", &err, api_response, &resp.Diagnostics)
 		return
 	}
 
@@ -181,13 +177,10 @@ func (r *organizationResource) Read(ctx context.Context, req resource.ReadReques
 	)
 
 	// Get refreshed Organization from IQ
-	organization, _, err := r.Client.OrganizationsAPI.GetOrganization(ctx, state.ID.ValueString()).Execute()
+	organization, httpResponse, err := r.Client.OrganizationsAPI.GetOrganization(ctx, state.ID.ValueString()).Execute()
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading IQ Organization",
-			"Could not read Organization with ID "+state.ID.ValueString()+": "+err.Error(),
-		)
+		sharederr.HandleAPIError("Error reading Organization", &err, httpResponse, &resp.Diagnostics)
 		return
 	}
 
@@ -245,11 +238,7 @@ func (r *organizationResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	api_response, err := r.Client.OrganizationsAPI.DeleteOrganization(ctx, state.ID.ValueString()).Execute()
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
-			"Error deleting Organization",
-			"Could not delete Organization, unexpected error: "+api_response.Status+": "+string(error_body),
-		)
+		sharederr.HandleAPIError("Error deleting Organization", &err, api_response, &resp.Diagnostics)
 		return
 	}
 }

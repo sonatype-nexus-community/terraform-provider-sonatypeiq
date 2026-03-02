@@ -18,7 +18,6 @@ package system
 
 import (
 	"context"
-	"io"
 	"math/rand"
 	"strconv"
 	"terraform-provider-sonatypeiq/internal/provider/common"
@@ -29,6 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 )
 
 // systemConfigResource is the resource implementation.
@@ -106,10 +106,11 @@ func (r *systemConfigResource) Create(ctx context.Context, req resource.CreateRe
 
 	// Call API
 	if err != nil || api_response.StatusCode != 204 {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error creating System Configuration",
-			"Could not create System Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -150,10 +151,11 @@ func (r *systemConfigResource) Read(ctx context.Context, req resource.ReadReques
 	system_config, api_response, err := config_request.Execute()
 
 	if err != nil || api_response.StatusCode != 200 {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error reading System Configuration",
-			"Could not read System Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}
@@ -204,10 +206,11 @@ func (r *systemConfigResource) Update(ctx context.Context, req resource.UpdateRe
 
 	// Call API
 	if err != nil || api_response.StatusCode != 204 {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		sharederr.HandleAPIError(
 			"Error updating System Configuration",
-			"Could not update System Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			api_response,
+			&resp.Diagnostics,
 		)
 		return
 	}
