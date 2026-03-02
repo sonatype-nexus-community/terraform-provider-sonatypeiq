@@ -27,4 +27,4 @@ data "sonatypeiq_role" "developer" {
 
 ### Read-Only
 
-- `id` (String) The role ID
+- `id` (String) The ID of this resource.

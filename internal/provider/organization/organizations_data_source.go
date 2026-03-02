@@ -66,7 +66,7 @@ func (d *organizationsDataSource) Schema(_ context.Context, _ datasource.SchemaR
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Placeholder ID",
+				Description: "The ID of this resource.",
 			},
 			"organizations": sharedrschema.DataSourceComputedListNestedAttribute(
 				"List of Organizations",

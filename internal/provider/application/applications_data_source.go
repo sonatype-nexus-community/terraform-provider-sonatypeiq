@@ -66,7 +66,7 @@ func (d *applicationsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Placeholder ID",
+				Description: "The ID of this resource.",
 			},
 			"applications": sharedrschema.DataSourceComputedListNestedAttribute(
 				"List of Applications",

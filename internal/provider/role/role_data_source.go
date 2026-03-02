@@ -61,7 +61,7 @@ func (d *roleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 	resp.Schema = schema.Schema{
 		Description: "Use this data source to get a role",
 		Attributes: map[string]schema.Attribute{
-			"id":   sharedrschema.ResourceComputedString("The role ID"),
+			"id":   sharedrschema.ResourceComputedString("The ID of this resource."),
 			"name": sharedrschema.ResourceRequiredString("The role name"),
 		},
 	}

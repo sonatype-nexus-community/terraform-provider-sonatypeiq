@@ -65,7 +65,7 @@ func (d *applicationCategoriesDataSource) Schema(_ context.Context, req datasour
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Placeholder ID",
+				Description: "The ID of this resource.",
 			},
 			"organization_id": schema.StringAttribute{
 				Description: "Internal ID of the Organization to which this Application belongs - use 'ROOT_ORGANIZATION_ID' for the Root Organization",

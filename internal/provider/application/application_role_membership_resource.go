@@ -59,7 +59,7 @@ func (r *applicationRoleMembershipResource) Metadata(_ context.Context, req reso
 func (r *applicationRoleMembershipResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id":             sharedrschema.ResourceComputedString("The role membership ID"),
+			"id":             sharedrschema.ResourceComputedString("The ID of this resource."),
 			"role_id":        sharedrschema.ResourceRequiredString("The role ID"),
 			"application_id": sharedrschema.ResourceRequiredString("The application ID"),
 			"user_name":      sharedrschema.ResourceOptionalString("The username of the user (mutually exclusive with group_name)"),

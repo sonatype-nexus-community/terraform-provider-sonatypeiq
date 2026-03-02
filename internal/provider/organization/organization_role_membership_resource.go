@@ -61,7 +61,7 @@ func (r *organizationRoleMembershipResource) Metadata(_ context.Context, req res
 func (r *organizationRoleMembershipResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id":              sharedrschema.ResourceComputedString("The role membership ID"),
+			"id":              sharedrschema.ResourceComputedString("The ID of this resource."),
 			"role_id":         sharedrschema.ResourceRequiredStringWithPlanModifier("The role ID", []planmodifier.String{stringplanmodifier.RequiresReplace()}),
 			"organization_id": sharedrschema.ResourceRequiredStringWithPlanModifier("The organization ID", []planmodifier.String{stringplanmodifier.RequiresReplace()}),
 			"user_name":       sharedrschema.ResourceOptionalStringWithPlanModifier("The username of the user (mutually exclusive with group_name)", stringplanmodifier.RequiresReplace()),

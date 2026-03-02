@@ -29,7 +29,7 @@ data "sonatypeiq_application_categories" "categories" {
 ### Read-Only
 
 - `categories` (Attributes List) List of Categories defined for this Organization (see [below for nested schema](#nestedatt--categories))
-- `id` (String) Placeholder ID
+- `id` (String) The ID of this resource.
 
 <a id="nestedatt--categories"></a>
 ### Nested Schema for `categories`
