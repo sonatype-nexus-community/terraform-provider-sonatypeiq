@@ -30,6 +30,7 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -147,20 +148,20 @@ func (d *applicationsDataSource) Read(ctx context.Context, req datasource.ReadRe
 	for _, application := range applicationList.Applications {
 		var contactUserName = types.StringNull()
 		if application.ContactUserName != nil {
-			contactUserName = types.StringValue(*application.ContactUserName)
+			contactUserName = sharedutil.StringPtrToValue(application.ContactUserName)
 		}
 		applicationState := model.ApplicationModel{
-			ID:              types.StringValue(*application.Id),
-			PublicId:        types.StringValue(*application.PublicId),
-			Name:            types.StringValue(*application.Name),
-			OrganizationId:  types.StringValue(*application.OrganizationId),
+			ID:              sharedutil.StringPtrToValue(application.Id),
+			PublicId:        sharedutil.StringPtrToValue(application.PublicId),
+			Name:            sharedutil.StringPtrToValue(application.Name),
+			OrganizationId:  sharedutil.StringPtrToValue(application.OrganizationId),
 			ContactUserName: contactUserName,
 		}
 		for _, tag := range application.ApplicationTags {
 			applicationState.ApplicationTags = append(applicationState.ApplicationTags, model.ApplicationTagLinkModel{
-				ID:            types.StringValue(*tag.Id),
-				TagId:         types.StringValue(*tag.TagId),
-				ApplicationId: types.StringValue(*tag.ApplicationId),
+				ID:            sharedutil.StringPtrToValue(tag.Id),
+				TagId:         sharedutil.StringPtrToValue(tag.TagId),
+				ApplicationId: sharedutil.StringPtrToValue(tag.ApplicationId),
 			})
 		}
 

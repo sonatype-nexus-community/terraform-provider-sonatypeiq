@@ -31,6 +31,7 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 var _ resource.ResourceWithImportState = &applicationResource{}
@@ -83,10 +84,10 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 
 	application_request := r.Client.ApplicationsAPI.AddApplication(ctx)
 	application_request = application_request.ApiApplicationDTO(sonatypeiq.ApiApplicationDTO{
-		Name:            plan.Name.ValueStringPointer(),
-		PublicId:        plan.PublicId.ValueStringPointer(),
-		OrganizationId:  plan.OrganizationId.ValueStringPointer(),
-		ContactUserName: plan.ContactUserName.ValueStringPointer(),
+		Name:            sharedutil.StringToPtr(plan.Name.ValueString()),
+		PublicId:        sharedutil.StringToPtr(plan.PublicId.ValueString()),
+		OrganizationId:  sharedutil.StringToPtr(plan.OrganizationId.ValueString()),
+		ContactUserName: sharedutil.StringToPtr(plan.ContactUserName.ValueString()),
 	})
 	application, api_response, err := application_request.Execute()
 
@@ -97,7 +98,7 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 	}
 
 	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(*application.Id)
+	plan.ID = sharedutil.StringPtrToValue(application.Id)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
 	// Set state to fully populated data
@@ -136,18 +137,14 @@ func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	} else {
 		// Overwrite items with refreshed state
-		state.ID = types.StringValue(*application.Id)
-		state.Name = types.StringValue(*application.Name)
-		state.PublicId = types.StringValue(*application.PublicId)
-		state.OrganizationId = types.StringValue(*application.OrganizationId)
+		state.ID = sharedutil.StringPtrToValue(application.Id)
+		state.Name = sharedutil.StringPtrToValue(application.Name)
+		state.PublicId = sharedutil.StringPtrToValue(application.PublicId)
+		state.OrganizationId = sharedutil.StringPtrToValue(application.OrganizationId)
 		if state.LastUpdated == types.StringValue("") {
 			state.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 		}
-		if application.ContactUserName != nil {
-			state.ContactUserName = types.StringValue(*application.ContactUserName)
-		} else {
-			state.ContactUserName = types.StringNull()
-		}
+		state.ContactUserName = sharedutil.StringPtrToValue(application.ContactUserName)
 	}
 
 	// Set refreshed state
@@ -182,10 +179,10 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 	app_update_request := r.Client.ApplicationsAPI.UpdateApplication(ctx, state.ID.ValueString())
 	app_update_request = app_update_request.ApiApplicationDTO(sonatypeiq.ApiApplicationDTO{
-		Name:            plan.Name.ValueStringPointer(),
-		PublicId:        plan.PublicId.ValueStringPointer(),
-		OrganizationId:  plan.OrganizationId.ValueStringPointer(),
-		ContactUserName: plan.ContactUserName.ValueStringPointer(),
+		Name:            sharedutil.StringToPtr(plan.Name.ValueString()),
+		PublicId:        sharedutil.StringToPtr(plan.PublicId.ValueString()),
+		OrganizationId:  sharedutil.StringToPtr(plan.OrganizationId.ValueString()),
+		ContactUserName: sharedutil.StringToPtr(plan.ContactUserName.ValueString()),
 	})
 
 	application, api_response, err := app_update_request.Execute()
@@ -197,7 +194,7 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(*application.Id)
+	plan.ID = sharedutil.StringPtrToValue(application.Id)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
 	// Set state to fully populated data

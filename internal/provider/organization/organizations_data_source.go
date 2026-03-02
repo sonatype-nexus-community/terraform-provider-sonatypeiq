@@ -30,6 +30,7 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -140,20 +141,20 @@ func (d *organizationsDataSource) Read(ctx context.Context, req datasource.ReadR
 		var parentOrgId = types.StringNull()
 		if organization.ParentOrganizationId != nil {
 			tflog.Debug(ctx, fmt.Sprintf("Parent Org Id is %s", *organization.ParentOrganizationId))
-			parentOrgId = types.StringValue(*organization.ParentOrganizationId)
+			parentOrgId = sharedutil.StringPtrToValue(organization.ParentOrganizationId)
 		}
 		organizationState := model.OrganizationModel{
-			ID:                    types.StringValue(*organization.Id),
-			Name:                  types.StringValue(*organization.Name),
+			ID:                    sharedutil.StringPtrToValue(organization.Id),
+			Name:                  sharedutil.StringPtrToValue(organization.Name),
 			ParentOrganiziationId: parentOrgId,
 		}
 
 		for _, tag := range organization.Tags {
 			organizationState.Tags = append(organizationState.Tags, model.TagModel{
-				ID:          types.StringValue(*tag.Id),
-				Name:        types.StringValue(*tag.Name),
-				Description: types.StringValue(*tag.Description),
-				Color:       types.StringValue(*tag.Color),
+				ID:          sharedutil.StringPtrToValue(tag.Id),
+				Name:        sharedutil.StringPtrToValue(tag.Name),
+				Description: sharedutil.StringPtrToValue(tag.Description),
+				Color:       sharedutil.StringPtrToValue(tag.Color),
 			})
 		}
 

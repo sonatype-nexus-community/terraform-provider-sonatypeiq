@@ -30,6 +30,7 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // userResource is the resource implementation.
@@ -113,12 +114,12 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	user_request := r.Client.UsersAPI.Add(ctx)
 	user_config := sonatypeiq.ApiUserDTO{
-		Username:  plan.Username.ValueStringPointer(),
-		Password:  plan.Password.ValueStringPointer(),
-		FirstName: plan.FirstName.ValueStringPointer(),
-		LastName:  plan.LastName.ValueStringPointer(),
-		Email:     plan.Email.ValueStringPointer(),
-		Realm:     plan.Realm.ValueStringPointer(),
+		Username:  sharedutil.StringToPtr(plan.Username.ValueString()),
+		Password:  sharedutil.StringToPtr(plan.Password.ValueString()),
+		FirstName: sharedutil.StringToPtr(plan.FirstName.ValueString()),
+		LastName:  sharedutil.StringToPtr(plan.LastName.ValueString()),
+		Email:     sharedutil.StringToPtr(plan.Email.ValueString()),
+		Realm:     sharedutil.StringToPtr(plan.Realm.ValueString()),
 	}
 	user_request = user_request.ApiUserDTO(user_config)
 	api_response, err := user_request.Execute()
@@ -173,10 +174,10 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	state.FirstName = types.StringValue(*user.FirstName)
-	state.LastName = types.StringValue(*user.LastName)
-	state.Email = types.StringValue(*user.Email)
-	state.Realm = types.StringValue(*user.Realm)
+	state.FirstName = sharedutil.StringPtrToValue(user.FirstName)
+	state.LastName = sharedutil.StringPtrToValue(user.LastName)
+	state.Email = sharedutil.StringPtrToValue(user.Email)
+	state.Realm = sharedutil.StringPtrToValue(user.Realm)
 
 	// Set refreshed state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -220,15 +221,15 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	user_request := r.Client.UsersAPI.Update(ctx, state.Username.ValueString())
 	user_config := sonatypeiq.ApiUserDTO{
-		Username:  plan.Username.ValueStringPointer(),
-		FirstName: plan.FirstName.ValueStringPointer(),
-		LastName:  plan.LastName.ValueStringPointer(),
-		Email:     plan.Email.ValueStringPointer(),
-		Realm:     plan.Realm.ValueStringPointer(),
+		Username:  sharedutil.StringToPtr(plan.Username.ValueString()),
+		FirstName: sharedutil.StringToPtr(plan.FirstName.ValueString()),
+		LastName:  sharedutil.StringToPtr(plan.LastName.ValueString()),
+		Email:     sharedutil.StringToPtr(plan.Email.ValueString()),
+		Realm:     sharedutil.StringToPtr(plan.Realm.ValueString()),
 	}
 	// Changing User Password not supported by IQ
 	// if !plan.Password.IsNull() {
-	// 	user_config.Password = plan.Password.ValueStringPointer()
+	// 	user_config.Password = sharedutil.StringToPtr(plan.Password.ValueString())
 	// }
 	user_request = user_request.ApiUserDTO(user_config)
 	user, api_response, err := user_request.Execute()
@@ -245,11 +246,11 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	// Map response body to schema and populate Computed attribute values
-	plan.Username = types.StringValue(*user.Username)
-	plan.FirstName = types.StringValue(*user.FirstName)
-	plan.LastName = types.StringValue(*user.LastName)
-	plan.Email = types.StringValue(*user.Email)
-	plan.Realm = types.StringValue(*user.Realm)
+	plan.Username = sharedutil.StringPtrToValue(user.Username)
+	plan.FirstName = sharedutil.StringPtrToValue(user.FirstName)
+	plan.LastName = sharedutil.StringPtrToValue(user.LastName)
+	plan.Email = sharedutil.StringPtrToValue(user.Email)
+	plan.Realm = sharedutil.StringPtrToValue(user.Realm)
 	plan.GenerateID()
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 

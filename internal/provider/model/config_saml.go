@@ -19,6 +19,7 @@ package model
 import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 type SecuritySamlModel struct {
@@ -35,26 +36,26 @@ type SecuritySamlModel struct {
 }
 
 func (m *SecuritySamlModel) MapToApi(api *sonatypeiq.ApiSamlConfigurationDTO) {
-	api.IdentityProviderName = m.IdentityProviderName.ValueStringPointer()
-	api.EntityId = m.EntityId.ValueStringPointer()
-	api.FirstNameAttributeName = m.FirstNameAttribute.ValueStringPointer()
-	api.LastNameAttributeName = m.LastNameAttribute.ValueStringPointer()
-	api.EmailAttributeName = m.EmailAttribute.ValueStringPointer()
-	api.UsernameAttributeName = m.UsernameAttribute.ValueStringPointer()
-	api.GroupsAttributeName = m.GroupsAttribute.ValueStringPointer()
-	api.ValidateAssertionSignature = m.ValidateAssertionSignature.ValueBoolPointer()
-	api.ValidateResponseSignature = m.ValidateResponseSignature.ValueBoolPointer()
+	api.IdentityProviderName = sharedutil.StringToPtr(m.IdentityProviderName.ValueString())
+	api.EntityId = sharedutil.StringToPtr(m.EntityId.ValueString())
+	api.FirstNameAttributeName = sharedutil.StringToPtr(m.FirstNameAttribute.ValueString())
+	api.LastNameAttributeName = sharedutil.StringToPtr(m.LastNameAttribute.ValueString())
+	api.EmailAttributeName = sharedutil.StringToPtr(m.EmailAttribute.ValueString())
+	api.UsernameAttributeName = sharedutil.StringToPtr(m.UsernameAttribute.ValueString())
+	api.GroupsAttributeName = sharedutil.StringToPtr(m.GroupsAttribute.ValueString())
+	api.ValidateAssertionSignature = sharedutil.BoolToPtr(m.ValidateAssertionSignature.ValueBool())
+	api.ValidateResponseSignature = sharedutil.BoolToPtr(m.ValidateResponseSignature.ValueBool())
 }
 
 func (m *SecuritySamlModel) MapFromApi(api *sonatypeiq.ApiSamlConfigurationResponseDTO) {
-	m.IdentityProviderName = types.StringPointerValue(api.IdentityProviderName)
-	m.IdpMetadata = types.StringPointerValue(api.IdentityProviderMetadataXml)
-	m.UsernameAttribute = types.StringPointerValue(api.UsernameAttributeName)
-	m.FirstNameAttribute = types.StringPointerValue(api.FirstNameAttributeName)
-	m.LastNameAttribute = types.StringPointerValue(api.LastNameAttributeName)
-	m.EmailAttribute = types.StringPointerValue(api.EmailAttributeName)
-	m.GroupsAttribute = types.StringPointerValue(api.GroupsAttributeName)
-	m.ValidateResponseSignature = types.BoolPointerValue(api.ValidateResponseSignature)
-	m.ValidateAssertionSignature = types.BoolPointerValue(api.ValidateAssertionSignature)
-	m.EntityId = types.StringPointerValue(api.EntityId)
+	m.IdentityProviderName = sharedutil.StringPtrToValue(api.IdentityProviderName)
+	m.IdpMetadata = sharedutil.StringPtrToValue(api.IdentityProviderMetadataXml)
+	m.UsernameAttribute = sharedutil.StringPtrToValue(api.UsernameAttributeName)
+	m.FirstNameAttribute = sharedutil.StringPtrToValue(api.FirstNameAttributeName)
+	m.LastNameAttribute = sharedutil.StringPtrToValue(api.LastNameAttributeName)
+	m.EmailAttribute = sharedutil.StringPtrToValue(api.EmailAttributeName)
+	m.GroupsAttribute = sharedutil.StringPtrToValue(api.GroupsAttributeName)
+	m.ValidateResponseSignature = sharedutil.BoolPtrToValue(api.ValidateResponseSignature)
+	m.ValidateAssertionSignature = sharedutil.BoolPtrToValue(api.ValidateAssertionSignature)
+	m.EntityId = sharedutil.StringPtrToValue(api.EntityId)
 }

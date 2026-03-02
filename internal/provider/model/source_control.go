@@ -19,6 +19,7 @@ package model
 import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 type SourceControlModelResource struct {
@@ -36,27 +37,27 @@ type SourceControlModelResource struct {
 }
 
 func (m *SourceControlModelResource) MapFromApi(api *sonatypeiq.ApiSourceControlDTO) {
-	m.ID = types.StringPointerValue(api.OwnerId)
+	m.ID = sharedutil.StringPtrToValue(api.OwnerId)
 	// if m.OwnerType.ValueString() == common.OWNER_TYPE_APPLICATION {
-	m.RepositoryUrl = types.StringPointerValue(api.RepositoryUrl)
+	m.RepositoryUrl = sharedutil.StringPtrToValue(api.RepositoryUrl)
 	// }
-	m.BaseBranch = types.StringPointerValue(api.BaseBranch)
-	m.UserName = types.StringPointerValue(api.Username)
-	m.RemediationPullRequestsEnabled = types.BoolPointerValue(api.RemediationPullRequestsEnabled)
-	m.PullRequestCommentingEnabled = types.BoolPointerValue(api.PullRequestCommentingEnabled)
-	m.SourceControlEvaluationsEnabled = types.BoolPointerValue(api.SourceControlEvaluationsEnabled)
+	m.BaseBranch = sharedutil.StringPtrToValue(api.BaseBranch)
+	m.UserName = sharedutil.StringPtrToValue(api.Username)
+	m.RemediationPullRequestsEnabled = sharedutil.BoolPtrToValue(api.RemediationPullRequestsEnabled)
+	m.PullRequestCommentingEnabled = sharedutil.BoolPtrToValue(api.PullRequestCommentingEnabled)
+	m.SourceControlEvaluationsEnabled = sharedutil.BoolPtrToValue(api.SourceControlEvaluationsEnabled)
 	// Token
-	m.ScmProvider = types.StringPointerValue(api.Provider)
+	m.ScmProvider = sharedutil.StringPtrToValue(api.Provider)
 }
 
 func (m *SourceControlModelResource) MapToApi(api *sonatypeiq.ApiSourceControlDTO) {
-	api.OwnerId = m.ID.ValueStringPointer()
-	api.RepositoryUrl = m.RepositoryUrl.ValueStringPointer()
-	api.BaseBranch = m.BaseBranch.ValueStringPointer()
-	api.Username = m.UserName.ValueStringPointer()
-	api.RemediationPullRequestsEnabled = m.RemediationPullRequestsEnabled.ValueBoolPointer()
-	api.PullRequestCommentingEnabled = m.PullRequestCommentingEnabled.ValueBoolPointer()
-	api.SourceControlEvaluationsEnabled = m.SourceControlEvaluationsEnabled.ValueBoolPointer()
-	api.Token = m.Token.ValueStringPointer()
-	api.Provider = m.ScmProvider.ValueStringPointer()
+	api.OwnerId = sharedutil.StringToPtr(m.ID.ValueString())
+	api.RepositoryUrl = sharedutil.StringToPtr(m.RepositoryUrl.ValueString())
+	api.BaseBranch = sharedutil.StringToPtr(m.BaseBranch.ValueString())
+	api.Username = sharedutil.StringToPtr(m.UserName.ValueString())
+	api.RemediationPullRequestsEnabled = sharedutil.BoolToPtr(m.RemediationPullRequestsEnabled.ValueBool())
+	api.PullRequestCommentingEnabled = sharedutil.BoolToPtr(m.PullRequestCommentingEnabled.ValueBool())
+	api.SourceControlEvaluationsEnabled = sharedutil.BoolToPtr(m.SourceControlEvaluationsEnabled.ValueBool())
+	api.Token = sharedutil.StringToPtr(m.Token.ValueString())
+	api.Provider = sharedutil.StringToPtr(m.ScmProvider.ValueString())
 }

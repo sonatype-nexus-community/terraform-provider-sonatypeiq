@@ -22,7 +22,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
@@ -30,6 +29,7 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -168,22 +168,18 @@ func (d *applicationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	var contactUserName = types.StringNull()
-	if app.ContactUserName != nil {
-		contactUserName = types.StringValue(*app.ContactUserName)
-	}
 	appModel := model.ApplicationModel{
-		ID:              types.StringValue(*app.Id),
-		PublicId:        types.StringValue(*app.PublicId),
-		Name:            types.StringValue(*app.Name),
-		OrganizationId:  types.StringValue(*app.OrganizationId),
-		ContactUserName: contactUserName,
+		ID:              sharedutil.StringPtrToValue(app.Id),
+		PublicId:        sharedutil.StringPtrToValue(app.PublicId),
+		Name:            sharedutil.StringPtrToValue(app.Name),
+		OrganizationId:  sharedutil.StringPtrToValue(app.OrganizationId),
+		ContactUserName: sharedutil.StringPtrToValue(app.ContactUserName),
 	}
 	for _, tag := range app.ApplicationTags {
 		appModel.ApplicationTags = append(appModel.ApplicationTags, model.ApplicationTagLinkModel{
-			ID:            types.StringValue(*tag.Id),
-			TagId:         types.StringValue(*tag.TagId),
-			ApplicationId: types.StringValue(*tag.ApplicationId),
+			ID:            sharedutil.StringPtrToValue(tag.Id),
+			TagId:         sharedutil.StringPtrToValue(tag.TagId),
+			ApplicationId: sharedutil.StringPtrToValue(tag.ApplicationId),
 		})
 	}
 

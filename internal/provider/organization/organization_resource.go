@@ -31,6 +31,7 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 type organizationModelResouce struct {
@@ -97,8 +98,8 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 
 	organization_request := r.Client.OrganizationsAPI.AddOrganization(ctx)
 	orgDto := sonatypeiq.ApiOrganizationDTO{
-		Name:                 plan.Name.ValueStringPointer(),
-		ParentOrganizationId: plan.ParentOrganiziationId.ValueStringPointer(),
+		Name:                 sharedutil.StringToPtr(plan.Name.ValueString()),
+		ParentOrganizationId: sharedutil.StringToPtr(plan.ParentOrganiziationId.ValueString()),
 	}
 
 	// if !plan.Tags.IsNull() && !plan.Tags.IsUnknown() && len(plan.Tags.Elements()) > 0 {
@@ -127,9 +128,9 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(*organization.Id)
-	plan.Name = types.StringValue(*organization.Name)
-	plan.ParentOrganiziationId = types.StringValue(*organization.ParentOrganizationId)
+	plan.ID = sharedutil.StringPtrToValue(organization.Id)
+	plan.Name = sharedutil.StringPtrToValue(organization.Name)
+	plan.ParentOrganiziationId = sharedutil.StringPtrToValue(organization.ParentOrganizationId)
 	// plan.Tags = []tagModel{}
 	// for _, tagDto := range organization.Tags {
 	// 	plan.Tags = append(plan.Tags, tagModel{
@@ -171,9 +172,9 @@ func (r *organizationResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	// Overwrite items with refreshed state
-	state.ID = types.StringValue(*organization.Id)
-	state.Name = types.StringValue(*organization.Name)
-	state.ParentOrganiziationId = types.StringValue(*organization.ParentOrganizationId)
+	state.ID = sharedutil.StringPtrToValue(organization.Id)
+	state.Name = sharedutil.StringPtrToValue(organization.Name)
+	state.ParentOrganiziationId = sharedutil.StringPtrToValue(organization.ParentOrganizationId)
 
 	// if len(organization.Tags) > 0 {
 	// 	tflog.Debug(ctx, "Adding Tag to Organization Read response...")

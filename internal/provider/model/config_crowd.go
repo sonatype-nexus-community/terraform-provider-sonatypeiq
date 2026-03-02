@@ -19,6 +19,7 @@ package model
 import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 type ConfigCrowdModel struct {
@@ -29,12 +30,12 @@ type ConfigCrowdModel struct {
 }
 
 func (m *ConfigCrowdModel) MapFromApi(api *sonatypeiq.ApiCrowdConfigurationDTO) {
-	m.ServerUrl = types.StringPointerValue(api.ServerUrl)
-	m.ApplicationName = types.StringPointerValue(api.ApplicationName)
+	m.ServerUrl = sharedutil.StringPtrToValue(api.ServerUrl)
+	m.ApplicationName = sharedutil.StringPtrToValue(api.ApplicationName)
 }
 
 func (m *ConfigCrowdModel) MapToApi(api *sonatypeiq.ApiCrowdConfigurationDTO) {
-	api.ServerUrl = m.ServerUrl.ValueStringPointer()
-	api.ApplicationName = m.ApplicationName.ValueStringPointer()
-	api.ApplicationPassword = m.ApplicationPassword.ValueStringPointer()
+	api.ServerUrl = sharedutil.StringToPtr(m.ServerUrl.ValueString())
+	api.ApplicationName = sharedutil.StringToPtr(m.ApplicationName.ValueString())
+	api.ApplicationPassword = sharedutil.StringToPtr(m.ApplicationPassword.ValueString())
 }

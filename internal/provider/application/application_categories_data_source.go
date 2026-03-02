@@ -28,6 +28,7 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -126,10 +127,10 @@ func (d *applicationCategoriesDataSource) Read(ctx context.Context, req datasour
 
 	for _, category := range categories {
 		data.Categories = append(data.Categories, model.TagModel{
-			ID:          types.StringValue(*category.Id),
-			Name:        types.StringValue(*category.Name),
-			Description: types.StringValue(*category.Description),
-			Color:       types.StringValue(*category.Color),
+			ID:          sharedutil.StringPtrToValue(category.Id),
+			Name:        sharedutil.StringPtrToValue(category.Name),
+			Description: sharedutil.StringPtrToValue(category.Description),
+			Color:       sharedutil.StringPtrToValue(category.Color),
 		})
 	}
 
