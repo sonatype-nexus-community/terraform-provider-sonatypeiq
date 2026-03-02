@@ -130,7 +130,7 @@ func (r *sourceControlResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Set the state to fully populated data
-	// plan.ID = types.StringValue(*sourceControl.OwnerId)
+	// plan.ID = sharedutil.StringPtrToValue(sourceControl.OwnerId)
 	diags := resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

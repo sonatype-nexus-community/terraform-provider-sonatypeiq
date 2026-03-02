@@ -30,6 +30,7 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // systemConfigResource is the resource implementation.
@@ -87,10 +88,10 @@ func (r *systemConfigResource) Create(ctx context.Context, req resource.CreateRe
 	config_request := r.Client.ConfigurationAPI.SetConfiguration(ctx)
 	system_config := sonatypeiq.SystemConfig{}
 	if !plan.BaseURL.IsNull() {
-		system_config.BaseUrl = *sonatypeiq.NewNullableString(plan.BaseURL.ValueStringPointer())
+		system_config.BaseUrl = *sonatypeiq.NewNullableString(sharedutil.StringToPtr(plan.BaseURL.ValueString()))
 	}
 	if !plan.ForceBaseURL.IsNull() {
-		system_config.ForceBaseUrl = *sonatypeiq.NewNullableBool(plan.ForceBaseURL.ValueBoolPointer())
+		system_config.ForceBaseUrl = *sonatypeiq.NewNullableBool(sharedutil.BoolToPtr(plan.ForceBaseURL.ValueBool()))
 	}
 	config_request = config_request.SystemConfig(system_config)
 	api_response, err := config_request.Execute()
@@ -187,10 +188,10 @@ func (r *systemConfigResource) Update(ctx context.Context, req resource.UpdateRe
 	config_request := r.Client.ConfigurationAPI.SetConfiguration(ctx)
 	system_config := sonatypeiq.SystemConfig{}
 	if !plan.BaseURL.IsNull() {
-		system_config.BaseUrl = *sonatypeiq.NewNullableString(plan.BaseURL.ValueStringPointer())
+		system_config.BaseUrl = *sonatypeiq.NewNullableString(sharedutil.StringToPtr(plan.BaseURL.ValueString()))
 	}
 	if !plan.ForceBaseURL.IsNull() {
-		system_config.ForceBaseUrl = *sonatypeiq.NewNullableBool(plan.ForceBaseURL.ValueBoolPointer())
+		system_config.ForceBaseUrl = *sonatypeiq.NewNullableBool(sharedutil.BoolToPtr(plan.ForceBaseURL.ValueBool()))
 	}
 	config_request = config_request.SystemConfig(system_config)
 	api_response, err := config_request.Execute()

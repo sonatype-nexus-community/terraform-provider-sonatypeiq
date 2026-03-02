@@ -30,6 +30,7 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // configProxyServerResource is the resource implementation.
@@ -95,12 +96,12 @@ func (r *configProxyServerResource) Create(ctx context.Context, req resource.Cre
 	var port = new(int32)
 	*port = int32(plan.Port.ValueInt64())
 	proxy_config := sonatypeiq.ApiProxyServerConfigurationDTO{
-		Hostname: plan.Hostname.ValueStringPointer(),
+		Hostname: sharedutil.StringToPtr(plan.Hostname.ValueString()),
 		Port:     port,
-		Username: plan.Username.ValueStringPointer(),
+		Username: sharedutil.StringToPtr(plan.Username.ValueString()),
 	}
 	if !plan.Password.IsNull() {
-		proxy_config.Password = plan.Password.ValueStringPointer()
+		proxy_config.Password = sharedutil.StringToPtr(plan.Password.ValueString())
 		proxy_config.SetPasswordIsIncluded(true)
 	} else {
 		proxy_config.SetPasswordIsIncluded(false)
@@ -171,11 +172,11 @@ func (r *configProxyServerResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	// Overwrite items with refreshed state
-	state.Hostname = types.StringValue(*proxy_config.Hostname)
+	state.Hostname = sharedutil.StringPtrToValue(proxy_config.Hostname)
 	state.Port = types.Int64Value(int64(*proxy_config.Port))
-	state.Username = types.StringValue(*proxy_config.Username)
+	state.Username = sharedutil.StringPtrToValue(proxy_config.Username)
 	state.Password = types.StringNull()
-	state.PasswordIsIncluded = types.BoolValue(*proxy_config.PasswordIsIncluded)
+	state.PasswordIsIncluded = sharedutil.BoolPtrToValue(proxy_config.PasswordIsIncluded)
 	state.ExcludeHosts, _ = types.SetValueFrom(ctx, types.StringType, proxy_config.ExcludeHosts)
 
 	// Set refreshed state
@@ -205,12 +206,12 @@ func (r *configProxyServerResource) Update(ctx context.Context, req resource.Upd
 	var port = new(int32)
 	*port = int32(plan.Port.ValueInt64())
 	proxy_config := sonatypeiq.ApiProxyServerConfigurationDTO{
-		Hostname: plan.Hostname.ValueStringPointer(),
+		Hostname: sharedutil.StringToPtr(plan.Hostname.ValueString()),
 		Port:     port,
-		Username: plan.Username.ValueStringPointer(),
+		Username: sharedutil.StringToPtr(plan.Username.ValueString()),
 	}
 	if !plan.Password.IsNull() {
-		proxy_config.Password = plan.Password.ValueStringPointer()
+		proxy_config.Password = sharedutil.StringToPtr(plan.Password.ValueString())
 		proxy_config.SetPasswordIsIncluded(true)
 	} else {
 		proxy_config.SetPasswordIsIncluded(false)

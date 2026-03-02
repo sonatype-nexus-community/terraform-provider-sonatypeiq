@@ -30,6 +30,7 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 const (
@@ -105,15 +106,15 @@ func (r *configMailResource) Create(ctx context.Context, req resource.CreateRequ
 	var port = new(int32)
 	*port = int32(plan.Port.ValueInt64())
 	mail_config := sonatypeiq.ApiMailConfigurationDTO{
-		Hostname:        plan.Hostname.ValueStringPointer(),
+		Hostname:        sharedutil.StringToPtr(plan.Hostname.ValueString()),
 		Port:            port,
-		Username:        plan.Username.ValueStringPointer(),
-		SslEnabled:      plan.SSLEnabled.ValueBoolPointer(),
-		StartTlsEnabled: plan.StartTLSEnabled.ValueBoolPointer(),
-		SystemEmail:     plan.SystemEmail.ValueStringPointer(),
+		Username:        sharedutil.StringToPtr(plan.Username.ValueString()),
+		SslEnabled:      sharedutil.BoolToPtr(plan.SSLEnabled.ValueBool()),
+		StartTlsEnabled: sharedutil.BoolToPtr(plan.StartTLSEnabled.ValueBool()),
+		SystemEmail:     sharedutil.StringToPtr(plan.SystemEmail.ValueString()),
 	}
 	if !plan.Password.IsNull() {
-		mail_config.Password = plan.Password.ValueStringPointer()
+		mail_config.Password = sharedutil.StringToPtr(plan.Password.ValueString())
 		mail_config.SetPasswordIsIncluded(true)
 	} else {
 		mail_config.SetPasswordIsIncluded(false)
@@ -180,17 +181,17 @@ func (r *configMailResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	// Overwrite items with refreshed state
-	state.Hostname = types.StringValue(*mail_config.Hostname)
+	state.Hostname = sharedutil.StringPtrToValue(mail_config.Hostname)
 	state.Port = types.Int64Value(int64(*mail_config.Port))
 	state.Username = types.StringNull()
 	if mail_config.HasUsername() {
-		state.Username = types.StringValue(*mail_config.Username)
+		state.Username = sharedutil.StringPtrToValue(mail_config.Username)
 	}
 	state.Password = types.StringNull()
-	state.PasswordIsIncluded = types.BoolValue(*mail_config.PasswordIsIncluded)
-	state.SSLEnabled = types.BoolValue(*mail_config.SslEnabled)
-	state.StartTLSEnabled = types.BoolValue(*mail_config.StartTlsEnabled)
-	state.SystemEmail = types.StringValue(*mail_config.SystemEmail)
+	state.PasswordIsIncluded = sharedutil.BoolPtrToValue(mail_config.PasswordIsIncluded)
+	state.SSLEnabled = sharedutil.BoolPtrToValue(mail_config.SslEnabled)
+	state.StartTLSEnabled = sharedutil.BoolPtrToValue(mail_config.StartTlsEnabled)
+	state.SystemEmail = sharedutil.StringPtrToValue(mail_config.SystemEmail)
 
 	// Set refreshed state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -219,15 +220,15 @@ func (r *configMailResource) Update(ctx context.Context, req resource.UpdateRequ
 	var port = new(int32)
 	*port = int32(plan.Port.ValueInt64())
 	mail_config := sonatypeiq.ApiMailConfigurationDTO{
-		Hostname:        plan.Hostname.ValueStringPointer(),
+		Hostname:        sharedutil.StringToPtr(plan.Hostname.ValueString()),
 		Port:            port,
-		Username:        plan.Username.ValueStringPointer(),
-		SslEnabled:      plan.SSLEnabled.ValueBoolPointer(),
-		StartTlsEnabled: plan.StartTLSEnabled.ValueBoolPointer(),
-		SystemEmail:     plan.SystemEmail.ValueStringPointer(),
+		Username:        sharedutil.StringToPtr(plan.Username.ValueString()),
+		SslEnabled:      sharedutil.BoolToPtr(plan.SSLEnabled.ValueBool()),
+		StartTlsEnabled: sharedutil.BoolToPtr(plan.StartTLSEnabled.ValueBool()),
+		SystemEmail:     sharedutil.StringToPtr(plan.SystemEmail.ValueString()),
 	}
 	if !plan.Password.IsNull() {
-		mail_config.Password = plan.Password.ValueStringPointer()
+		mail_config.Password = sharedutil.StringToPtr(plan.Password.ValueString())
 		mail_config.SetPasswordIsIncluded(true)
 	} else {
 		mail_config.SetPasswordIsIncluded(false)
