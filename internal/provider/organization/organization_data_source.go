@@ -23,13 +23,14 @@ import (
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
-	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
@@ -56,43 +57,20 @@ func (d *organizationDataSource) Metadata(_ context.Context, req datasource.Meta
 
 // Schema defines the schema for the data source.
 func (d *organizationDataSource) Schema(_ context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+	resp.Schema = tfschema.Schema{
 		Description: "Use this data source to get an Organization",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Internal ID of the Organization",
-				Computed:    true,
-				Optional:    true,
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the Organization",
-				Computed:    true,
-				Optional:    true,
-			},
-			"parent_organization_id": schema.StringAttribute{
-				Description: "Internal ID of the Parent Organization if this Organization has a Parent Organization",
-				Computed:    true,
-			},
-			"tags": sharedrschema.DataSourceComputedListNestedAttribute(
+		Attributes: map[string]tfschema.Attribute{
+			"id":                     schema.DataSourceOptionalString("Internal ID of the Organization"),
+			"name":                   schema.DataSourceOptionalString("Name of the Organization"),
+			"parent_organization_id": schema.DataSourceComputedString("Internal ID of the Parent Organization if this Organization has a Parent Organization"),
+			"tags": schema.DataSourceComputedListNestedAttribute(
 				"List of Tags associated to this Organization",
-				schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"id": schema.StringAttribute{
-							Description: "Internal ID of the Tag",
-							Computed:    true,
-						},
-						"name": schema.StringAttribute{
-							Description: "Name of the Tag",
-							Computed:    true,
-						},
-						"description": schema.StringAttribute{
-							Description: "Description of the Tag",
-							Computed:    true,
-						},
-						"color": schema.StringAttribute{
-							Description: "Color of the Tag",
-							Computed:    true,
-						},
+				tfschema.NestedAttributeObject{
+					Attributes: map[string]tfschema.Attribute{
+						"id":          schema.DataSourceComputedString("Internal ID of the Tag"),
+						"name":        schema.DataSourceComputedString("Name of the Tag"),
+						"description": schema.DataSourceComputedString("Description of the Tag"),
+						"color":       schema.DataSourceComputedString("Color of the Tag"),
 					},
 				},
 			),

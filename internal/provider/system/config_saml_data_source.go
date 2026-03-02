@@ -22,11 +22,11 @@ import (
 	"terraform-provider-sonatypeiq/internal/provider/common"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
-	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -57,11 +57,11 @@ func (d *configSamlDataSource) Metadata(_ context.Context, req datasource.Metada
 
 // Schema defines the schema for the data source.
 func (d *configSamlDataSource) Schema(_ context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+	resp.Schema = tfschema.Schema{
 		Description: "Use this data source to get SAML Metadata for Sonatype IQ Server",
-		Attributes: map[string]schema.Attribute{
-			"id":            sharedrschema.DataSourceComputedString(""),
-			"saml_metadata": sharedrschema.DataSourceComputedString("SAML Metadata for Sonatype IQ Server"),
+		Attributes: map[string]tfschema.Attribute{
+			"id":            schema.DataSourceComputedString("The ID of this resource."),
+			"saml_metadata": schema.DataSourceComputedString("SAML Metadata for Sonatype IQ Server"),
 		},
 	}
 }

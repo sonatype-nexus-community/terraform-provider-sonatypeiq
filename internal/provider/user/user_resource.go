@@ -70,7 +70,7 @@ func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	resp.Schema = schema.Schema{
 		Description: "Use this data source to manage Users",
 		Attributes: map[string]schema.Attribute{
-			"id":         sharedrschema.ResourceComputedString("The user ID"),
+			"id":         sharedrschema.ResourceComputedString("The ID of this resource."),
 			"username":   sharedrschema.ResourceRequiredString("Username used to log in to Sonatype IQ Server"),
 			"password":   sharedrschema.ResourceSensitiveString("Password used to log in to Sonatype IQ Server"),
 			"first_name": sharedrschema.ResourceRequiredString("Users first name"),

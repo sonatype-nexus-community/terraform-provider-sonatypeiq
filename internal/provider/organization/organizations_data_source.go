@@ -22,14 +22,14 @@ import (
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
-	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
@@ -61,49 +61,25 @@ func (d *organizationsDataSource) Metadata(_ context.Context, req datasource.Met
 
 // Schema defines the schema for the data source.
 func (d *organizationsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+	resp.Schema = tfschema.Schema{
 		Description: "Use this data source to get all Organizations",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed:    true,
-				Description: "The ID of this resource.",
-			},
-			"organizations": sharedrschema.DataSourceComputedListNestedAttribute(
+		Attributes: map[string]tfschema.Attribute{
+			"id": schema.DataSourceComputedString("The ID of this resource."),
+			"organizations": schema.DataSourceComputedListNestedAttribute(
 				"List of Organizations",
-				schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"id": schema.StringAttribute{
-							Description: "Internal ID of the Organization",
-							Computed:    true,
-						},
-						"name": schema.StringAttribute{
-							Description: "Name of the Organization",
-							Computed:    true,
-						},
-						"parent_organization_id": schema.StringAttribute{
-							Description: "Internal ID of the Organization to which this Organization belongs",
-							Computed:    true,
-						},
-						"tags": sharedrschema.DataSourceComputedListNestedAttribute(
+				tfschema.NestedAttributeObject{
+					Attributes: map[string]tfschema.Attribute{
+						"id":                     schema.DataSourceComputedString("Internal ID of the Organization"),
+						"name":                   schema.DataSourceComputedString("Name of the Organization"),
+						"parent_organization_id": schema.DataSourceComputedString("Internal ID of the Organization to which this Organization belongs"),
+						"tags": schema.DataSourceComputedListNestedAttribute(
 							"List of any Tags associated to this Organization",
-							schema.NestedAttributeObject{
-								Attributes: map[string]schema.Attribute{
-									"id": schema.StringAttribute{
-										Description: "Internal ID of the Tag",
-										Computed:    true,
-									},
-									"name": schema.StringAttribute{
-										Description: "Name of the Tag",
-										Computed:    true,
-									},
-									"description": schema.StringAttribute{
-										Description: "Description of the Tag",
-										Computed:    true,
-									},
-									"color": schema.StringAttribute{
-										Description: "Color of the Tag",
-										Computed:    true,
-									},
+							tfschema.NestedAttributeObject{
+								Attributes: map[string]tfschema.Attribute{
+									"id":          schema.DataSourceComputedString("Internal ID of the Tag"),
+									"name":        schema.DataSourceComputedString("Name of the Tag"),
+									"description": schema.DataSourceComputedString("Description of the Tag"),
+									"color":       schema.DataSourceComputedString("Color of the Tag"),
 								},
 							},
 						),
@@ -112,6 +88,58 @@ func (d *organizationsDataSource) Schema(_ context.Context, _ datasource.SchemaR
 			),
 		},
 	}
+
+	// resp.Schema = schema.Schema{
+	// 	Description: "Use this data source to get all Organizations",
+	// 	Attributes: map[string]schema.Attribute{
+	// 		"id": schema.StringAttribute{
+	// 			Computed:    true,
+	// 			Description: "The ID of this resource.",
+	// 		},
+	// 		"organizations": sharedrschema.DataSourceComputedListNestedAttribute(
+	// 			"List of Organizations",
+	// 			schema.NestedAttributeObject{
+	// 				Attributes: map[string]schema.Attribute{
+	// 					"id": schema.StringAttribute{
+	// 						Description: "Internal ID of the Organization",
+	// 						Computed:    true,
+	// 					},
+	// 					"name": schema.StringAttribute{
+	// 						Description: "Name of the Organization",
+	// 						Computed:    true,
+	// 					},
+	// 					"parent_organization_id": schema.StringAttribute{
+	// 						Description: "Internal ID of the Organization to which this Organization belongs",
+	// 						Computed:    true,
+	// 					},
+	// 					"tags": sharedrschema.DataSourceComputedListNestedAttribute(
+	// 						"List of any Tags associated to this Organization",
+	// 						schema.NestedAttributeObject{
+	// 							Attributes: map[string]schema.Attribute{
+	// 								"id": schema.StringAttribute{
+	// 									Description: "Internal ID of the Tag",
+	// 									Computed:    true,
+	// 								},
+	// 								"name": schema.StringAttribute{
+	// 									Description: "Name of the Tag",
+	// 									Computed:    true,
+	// 								},
+	// 								"description": schema.StringAttribute{
+	// 									Description: "Description of the Tag",
+	// 									Computed:    true,
+	// 								},
+	// 								"color": schema.StringAttribute{
+	// 									Description: "Color of the Tag",
+	// 									Computed:    true,
+	// 								},
+	// 							},
+	// 						},
+	// 					),
+	// 				},
+	// 			},
+	// 		),
+	// 	},
+	// }
 }
 
 // Read refreshes the Terraform state with the latest data.

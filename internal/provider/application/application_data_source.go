@@ -19,16 +19,14 @@ package application
 import (
 	"context"
 	"net/http"
-
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
-	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
@@ -55,49 +53,21 @@ func (d *applicationDataSource) Metadata(_ context.Context, req datasource.Metad
 
 // Schema defines the schema for the data source.
 func (d *applicationDataSource) Schema(_ context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+	resp.Schema = tfschema.Schema{
 		Description: "Use this data source to get an Application",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Internal ID of the Application",
-				Computed:    true,
-				Optional:    true,
-			},
-			"public_id": schema.StringAttribute{
-				Description: "Public ID of the Application",
-				Computed:    true,
-				Optional:    true,
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the Application",
-				Computed:    true,
-				Optional:    true,
-			},
-			"organization_id": schema.StringAttribute{
-				Description: "Internal ID of the Organization to which this Application belongs",
-				Computed:    true,
-			},
-			"contact_user_name": schema.StringAttribute{
-				Description: "User Name of the Contact for the Application",
-				Computed:    true,
-				Optional:    true,
-			},
-			"application_tags": sharedrschema.DataSourceComputedListNestedAttribute(
+		Attributes: map[string]tfschema.Attribute{
+			"id":                schema.DataSourceOptionalString("Internal ID of the Application"),
+			"public_id":         schema.DataSourceOptionalString("Public ID of the Application"),
+			"name":              schema.DataSourceComputedString("Name of the Application"),
+			"organization_id":   schema.DataSourceComputedString("Internal ID of the Organization to which this Application belongs"),
+			"contact_user_name": schema.DataSourceComputedString("User Name of the Contact for the Application"),
+			"application_tags": schema.DataSourceComputedListNestedAttribute(
 				"List of Tags applied to this Application",
-				schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"id": schema.StringAttribute{
-							Description: "Internal ID of the Application-Tag link",
-							Computed:    true,
-						},
-						"tag_id": schema.StringAttribute{
-							Description: "Internal ID of the Tag",
-							Computed:    true,
-						},
-						"application_id": schema.StringAttribute{
-							Description: "Internal ID of the Application",
-							Computed:    true,
-						},
+				tfschema.NestedAttributeObject{
+					Attributes: map[string]tfschema.Attribute{
+						"id":             schema.DataSourceComputedString("Internal ID of the Application-Tag link"),
+						"tag_id":         schema.DataSourceComputedString("Internal ID of the Tag"),
+						"application_id": schema.DataSourceComputedString("Internal ID of the Application"),
 					},
 				},
 			),
