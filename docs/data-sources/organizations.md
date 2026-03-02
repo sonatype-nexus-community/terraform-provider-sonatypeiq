@@ -22,7 +22,7 @@ data "sonatypeiq_organizations" "orgs" {}
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
+- `id` (String) Placeholder ID
 - `organizations` (Attributes List) List of Organizations (see [below for nested schema](#nestedatt--organizations))
 
 <a id="nestedatt--organizations"></a>

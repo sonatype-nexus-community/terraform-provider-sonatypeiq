@@ -36,9 +36,9 @@ resource "sonatypeiq_user" "example_user" {
 ### Optional
 
 - `password` (String, Sensitive) Password used to log in to Sonatype IQ Server
+- `realm` (String) Realm the User belongs to. Only 'Internal' is supported at this time.
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
-- `last_updated` (String)
-- `realm` (String) Realm the User belongs to. Only 'Internal' is supported at this time.
+- `id` (String) The user ID
+- `last_updated` (String) String representation of the date/time the resource was last changed by Terraform

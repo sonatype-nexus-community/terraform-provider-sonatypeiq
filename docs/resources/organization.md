@@ -39,7 +39,7 @@ output "sub_org_id" {
 ### Read-Only
 
 - `id` (String) Internal ID of the Organization
-- `last_updated` (String)
+- `last_updated` (String) String representation of the date/time the resource was last changed by Terraform
 
 ## Import
 

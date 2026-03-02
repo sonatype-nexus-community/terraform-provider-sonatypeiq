@@ -55,4 +55,4 @@ resource "sonatypeiq_organization_role_membership" "organization_role_membership
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
+- `id` (String) The role membership ID

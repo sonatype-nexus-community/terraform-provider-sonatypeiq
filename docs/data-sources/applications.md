@@ -22,8 +22,8 @@ data "sonatypeiq_applications" "apps" {}
 
 ### Read-Only
 
-- `applications` (Attributes List) (see [below for nested schema](#nestedatt--applications))
-- `id` (String) The ID of this resource.
+- `applications` (Attributes List) List of Applications (see [below for nested schema](#nestedatt--applications))
+- `id` (String) Placeholder ID
 
 <a id="nestedatt--applications"></a>
 ### Nested Schema for `applications`

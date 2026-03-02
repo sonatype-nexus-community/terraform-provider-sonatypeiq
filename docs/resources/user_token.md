@@ -33,6 +33,6 @@ resource "sonatypeiq_user_token" "current_user_token" {
 
 ### Read-Only
 
-- `last_updated` (String)
+- `last_updated` (String) String representation of the date/time the resource was last changed by Terraform
 - `pass_code` (String, Sensitive) Pass Code portion of the User Token
 - `user_code` (String) User Code portion of the User Token
