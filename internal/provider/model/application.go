@@ -73,6 +73,24 @@ type ApplicationModelResource struct {
 	LastUpdated     types.String `tfsdk:"last_updated"`
 }
 
+func (m *ApplicationModelResource) MapFromApi(api *sonatypeiq.ApiApplicationDTO) {
+	m.ID = types.StringPointerValue(api.Id)
+	m.PublicId = types.StringPointerValue(api.PublicId)
+	m.Name = types.StringPointerValue(api.Name)
+	m.OrganizationId = types.StringPointerValue(api.OrganizationId)
+	m.ContactUserName = types.StringPointerValue(api.ContactUserName)
+}
+
+func (m *ApplicationModelResource) MapToApi() sonatypeiq.ApiApplicationDTO {
+	api := sonatypeiq.NewApiApplicationDTOWithDefaults()
+	api.Id = m.ID.ValueStringPointer()
+	api.PublicId = m.PublicId.ValueStringPointer()
+	api.Name = m.Name.ValueStringPointer()
+	api.OrganizationId = m.OrganizationId.ValueStringPointer()
+	api.ContactUserName = m.ContactUserName.ValueStringPointer()
+	return *api
+}
+
 // ApplicationTagLinkModel
 // ------------------------------------------------------------
 type ApplicationTagLinkModel struct {

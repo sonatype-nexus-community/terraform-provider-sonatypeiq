@@ -18,8 +18,7 @@ package application_test
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
@@ -28,36 +27,39 @@ import (
 )
 
 func TestAccApplicationResource(t *testing.T) {
-
 	appName := `TFACC` + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-
 	resourceName := "sonatypeiq_application.test"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// Create and Read testing
+			// Create
 			{
 				Config: testAccApplicationResource(appName, "", "data.sonatypeiq_organization.sandbox.id"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify Application
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "id", common.APPLICATION_INTERNAL_ID_REGEX),
 					resource.TestCheckResourceAttr(resourceName, "name", appName),
 					resource.TestCheckResourceAttr(resourceName, "public_id", appName),
+					resource.TestMatchResourceAttr(resourceName, "organization_id", common.ORGANIZATION_ID_REGEX),
+					resource.TestCheckResourceAttr(resourceName, "contact_user_name", "admin"),
 					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
 			},
+			// Update and Move Org
 			{
-				Config: testAccApplicationResource(appName, "2", "data.sonatypeiq_organization.sandbox.id"),
+				Config: testAccApplicationResource(appName, "2", "sonatypeiq_organization.sub_org.id"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "id", common.APPLICATION_INTERNAL_ID_REGEX),
 					resource.TestCheckResourceAttr(resourceName, "name", appName+"2"),
 					resource.TestCheckResourceAttr(resourceName, "public_id", appName+"2"),
+					resource.TestMatchResourceAttr(resourceName, "organization_id", common.ORGANIZATION_ID_REGEX),
+					resource.TestCheckResourceAttr(resourceName, "contact_user_name", "admin"),
 					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
 			},
 			// Validate
 			{
-				Config:             testAccApplicationResource(appName, "2", "data.sonatypeiq_organization.sandbox.id"),
+				Config:             testAccApplicationResource(appName, "2", "sonatypeiq_organization.sub_org.id"),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
@@ -72,41 +74,7 @@ func TestAccApplicationResource(t *testing.T) {
 	})
 }
 
-func TestAccApplicationResourceMoveOrganization(t *testing.T) {
-	appName := `TFACC` + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	randomOrgId := strings.ToLower(acctest.RandStringFromCharSet(32, acctest.CharSetAlphaNum))
-	organizationIdRegex, _ := regexp.Compile(`^[a-z0-9]{32}$`)
-	resourceName := "sonatypeiq_application.test"
-
-	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
-		Steps: []resource.TestStep{
-			// Create and Read testing
-			{
-				Config: testAccApplicationWithSubOrgResource(appName, "", "data.sonatypeiq_organization.sandbox.id", randomOrgId),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Verify Application created in Test Sub Org
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttrSet(resourceName, "organization_id"),
-				),
-			},
-			{
-				Config:      testAccApplicationWithSubOrgResource(appName, "", fmt.Sprintf("\"non-existent-%s\"", randomOrgId), randomOrgId),
-				ExpectError: regexp.MustCompile("Could not move the application"),
-			},
-			{
-				Config: testAccApplicationWithSubOrgResource(appName, "", "sonatypeiq_organization.test_sub_org.id", randomOrgId),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Verify Application moved to sandbox organization
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestMatchResourceAttr(resourceName, "organization_id", organizationIdRegex),
-				),
-			},
-		},
-	})
-}
-
-func testAccApplicationResource(name string, update string, organization string) string {
+func testAccApplicationResource(name, update, organization string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
 data "sonatypeiq_organization" "sandbox" {
   name = "Sandbox Organization"
@@ -116,17 +84,15 @@ data "sonatypeiq_organization" "root" {
   id = "ROOT_ORGANIZATION_ID"
 }
 
+resource "sonatypeiq_organization" "sub_org" {
+  name                   = "Sub Organization"
+  parent_organization_id = data.sonatypeiq_organization.root.id
+}
+
 resource "sonatypeiq_application" "test" {
   name = "%s%s"
   public_id = "%s%s"
   organization_id = %s
+  contact_user_name = "admin"
 }`, name, update, name, update, organization)
-}
-
-func testAccApplicationWithSubOrgResource(name string, update string, organization string, randomId string) string {
-	return fmt.Sprintf(testAccApplicationResource(name, update, organization)+`
-resource "sonatypeiq_organization" "test_sub_org" {
-  name = "test-sub-org-%s"
-  parent_organization_id = data.sonatypeiq_organization.root.id
-}`, randomId)
 }

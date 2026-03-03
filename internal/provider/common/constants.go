@@ -16,6 +16,8 @@
 
 package common
 
+import "regexp"
+
 const (
 	DEFAULT_USER_REALM                string = "Internal"
 	OWNER_TYPE_APPLICATION            string = "application"
@@ -29,4 +31,10 @@ const (
 	USER_REALM_SAML                   string = "SAML"
 	USER_REALM_OAUTH2                 string = "OAUTH2"
 	USER_REALM_CROWD                  string = "CROWD"
+)
+
+var (
+	internalIdRegex, _            = regexp.Compile(`^[a-z0-9]{32}$`)
+	APPLICATION_INTERNAL_ID_REGEX = internalIdRegex
+	ORGANIZATION_ID_REGEX         = internalIdRegex
 )

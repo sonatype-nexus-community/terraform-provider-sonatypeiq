@@ -17,6 +17,12 @@
 package common
 
 const (
+	ERR_TF_GETTING_PLAN  string = "Getting Plan has errors: %v"
+	ERR_TF_GETTING_STATE string = "Getting State has errors: %v"
+
+	ERR_APPLICATION_DID_NOT_EXIST                     string = "Application did not exist: %s"
+	ERR_FAILED_MOVING_APPLICATION                     string = "Failed moving Application to a new Organization"
+	ERR_FAILED_READING_APPLICATION                    string = "Unable to read Application"
 	ERR_FAILED_READING_APPLICATIONS                   string = "Unable to read Applications"
 	ERR_FAILED_READING_APPLICATION_CATEGORIES_FOR_ORG string = "Unable to read IQ Application Categories for Organization"
 	ERR_FAILED_READING_ORGANIZATIONS                  string = "Unable to read Organizations"

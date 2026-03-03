@@ -39,6 +39,11 @@ type BaseResource struct {
 	Client  *sonatypeiq.APIClient
 }
 
+// AuthContext returns a new context with authentication set up for API calls
+func (d *BaseResource) AuthContext(ctx context.Context) context.Context {
+	return WithAuth(ctx, d.Auth)
+}
+
 // Create implements resource.Resource.
 func (*BaseResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
 	panic("unimplemented")
