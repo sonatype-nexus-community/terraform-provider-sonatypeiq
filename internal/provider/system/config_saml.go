@@ -35,6 +35,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // securitySamlResource is the resource implementation.
@@ -133,6 +134,7 @@ func (r *securitySamlResource) Schema(_ context.Context, _ resource.SchemaReques
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
+			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

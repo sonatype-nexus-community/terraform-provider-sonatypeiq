@@ -18,14 +18,16 @@ package system
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
+	"terraform-provider-sonatypeiq/internal/provider/model"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
@@ -43,11 +45,6 @@ func ConfigSamlDataSource() datasource.DataSource {
 // configSamlDataSource is the data source implementation.
 type configSamlDataSource struct {
 	common.BaseDataSource
-}
-
-type configSamlModel struct {
-	ID           types.String `tfsdk:"id"`
-	SamlMetadata types.String `tfsdk:"saml_metadata"`
 }
 
 // Metadata returns the data source type name.
@@ -68,47 +65,35 @@ func (d *configSamlDataSource) Schema(_ context.Context, req datasource.SchemaRe
 
 // Read refreshes the Terraform state with the latest data.
 func (d *configSamlDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data configSamlModel
+	var data model.SecuritySamlMetadataModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		d.Auth,
-	)
-
-	// Make API Call
-	apiResponse, httpResponse, err := d.Client.ConfigSAMLAPI.GetMetadata(ctx).Execute()
+	apiResponse, httpResponse, err := d.Client.ConfigSAMLAPI.GetMetadata(d.AuthContext(ctx)).Execute()
 
 	if err != nil && httpResponse.StatusCode != http.StatusNotFound {
-		sharederr.HandleAPIError(
-			"Unable to Read IQ System Configuration",
+		errors.HandleAPIError(
+			common.ERR_FAILED_READING_SAML_METADATA,
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
 		)
-
+		return
+	} else if httpResponse.StatusCode != http.StatusOK && httpResponse.StatusCode != http.StatusNotFound {
+		errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "SAML Metadata", httpResponse, err)
 		return
 	}
 
-	if httpResponse.StatusCode == http.StatusNotFound {
-		data.ID = types.StringValue("placeholder")
+	data.ID = types.StringValue("saml-metadata")
+	if httpResponse.StatusCode == http.StatusOK {
+		data.SamlMetadata = types.StringValue(apiResponse)
+	} else {
 		data.SamlMetadata = types.StringNull()
-	} else if httpResponse.StatusCode != http.StatusOK {
-		sharederr.HandleAPIError(
-			"Error Reading SAML configuration",
-			&err,
-			httpResponse,
-			&resp.Diagnostics,
-		)
-		return
 	}
-
-	data.ID = types.StringValue("placeholder")
-	data.SamlMetadata = types.StringValue(apiResponse)
 
 	// Set state
 	diags := resp.State.Set(ctx, &data)

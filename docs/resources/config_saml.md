@@ -45,6 +45,10 @@ resource "sonatypeiq_config_saml" "saml_config" {
 - `validate_assertion_signature` (Boolean) By default, if a signing key is found in the IdP metadata, then Sonatype Nexus Repository Manager will attempt to validate signatures on the assertions.
 - `validate_response_signature` (Boolean) Validate SAML response signature
 
+### Read-Only
+
+- `last_updated` (String) String representation of the date/time the resource was last changed
+
 ## Import
 
 Import is supported using the following syntax:

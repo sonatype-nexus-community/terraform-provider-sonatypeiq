@@ -22,6 +22,15 @@ import (
 	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
+// SecuritySamlMetadataModel
+// ------------------------------------------------------------
+type SecuritySamlMetadataModel struct {
+	ID           types.String `tfsdk:"id"`
+	SamlMetadata types.String `tfsdk:"saml_metadata"`
+}
+
+// SecuritySamlModel
+// ------------------------------------------------------------
 type SecuritySamlModel struct {
 	IdentityProviderName       types.String `tfsdk:"identity_provider_name"`
 	IdpMetadata                types.String `tfsdk:"idp_metadata"`
@@ -33,6 +42,7 @@ type SecuritySamlModel struct {
 	ValidateResponseSignature  types.Bool   `tfsdk:"validate_response_signature"`
 	ValidateAssertionSignature types.Bool   `tfsdk:"validate_assertion_signature"`
 	EntityId                   types.String `tfsdk:"entity_id"`
+	LastUpdated                types.String `tfsdk:"last_updated"`
 }
 
 func (m *SecuritySamlModel) MapToApi(api *sonatypeiq.ApiSamlConfigurationDTO) {

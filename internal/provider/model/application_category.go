@@ -23,6 +23,8 @@ import (
 	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
+// ApplicationCategory
+// ------------------------------------------------------------
 type ApplicationCategory struct {
 	ID             types.String `tfsdk:"id"`
 	Name           types.String `tfsdk:"name"`
@@ -31,17 +33,40 @@ type ApplicationCategory struct {
 	Color          types.String `tfsdk:"color"`
 }
 
+// ApplicationCategories
+// ------------------------------------------------------------
+type ApplicationCategories struct {
+	ID              types.String          `tfsdk:"id"`
+	OrganiziationId types.String          `tfsdk:"organization_id"`
+	Categories      []ApplicationCategory `tfsdk:"categories"`
+}
+
+func (m *ApplicationCategories) MapFromApi(api *[]sonatypeiq.ApiApplicationCategoryDTO) {
+	m.Categories = make([]ApplicationCategory, 0)
+	for _, category := range *api {
+		m.Categories = append(m.Categories, ApplicationCategory{
+			ID:             types.StringPointerValue(category.Id),
+			Name:           types.StringPointerValue(category.Name),
+			Description:    types.StringPointerValue(category.Description),
+			Color:          types.StringPointerValue(category.Color),
+			OrganizationId: types.StringPointerValue(category.OrganizationId),
+		})
+	}
+}
+
+// ApplicationCategoryModel
+// ------------------------------------------------------------
 type ApplicationCategoryModel struct {
 	ApplicationCategory
 	LastUpdated types.String `tfsdk:"last_updated"`
 }
 
 func (m *ApplicationCategoryModel) MapFromApi(api *sonatypeiq.ApiApplicationCategoryDTO) {
-	m.ID = sharedutil.StringPtrToValue(api.Id)
-	m.Name = sharedutil.StringPtrToValue(api.Name)
-	m.Description = sharedutil.StringPtrToValue(api.Description)
-	m.Color = sharedutil.StringPtrToValue(api.Color)
-	m.OrganizationId = sharedutil.StringPtrToValue(api.OrganizationId)
+	m.ID = types.StringPointerValue(api.Id)
+	m.Name = types.StringPointerValue(api.Name)
+	m.Description = types.StringPointerValue(api.Description)
+	m.Color = types.StringPointerValue(api.Color)
+	m.OrganizationId = types.StringPointerValue(api.OrganizationId)
 }
 
 func (m *ApplicationCategoryModel) MapToApi(api *sonatypeiq.ApiApplicationCategoryDTO) {

@@ -27,11 +27,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
-	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -81,97 +79,48 @@ func (d *organizationDataSource) Schema(_ context.Context, req datasource.Schema
 // Read refreshes the Terraform state with the latest data.
 func (d *organizationDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data model.OrganizationModel
-
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		d.Auth,
-	)
-
-	var org *sonatypeiq.ApiOrganizationDTO
-	var r *http.Response
+	// Lookup
+	var foundOrganization *sonatypeiq.ApiOrganizationDTO
+	var httpResponse *http.Response
 	var err error
 
 	if !data.ID.IsNull() {
-		// Lookup By Org ID
-		org, r, err = d.Client.OrganizationsAPI.GetOrganization(ctx, data.ID.ValueString()).Execute()
-		if err != nil {
-			sharederr.HandleAPIError(
-				"Unable to Read IQ Organization by ID",
-				&err,
-				r,
-				&resp.Diagnostics,
-			)
-			return
-		}
-		if r.StatusCode != 200 {
-			sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "Read Organization", "Organization", r, err)
-			return
-		}
+		foundOrganization, httpResponse, err = d.Client.OrganizationsAPI.GetOrganization(d.AuthContext(ctx), data.ID.ValueString()).Execute()
 
+		if err != nil || httpResponse.StatusCode != http.StatusOK {
+			errors.HandleAPIError("Unable to read IQ Organization by ID", &err, httpResponse, &resp.Diagnostics)
+			return
+		}
 	} else if !data.Name.IsNull() {
-		// Lookup By Org ID
-		var orgs *sonatypeiq.ApiOrganizationListDTO
-		get_orgs_req := d.Client.OrganizationsAPI.GetOrganizations(ctx)
-		get_orgs_req = get_orgs_req.OrganizationName([]string{data.Name.ValueString()})
-		orgs, r, err = get_orgs_req.Execute()
-		if err != nil {
-			sharederr.HandleAPIError(
-				"Unable to Read IQ Organization by Name",
-				&err,
-				r,
-				&resp.Diagnostics,
-			)
+		var apiResponse *sonatypeiq.ApiOrganizationListDTO
+		apiResponse, httpResponse, err = d.Client.OrganizationsAPI.GetOrganizations(d.AuthContext(ctx)).OrganizationName([]string{data.Name.ValueString()}).Execute()
+
+		if err != nil || httpResponse.StatusCode != http.StatusOK {
+			errors.HandleAPIError("Unable to read IQ Organizations to find by Name", &err, httpResponse, &resp.Diagnostics)
+			return
+		} else if len(apiResponse.Organizations) != 1 {
+			errors.HandleAPIWarning("No unique Organization found with supplied Name", nil, httpResponse, &resp.Diagnostics)
 			return
 		}
-		if r.StatusCode != 200 {
-			sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "Read Organizations", "Organization", r, err)
-			return
-		}
-		if len(orgs.Organizations) == 1 {
-			org = &orgs.Organizations[0]
-		} else if len(orgs.Organizations) > 1 {
-			sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Organization", "More than one Organization matched the supplied name")
-			return
-		}
+
+		foundOrganization = &apiResponse.Organizations[0]
 	} else {
-		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Organization", "ID or Name must be provided")
+		errors.AddValidationDiagnostic(&resp.Diagnostics, "Organization Lookup", "ID or Name must be provided")
 		return
 	}
 
-	if org == nil {
-		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Organization", "No Organization found with the provided ID or Name")
-		return
-	}
-
-	var parentOrgId = types.StringNull()
-	if org.ParentOrganizationId != nil {
-		tflog.Debug(ctx, fmt.Sprintf("Parent Org Id is %s", *org.ParentOrganizationId))
-		parentOrgId = sharedutil.StringPtrToValue(org.ParentOrganizationId)
-	}
-	om := model.OrganizationModel{
-		ID:                    sharedutil.StringPtrToValue(org.Id),
-		Name:                  sharedutil.StringPtrToValue(org.Name),
-		ParentOrganiziationId: parentOrgId,
-		Tags:                  nil,
-	}
-	for _, tag := range org.Tags {
-		om.Tags = append(om.Tags, model.TagModel{
-			ID:          sharedutil.StringPtrToValue(tag.Id),
-			Name:        sharedutil.StringPtrToValue(tag.Name),
-			Description: sharedutil.StringPtrToValue(tag.Description),
-			Color:       sharedutil.StringPtrToValue(tag.Color),
-		})
-	}
+	// Map api response to State
+	data.MapFromApi(foundOrganization)
 
 	// Set state
-	diags := resp.State.Set(ctx, &om)
+	diags := resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -79,7 +79,7 @@ func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			"realm": sharedrschema.ResourceOptionalString(
 				fmt.Sprintf("Realm the User belongs to. Only '%s' is supported at this time.", common.DEFAULT_USER_REALM),
 			),
-			"last_updated": sharedrschema.ResourceComputedString("String representation of the date/time the resource was last changed by Terraform"),
+			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

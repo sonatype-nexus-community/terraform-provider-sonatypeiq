@@ -19,6 +19,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 
@@ -26,10 +27,8 @@ import (
 	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
-	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -46,11 +45,6 @@ func ApplicationsDataSource() datasource.DataSource {
 // applicationsDataSource is the data source implementation.
 type applicationsDataSource struct {
 	common.BaseDataSource
-}
-
-type applicationsDataSourceModel struct {
-	ID           types.String             `tfsdk:"id"`
-	Applications []model.ApplicationModel `tfsdk:"applications"`
 }
 
 // Metadata returns the data source type name.
@@ -92,57 +86,35 @@ func (d *applicationsDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 
 // Read refreshes the Terraform state with the latest data.
 func (d *applicationsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state applicationsDataSourceModel
+	var data model.ApplicationsModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		d.Auth,
-	)
+	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
+		return
+	}
 
-	applicationList, httpResponse, err := d.Client.ApplicationsAPI.GetApplications(ctx).Execute()
+	apiResponse, httpResponse, err := d.Client.ApplicationsAPI.GetApplications(d.AuthContext(ctx)).Execute()
+
 	if err != nil {
-		sharederr.HandleAPIError(
-			"Unable to Read IQ Applications",
+		errors.HandleAPIError(
+			common.ERR_FAILED_READING_APPLICATIONS,
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
 		)
 		return
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Applications", httpResponse, err)
+		return
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Iterating %d Applications", len(applicationList.Applications)))
-
-	for _, application := range applicationList.Applications {
-		var contactUserName = types.StringNull()
-		if application.ContactUserName != nil {
-			contactUserName = sharedutil.StringPtrToValue(application.ContactUserName)
-		}
-		applicationState := model.ApplicationModel{
-			ID:              sharedutil.StringPtrToValue(application.Id),
-			PublicId:        sharedutil.StringPtrToValue(application.PublicId),
-			Name:            sharedutil.StringPtrToValue(application.Name),
-			OrganizationId:  sharedutil.StringPtrToValue(application.OrganizationId),
-			ContactUserName: contactUserName,
-		}
-		for _, tag := range application.ApplicationTags {
-			applicationState.ApplicationTags = append(applicationState.ApplicationTags, model.ApplicationTagLinkModel{
-				ID:            sharedutil.StringPtrToValue(tag.Id),
-				TagId:         sharedutil.StringPtrToValue(tag.TagId),
-				ApplicationId: sharedutil.StringPtrToValue(tag.ApplicationId),
-			})
-		}
-
-		state.Applications = append(state.Applications, applicationState)
-
-		tflog.Debug(ctx, fmt.Sprintf("   Appended: %p", state.Applications))
-	}
-
-	// For test framework
-	state.ID = types.StringValue("placeholder")
+	// Assign Response Data to State
+	data.ID = types.StringValue("all-applications")
+	data.MapFromApi(apiResponse)
 
 	// Set state
-	diags := resp.State.Set(ctx, &state)
+	diags := resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

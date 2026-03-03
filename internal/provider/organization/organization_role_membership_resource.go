@@ -45,6 +45,7 @@ type organizationRoleMembershipModelResource struct {
 	OrganizationId types.String `tfsdk:"organization_id"`
 	UserName       types.String `tfsdk:"user_name"`
 	GroupName      types.String `tfsdk:"group_name"`
+	LastUpdated    types.String `tfsdk:"last_updated"`
 }
 
 // NewOrganizationRoleMembershipResource is a helper function to simplify the provider implementation.
@@ -66,6 +67,7 @@ func (r *organizationRoleMembershipResource) Schema(_ context.Context, _ resourc
 			"organization_id": sharedrschema.ResourceRequiredStringWithPlanModifier("The organization ID", []planmodifier.String{stringplanmodifier.RequiresReplace()}),
 			"user_name":       sharedrschema.ResourceOptionalStringWithPlanModifier("The username of the user (mutually exclusive with group_name)", stringplanmodifier.RequiresReplace()),
 			"group_name":      sharedrschema.ResourceOptionalStringWithPlanModifier("The group name of the group (mutually exclusive with user_name)", stringplanmodifier.RequiresReplace()),
+			"last_updated":    sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

@@ -56,3 +56,4 @@ resource "sonatypeiq_application_role_membership" "application_role_membership" 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `last_updated` (String) String representation of the date/time the resource was last changed

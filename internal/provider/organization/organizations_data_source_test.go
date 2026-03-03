@@ -32,8 +32,8 @@ func TestAccOrganizationsDataSource(t *testing.T) {
 				Config: utils_test.ProviderConfig + `data "sonatypeiq_organizations" "orgs" {
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.sonatypeiq_organizations.orgs", "id", "placeholder"),
-					resource.TestCheckResourceAttrSet("data.sonatypeiq_organizations.orgs", "organizations.#"),
+					resource.TestCheckResourceAttr("data.sonatypeiq_organizations.orgs", "id", "all-organizations"),
+					resource.TestCheckResourceAttr("data.sonatypeiq_organizations.orgs", "organizations.#", "2"),
 				),
 			},
 		},

@@ -88,6 +88,7 @@ func (r *sourceControlResource) Schema(_ context.Context, _ resource.SchemaReque
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

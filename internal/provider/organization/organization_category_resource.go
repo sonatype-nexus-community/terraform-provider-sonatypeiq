@@ -63,7 +63,7 @@ func (r *applicationCategoryResource) Schema(_ context.Context, _ resource.Schem
 				"Color of the Application Category",
 				model.AllColors()...,
 			),
-			"last_updated": sharedrschema.ResourceComputedString("String representation of the date/time the resource was last changed by Terraform"),
+			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

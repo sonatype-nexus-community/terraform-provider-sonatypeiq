@@ -33,7 +33,7 @@ type SourceControlModelResource struct {
 	SourceControlEvaluationsEnabled types.Bool   `tfsdk:"source_control_evaluation_enabled"`
 	Token                           types.String `tfsdk:"token"`
 	ScmProvider                     types.String `tfsdk:"scm_provider"` // This is provider in the rest API but provider is a reserved keyword
-	// TODO: Missing LastUpdated
+	LastUpdated                     types.String `tfsdk:"last_updated"`
 }
 
 func (m *SourceControlModelResource) MapFromApi(api *sonatypeiq.ApiSourceControlDTO) {

@@ -43,6 +43,7 @@ type applicationRoleMembershipModelResource struct {
 	ApplicationId types.String `tfsdk:"application_id"`
 	UserName      types.String `tfsdk:"user_name"`
 	GroupName     types.String `tfsdk:"group_name"`
+	LastUpdated   types.String `tfsdk:"last_updated"`
 }
 
 // NewApplicationRoleMembershipResource is a helper function to simplify the provider implementation.
@@ -64,6 +65,7 @@ func (r *applicationRoleMembershipResource) Schema(_ context.Context, _ resource
 			"application_id": sharedrschema.ResourceRequiredString("The application ID"),
 			"user_name":      sharedrschema.ResourceOptionalString("The username of the user (mutually exclusive with group_name)"),
 			"group_name":     sharedrschema.ResourceOptionalString("The group name of the group (mutually exclusive with user_name)"),
+			"last_updated":   sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

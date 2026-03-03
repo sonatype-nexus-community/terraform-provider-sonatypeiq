@@ -18,16 +18,19 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+
+	// sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
-	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -78,83 +81,47 @@ func (d *applicationDataSource) Schema(_ context.Context, req datasource.SchemaR
 // Read refreshes the Terraform state with the latest data.
 func (d *applicationDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var data model.ApplicationModel
-
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		d.Auth,
-	)
-
-	var app *sonatypeiq.ApiApplicationDTO
-	var r *http.Response
+	// Lookup
+	var foundApplication *sonatypeiq.ApiApplicationDTO
+	var httpResponse *http.Response
 	var err error
-
 	if !data.ID.IsNull() {
-		// Lookup By Application ID
-		app, r, err = d.Client.ApplicationsAPI.GetApplication(ctx, data.ID.ValueString()).Execute()
+		foundApplication, httpResponse, err = d.Client.ApplicationsAPI.GetApplication(d.AuthContext(ctx), data.ID.ValueString()).Execute()
 
-		if err != nil {
-			sharederr.HandleAPIError("Unable to read IQ Application by ID", &err, r, &resp.Diagnostics)
+		if err != nil || httpResponse.StatusCode != http.StatusOK {
+			errors.HandleAPIError("Unable to read IQ Application by ID", &err, httpResponse, &resp.Diagnostics)
 			return
 		}
-		if r.StatusCode != http.StatusOK {
-			sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Application", r, err)
-			return
-		}
-
 	} else if !data.PublicId.IsNull() {
-		// Lookup By Application Public ID
-		var apps *sonatypeiq.ApiApplicationListDTO
-		get_apps_req := d.Client.ApplicationsAPI.GetApplications(ctx)
-		get_apps_req = get_apps_req.PublicId([]string{data.PublicId.ValueString()})
-		apps, r, err = get_apps_req.Execute()
-		if err != nil {
-			sharederr.HandleAPIError("Unable to read IQ Application by Public ID", &err, r, &resp.Diagnostics)
+		var apiResponse *sonatypeiq.ApiApplicationListDTO
+		apiResponse, httpResponse, err = d.Client.ApplicationsAPI.GetApplications(d.AuthContext(ctx)).PublicId([]string{data.PublicId.ValueString()}).Execute()
+
+		if err != nil || httpResponse.StatusCode != http.StatusOK {
+			errors.HandleAPIError("Unable to read IQ Applications to find by Public ID", &err, httpResponse, &resp.Diagnostics)
+			return
+		} else if len(apiResponse.Applications) != 1 {
+			errors.HandleAPIWarning("No unique Application found with supplied Public ID", nil, httpResponse, &resp.Diagnostics)
 			return
 		}
-		if r.StatusCode != http.StatusOK {
-			sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Application", r, err)
-			return
-		}
-		if len(apps.Applications) == 1 {
-			app = &apps.Applications[0]
-		} else if len(apps.Applications) > 1 {
-			sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Application Public ID", "More than one Application matched the provided Public ID")
-			return
-		}
+
+		foundApplication = &apiResponse.Applications[0]
 	} else {
-		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Application Lookup", "ID or Public ID must be provided")
+		errors.AddValidationDiagnostic(&resp.Diagnostics, "Application Lookup", "ID or Public ID must be provided")
 		return
 	}
 
-	if app == nil {
-		sharederr.AddNotFoundDiagnostic(&resp.Diagnostics, "Application", data.ID.ValueString())
-		return
-	}
-
-	appModel := model.ApplicationModel{
-		ID:              sharedutil.StringPtrToValue(app.Id),
-		PublicId:        sharedutil.StringPtrToValue(app.PublicId),
-		Name:            sharedutil.StringPtrToValue(app.Name),
-		OrganizationId:  sharedutil.StringPtrToValue(app.OrganizationId),
-		ContactUserName: sharedutil.StringPtrToValue(app.ContactUserName),
-	}
-	for _, tag := range app.ApplicationTags {
-		appModel.ApplicationTags = append(appModel.ApplicationTags, model.ApplicationTagLinkModel{
-			ID:            sharedutil.StringPtrToValue(tag.Id),
-			TagId:         sharedutil.StringPtrToValue(tag.TagId),
-			ApplicationId: sharedutil.StringPtrToValue(tag.ApplicationId),
-		})
-	}
+	// Map api response to State
+	data.MapFromApi(foundApplication)
 
 	// Set state
-	diags := resp.State.Set(ctx, &appModel)
+	diags := resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

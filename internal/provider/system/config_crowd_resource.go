@@ -58,7 +58,7 @@ func (r *configCrowdResource) Schema(_ context.Context, _ resource.SchemaRequest
 			"server_url":           sharedrschema.ResourceRequiredString("Crowd Server URL"),
 			"application_name":     sharedrschema.ResourceRequiredString("Crowd Application Name"),
 			"application_password": sharedrschema.ResourceSensitiveRequiredString("Crowd Application Password"),
-			"last_updated":         sharedrschema.ResourceComputedString(""),
+			"last_updated":         sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

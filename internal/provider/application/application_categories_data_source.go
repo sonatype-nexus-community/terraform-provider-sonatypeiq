@@ -18,6 +18,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
@@ -25,10 +26,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+
+	// sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
-	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -47,12 +49,6 @@ type applicationCategoriesDataSource struct {
 	common.BaseDataSource
 }
 
-type applicationCategoriesModel struct {
-	ID              types.String     `tfsdk:"id"`
-	OrganiziationId types.String     `tfsdk:"organization_id"`
-	Categories      []model.TagModel `tfsdk:"categories"`
-}
-
 // Metadata returns the data source type name.
 func (d *applicationCategoriesDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_application_categories"
@@ -64,15 +60,16 @@ func (d *applicationCategoriesDataSource) Schema(_ context.Context, req datasour
 		Description: "Use this data source to get Application Categories for an Organization",
 		Attributes: map[string]tfschema.Attribute{
 			"id":              schema.DataSourceComputedString("The ID of this resource."),
-			"organization_id": schema.DataSourceRequiredString("Internal ID of the Organization to which this Application belongs - use 'ROOT_ORGANIZATION_ID' for the Root Organization"),
+			"organization_id": schema.DataSourceRequiredString("Internal ID of the Organization to which this Application belongs - use `ROOT_ORGANIZATION_ID` for the Root Organization"),
 			"categories": schema.DataSourceComputedListNestedAttribute(
 				"List of Categories defined for this Organization",
 				tfschema.NestedAttributeObject{
 					Attributes: map[string]tfschema.Attribute{
-						"id":          schema.DataSourceComputedString("Internal ID of the Tag"),
-						"name":        schema.DataSourceComputedString("Name of the Tag"),
-						"description": schema.DataSourceComputedString("Description of the Tag"),
-						"color":       schema.DataSourceComputedString("Color of the Tag"),
+						"id":              schema.DataSourceComputedString("Internal ID of the Application Category"),
+						"name":            schema.DataSourceComputedString("Name of the Application Category"),
+						"description":     schema.DataSourceComputedString("Description of the Application Category"),
+						"organization_id": schema.DataSourceComputedString("Organization ID this Application Category belongs to"),
+						"color":           schema.DataSourceComputedString("Color of the Application Category"),
 					},
 				},
 			),
@@ -82,42 +79,32 @@ func (d *applicationCategoriesDataSource) Schema(_ context.Context, req datasour
 
 // Read refreshes the Terraform state with the latest data.
 func (d *applicationCategoriesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data applicationCategoriesModel
-
+	var data model.ApplicationCategories
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		d.Auth,
-	)
-
-	categories, api_response, err := d.Client.ApplicationCategoriesAPI.GetTags(ctx, data.OrganiziationId.ValueString()).Execute()
+	apiResponse, httpResponse, err := d.Client.ApplicationCategoriesAPI.GetTags(d.AuthContext(ctx), data.OrganiziationId.ValueString()).Execute()
 
 	if err != nil {
-		sharederr.HandleAPIError("Unable to read IQ Application Categories for Organization", &err, api_response, &resp.Diagnostics)
+		errors.HandleAPIError(
+			common.ERR_FAILED_READING_APPLICATION_CATEGORIES_FOR_ORG,
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
 		return
-	}
-	if api_response.StatusCode != http.StatusOK {
-		sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Application Categories", api_response, err)
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Application Categories", httpResponse, err)
 		return
 	}
 
-	for _, category := range categories {
-		data.Categories = append(data.Categories, model.TagModel{
-			ID:          sharedutil.StringPtrToValue(category.Id),
-			Name:        sharedutil.StringPtrToValue(category.Name),
-			Description: sharedutil.StringPtrToValue(category.Description),
-			Color:       sharedutil.StringPtrToValue(category.Color),
-		})
-	}
-
-	// For test framework
-	data.ID = types.StringValue("placeholder")
+	// Assign Response Data to State
+	data.ID = types.StringValue(fmt.Sprintf("application-categories-%s", data.OrganiziationId.ValueString()))
+	data.MapFromApi(&apiResponse)
 
 	// Set state
 	diags := resp.State.Set(ctx, &data)

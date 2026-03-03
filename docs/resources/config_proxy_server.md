@@ -44,4 +44,4 @@ resource "sonatypeiq_config_proxy_server" "proxy_config" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `last_updated` (String)
+- `last_updated` (String) String representation of the date/time the resource was last changed

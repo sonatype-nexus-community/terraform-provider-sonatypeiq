@@ -71,7 +71,7 @@ func (r *configProxyServerResource) Schema(_ context.Context, _ resource.SchemaR
 			"password":             sharedrschema.ResourceSensitiveString("Password for the Proxy Server"),
 			"password_is_included": sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether the password is included", false),
 			"exclude_hosts":        sharedrschema.ResourceComputedOptionalStringSet("Optional list of hosts to exclude communication via Proxy Server"),
-			"last_updated":         sharedrschema.ResourceComputedString(""),
+			"last_updated":         sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

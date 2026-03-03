@@ -21,18 +21,14 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
 
-// TagModel
+// RoleModel
 // ------------------------------------------------------------
-type TagModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Color       types.String `tfsdk:"color"`
+type RoleModel struct {
+	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
 }
 
-func (m *TagModel) MapFromApi(api *sonatypeiq.ApiTagDTO) {
+func (m *RoleModel) MapFromApi(api *sonatypeiq.ApiRoleDTO) {
 	m.ID = types.StringPointerValue(api.Id)
 	m.Name = types.StringPointerValue(api.Name)
-	m.Description = types.StringPointerValue(api.Description)
-	m.Color = types.StringPointerValue(api.Color)
 }

@@ -19,6 +19,7 @@ package organization
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 
@@ -27,10 +28,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
-	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -47,11 +46,6 @@ func OrganizationsDataSource() datasource.DataSource {
 // applicationsDataSource is the data source implementation.
 type organizationsDataSource struct {
 	common.BaseDataSource
-}
-
-type organizationsDataSourceModel struct {
-	ID            types.String              `tfsdk:"id"`
-	Organizations []model.OrganizationModel `tfsdk:"organizations"`
 }
 
 // Metadata returns the data source type name.
@@ -88,114 +82,39 @@ func (d *organizationsDataSource) Schema(_ context.Context, _ datasource.SchemaR
 			),
 		},
 	}
-
-	// resp.Schema = schema.Schema{
-	// 	Description: "Use this data source to get all Organizations",
-	// 	Attributes: map[string]schema.Attribute{
-	// 		"id": schema.StringAttribute{
-	// 			Computed:    true,
-	// 			Description: "The ID of this resource.",
-	// 		},
-	// 		"organizations": sharedrschema.DataSourceComputedListNestedAttribute(
-	// 			"List of Organizations",
-	// 			schema.NestedAttributeObject{
-	// 				Attributes: map[string]schema.Attribute{
-	// 					"id": schema.StringAttribute{
-	// 						Description: "Internal ID of the Organization",
-	// 						Computed:    true,
-	// 					},
-	// 					"name": schema.StringAttribute{
-	// 						Description: "Name of the Organization",
-	// 						Computed:    true,
-	// 					},
-	// 					"parent_organization_id": schema.StringAttribute{
-	// 						Description: "Internal ID of the Organization to which this Organization belongs",
-	// 						Computed:    true,
-	// 					},
-	// 					"tags": sharedrschema.DataSourceComputedListNestedAttribute(
-	// 						"List of any Tags associated to this Organization",
-	// 						schema.NestedAttributeObject{
-	// 							Attributes: map[string]schema.Attribute{
-	// 								"id": schema.StringAttribute{
-	// 									Description: "Internal ID of the Tag",
-	// 									Computed:    true,
-	// 								},
-	// 								"name": schema.StringAttribute{
-	// 									Description: "Name of the Tag",
-	// 									Computed:    true,
-	// 								},
-	// 								"description": schema.StringAttribute{
-	// 									Description: "Description of the Tag",
-	// 									Computed:    true,
-	// 								},
-	// 								"color": schema.StringAttribute{
-	// 									Description: "Color of the Tag",
-	// 									Computed:    true,
-	// 								},
-	// 							},
-	// 						},
-	// 					),
-	// 				},
-	// 			},
-	// 		),
-	// 	},
-	// }
 }
 
 // Read refreshes the Terraform state with the latest data.
 func (d *organizationsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state organizationsDataSourceModel
+	var data model.OrganizationsModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		d.Auth,
-	)
+	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
+		return
+	}
 
-	orgList, httpResponse, err := d.Client.OrganizationsAPI.GetOrganizations(ctx).Execute()
+	apiResponse, httpResponse, err := d.Client.OrganizationsAPI.GetOrganizations(d.AuthContext(ctx)).Execute()
+
 	if err != nil {
-		sharederr.HandleAPIError(
-			"Unable to Read IQ Organizations",
+		errors.HandleAPIError(
+			common.ERR_FAILED_READING_ORGANIZATIONS,
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
 		)
 		return
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Organizations", httpResponse, err)
+		return
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Iterating %d Organizations", len(orgList.Organizations)))
-
-	for _, organization := range orgList.Organizations {
-		var parentOrgId = types.StringNull()
-		if organization.ParentOrganizationId != nil {
-			tflog.Debug(ctx, fmt.Sprintf("Parent Org Id is %s", *organization.ParentOrganizationId))
-			parentOrgId = sharedutil.StringPtrToValue(organization.ParentOrganizationId)
-		}
-		organizationState := model.OrganizationModel{
-			ID:                    sharedutil.StringPtrToValue(organization.Id),
-			Name:                  sharedutil.StringPtrToValue(organization.Name),
-			ParentOrganiziationId: parentOrgId,
-		}
-
-		for _, tag := range organization.Tags {
-			organizationState.Tags = append(organizationState.Tags, model.TagModel{
-				ID:          sharedutil.StringPtrToValue(tag.Id),
-				Name:        sharedutil.StringPtrToValue(tag.Name),
-				Description: sharedutil.StringPtrToValue(tag.Description),
-				Color:       sharedutil.StringPtrToValue(tag.Color),
-			})
-		}
-
-		state.Organizations = append(state.Organizations, organizationState)
-
-		tflog.Debug(ctx, fmt.Sprintf("   Appended: %p", state.Organizations))
-	}
-
-	// For test framework
-	state.ID = types.StringValue("placeholder")
+	// Assign Response Data to State
+	data.ID = types.StringValue("all-organizations")
+	data.MapFromApi(apiResponse)
 
 	// Set state
-	diags := resp.State.Set(ctx, &state)
+	diags := resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

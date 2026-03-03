@@ -64,6 +64,10 @@ resource "sonatypeiq_source_control" "organization" {
 - `token` (String) The token for use with the SCM Provider 'scm_provider'
 - `user_name` (String) The user name to use when setting `scm_provider` to `bitbucket`.
 
+### Read-Only
+
+- `last_updated` (String) String representation of the date/time the resource was last changed
+
 ## Import
 
 Import is supported using the following syntax:

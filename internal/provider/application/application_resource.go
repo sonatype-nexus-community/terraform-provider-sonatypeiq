@@ -60,7 +60,7 @@ func (r *applicationResource) Schema(_ context.Context, _ resource.SchemaRequest
 			"public_id":         sharedrschema.ResourceRequiredString("Public ID of the Application"),
 			"organization_id":   sharedrschema.ResourceRequiredString("Internal ID of the Organization to which this Application belongs"),
 			"contact_user_name": sharedrschema.ResourceOptionalString("User Name of the Contact for the Application"),
-			"last_updated":      sharedrschema.ResourceComputedString("String representation of the date/time the resource was last changed by Terraform"),
+			"last_updated":      sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }
@@ -68,7 +68,7 @@ func (r *applicationResource) Schema(_ context.Context, _ resource.SchemaRequest
 // Create creates the resource and sets the initial Terraform state.
 func (r *applicationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
-	var plan model.ApplicationModellResource
+	var plan model.ApplicationModelResource
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -111,7 +111,7 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 
 // Read refreshes the Terraform state with the latest data.
 func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state model.ApplicationModellResource
+	var state model.ApplicationModelResource
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -156,8 +156,8 @@ func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *applicationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan model.ApplicationModellResource
-	var state model.ApplicationModellResource
+	var plan model.ApplicationModelResource
+	var state model.ApplicationModelResource
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -207,7 +207,7 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *applicationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state model.ApplicationModellResource
+	var state model.ApplicationModelResource
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return

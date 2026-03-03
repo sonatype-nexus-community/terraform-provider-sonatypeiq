@@ -60,7 +60,7 @@ func (r *systemConfigProductLicenseResource) Schema(_ context.Context, _ resourc
 		Description: "Configure and Sonatype IQ License",
 		Attributes: map[string]schema.Attribute{
 			"license_data": sharedrschema.ResourceSensitiveRequiredString("Base64 encoded license data"),
-			"last_updated": sharedrschema.ResourceComputedString(""),
+			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

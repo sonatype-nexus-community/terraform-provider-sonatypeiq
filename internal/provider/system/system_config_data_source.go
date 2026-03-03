@@ -18,13 +18,17 @@ package system
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
+	"terraform-provider-sonatypeiq/internal/provider/model"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
@@ -42,12 +46,6 @@ func SystemConfigDataSource() datasource.DataSource {
 // systemConfigDataSource is the data source implementation.
 type systemConfigDataSource struct {
 	common.BaseDataSource
-}
-
-type systemConfigModel struct {
-	ID           types.String `tfsdk:"id"`
-	BaseURL      types.String `tfsdk:"base_url"`
-	ForceBaseURL types.Bool   `tfsdk:"force_base_url"`
 }
 
 // Metadata returns the data source type name.
@@ -69,49 +67,32 @@ func (d *systemConfigDataSource) Schema(_ context.Context, req datasource.Schema
 
 // Read refreshes the Terraform state with the latest data.
 func (d *systemConfigDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data systemConfigModel
-
+	var data model.SystemConfigModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		d.Auth,
-	)
-
-	// Lookup System Configuration
-	config_request := d.Client.ConfigurationAPI.GetConfiguration(ctx)
-	config_request = config_request.Property([]sonatypeiq.SystemConfigProperty{
-		"baseUrl", "forceBaseUrl",
-	})
-	config, r, err := config_request.Execute()
+	apiResponse, httpResponse, err := d.Client.ConfigurationAPI.GetConfiguration(d.AuthContext(ctx)).Property([]sonatypeiq.SystemConfigProperty{"baseUrl", "forceBaseUrl"}).Execute()
 
 	if err != nil {
-		sharederr.HandleAPIError(
-			"Unable to Read IQ System Configuration",
+		errors.HandleAPIError(
+			common.ERR_FAILED_READING_SYSTEM_CONFIG,
 			&err,
-			r,
+			httpResponse,
 			&resp.Diagnostics,
 		)
 		return
-	}
-	if r.StatusCode != 200 {
-		sharederr.AddAPIErrorDiagnostic(&resp.Diagnostics, "Read System Configuration", "System Configuration", r, err)
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "System Configuration", httpResponse, err)
 		return
 	}
 
-	if config.BaseUrl.IsSet() {
-		data.BaseURL = types.StringValue(config.GetBaseUrl())
-	}
-	if config.ForceBaseUrl.IsSet() {
-		data.ForceBaseURL = types.BoolValue(config.GetForceBaseUrl())
-	}
-
-	data.ID = types.StringValue("placeholder")
+	// Assign Response Data to State
+	data.ID = types.StringValue("system-configuration")
+	data.MapFromApi(apiResponse)
 
 	// Set state
 	diags := resp.State.Set(ctx, &data)

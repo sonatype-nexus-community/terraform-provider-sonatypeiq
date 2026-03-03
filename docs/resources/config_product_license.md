@@ -27,4 +27,4 @@ resource "sonatypeiq_config_product_license" "lic" {
 
 ### Read-Only
 
-- `last_updated` (String)
+- `last_updated` (String) String representation of the date/time the resource was last changed

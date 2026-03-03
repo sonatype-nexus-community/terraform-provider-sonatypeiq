@@ -81,7 +81,7 @@ func (r *configMailResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"ssl_enabled":          sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether SSL is enabled to SMTP server", mailDefaultSSLEnabled),
 			"start_tls_enabled":    sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether STARTTLS is enabled to SMTP server", mailDefaultStartTLSEnabled),
 			"system_email":         sharedrschema.ResourceRequiredString("The email address emails sent by Sonatype IQ Server will appear FROM"),
-			"last_updated":         sharedrschema.ResourceComputedString(""),
+			"last_updated":         sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

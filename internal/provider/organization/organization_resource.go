@@ -71,7 +71,7 @@ func (r *organizationResource) Schema(_ context.Context, _ resource.SchemaReques
 			// 		Attributes: tagSchemaObjectAttributes,
 			// 	},
 			// },
-			"last_updated": sharedrschema.ResourceComputedString("String representation of the date/time the resource was last changed by Terraform"),
+			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }

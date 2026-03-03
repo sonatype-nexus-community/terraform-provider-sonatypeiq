@@ -18,11 +18,42 @@ package model
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
 
+// OrganizationsModel
+// ------------------------------------------------------------
+type OrganizationsModel struct {
+	ID            types.String        `tfsdk:"id"`
+	Organizations []OrganizationModel `tfsdk:"organizations"`
+}
+
+func (m *OrganizationsModel) MapFromApi(api *sonatypeiq.ApiOrganizationListDTO) {
+	m.Organizations = make([]OrganizationModel, 0)
+	for _, apiOrg := range api.Organizations {
+		org := OrganizationModel{}
+		org.MapFromApi(&apiOrg)
+		m.Organizations = append(m.Organizations, org)
+	}
+}
+
+// OrganizationModel
+// ------------------------------------------------------------
 type OrganizationModel struct {
 	ID                    types.String `tfsdk:"id"`
 	Name                  types.String `tfsdk:"name"`
 	ParentOrganiziationId types.String `tfsdk:"parent_organization_id"`
 	Tags                  []TagModel   `tfsdk:"tags"`
+}
+
+func (m *OrganizationModel) MapFromApi(api *sonatypeiq.ApiOrganizationDTO) {
+	m.ID = types.StringPointerValue(api.Id)
+	m.Name = types.StringPointerValue(api.Name)
+	m.ParentOrganiziationId = types.StringPointerValue(api.ParentOrganizationId)
+	m.Tags = make([]TagModel, 0)
+	for _, apiTag := range api.Tags {
+		t := TagModel{}
+		t.MapFromApi(&apiTag)
+		m.Tags = append(m.Tags, t)
+	}
 }
