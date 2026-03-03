@@ -25,10 +25,10 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccOrganizationCategoryResource(t *testing.T) {
-
 	randomId := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	resourceName := "sonatypeiq_application_category.cat"
 
@@ -37,10 +37,10 @@ func TestAccOrganizationCategoryResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccApplicationCategoryResource(randomId),
+				Config: testAccApplicationCategoryResource(randomId, "", model.ColorDarkBlue.String()),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify Application
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "id", common.ORGANIZATION_ID_REGEX),
 					resource.TestCheckResourceAttr(resourceName, "name", fmt.Sprintf("app-cat-%s", randomId)),
 					resource.TestCheckResourceAttr(resourceName, "description", fmt.Sprintf("desc-%s", randomId)),
 					resource.TestCheckResourceAttr(resourceName, "organization_id", common.ROOT_ORGANIZATION_ID),
@@ -48,17 +48,48 @@ func TestAccOrganizationCategoryResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
 			},
+			// Update
+			{
+				Config: testAccApplicationCategoryResource(randomId, "2", model.ColorDarkGreen.String()),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Verify Application
+					resource.TestMatchResourceAttr(resourceName, "id", common.ORGANIZATION_ID_REGEX),
+					resource.TestCheckResourceAttr(resourceName, "name", fmt.Sprintf("app-cat-%s2", randomId)),
+					resource.TestCheckResourceAttr(resourceName, "description", fmt.Sprintf("desc-%s2", randomId)),
+					resource.TestCheckResourceAttr(resourceName, "organization_id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttr(resourceName, "color", model.ColorDarkGreen.String()),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
+				),
+			},
+			// Validate
+			{
+				Config:             testAccApplicationCategoryResource(randomId, "2", model.ColorDarkGreen.String()),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName: resourceName,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					primary := s.RootModule().Resources[resourceName].Primary
+					id := primary.ID
+					organizationId := primary.Attributes["organization_id"]
+					return fmt.Sprintf("%s,%s", organizationId, id), nil
+				},
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"last_updated"},
+			},
 			// Delete testing automatically occurs in TestCase
 		},
 	})
 }
 
-func testAccApplicationCategoryResource(randomId string) string {
+func testAccApplicationCategoryResource(randomId, seq, color string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
 resource "sonatypeiq_application_category" "cat" {
-  name = "app-cat-%s"
-  description = "desc-%s"
+  name = "app-cat-%s%s"
+  description = "desc-%s%s"
   organization_id = "%s"
   color = "%s"
-}`, randomId, randomId, common.ROOT_ORGANIZATION_ID, model.ColorDarkBlue.String())
+}`, randomId, seq, randomId, seq, common.ROOT_ORGANIZATION_ID, color)
 }

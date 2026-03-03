@@ -20,7 +20,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 // ApplicationCategory
@@ -69,8 +68,12 @@ func (m *ApplicationCategoryModel) MapFromApi(api *sonatypeiq.ApiApplicationCate
 	m.OrganizationId = types.StringPointerValue(api.OrganizationId)
 }
 
-func (m *ApplicationCategoryModel) MapToApi(api *sonatypeiq.ApiApplicationCategoryDTO) {
-	api.Name = sharedutil.StringToPtr(m.Name.ValueString())
-	api.Description = sharedutil.StringToPtr(m.Description.ValueString())
-	api.Color = sharedutil.StringToPtr(m.Color.ValueString())
+func (m *ApplicationCategoryModel) MapToApi() *sonatypeiq.ApiApplicationCategoryDTO {
+	api := sonatypeiq.NewApiApplicationCategoryDTOWithDefaults()
+	api.Id = m.ID.ValueStringPointer()
+	api.Name = m.Name.ValueStringPointer()
+	api.Description = m.Description.ValueStringPointer()
+	api.Color = m.Color.ValueStringPointer()
+	api.OrganizationId = m.OrganizationId.ValueStringPointer()
+	return api
 }
