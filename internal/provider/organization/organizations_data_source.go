@@ -66,8 +66,8 @@ func (d *organizationsDataSource) Schema(_ context.Context, _ datasource.SchemaR
 						"id":                     schema.DataSourceComputedString("Internal ID of the Organization"),
 						"name":                   schema.DataSourceComputedString("Name of the Organization"),
 						"parent_organization_id": schema.DataSourceComputedString("Internal ID of the Organization to which this Organization belongs"),
-						"tags": schema.DataSourceComputedListNestedAttribute(
-							"List of any Tags associated to this Organization",
+						"categories": schema.DataSourceComputedListNestedAttribute(
+							"List of Application Categories defined in this Organization",
 							tfschema.NestedAttributeObject{
 								Attributes: map[string]tfschema.Attribute{
 									"id":          schema.DataSourceComputedString("Internal ID of the Tag"),
