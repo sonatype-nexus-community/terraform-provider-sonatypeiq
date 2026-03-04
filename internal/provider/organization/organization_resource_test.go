@@ -27,7 +27,6 @@ import (
 )
 
 func TestAccOrganizationResource(t *testing.T) {
-
 	orgName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	resourceName := "sonatypeiq_organization.org"
 
@@ -39,11 +38,24 @@ func TestAccOrganizationResource(t *testing.T) {
 				Config: testAccOrganizationResource(orgName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify Application
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "id", common.ORGANIZATION_ID_REGEX),
 					resource.TestCheckResourceAttr(resourceName, "name", orgName),
 					resource.TestCheckResourceAttr(resourceName, "parent_organization_id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttr(resourceName, "categories.#", "0"),
 					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
+			},
+			// Validate
+			{
+				Config:             testAccOrganizationResource(orgName),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"last_updated"},
 			},
 			// Delete testing automatically occurs in TestCase
 		},

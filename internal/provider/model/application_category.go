@@ -22,14 +22,36 @@ import (
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
 
+// TagModel
+// ------------------------------------------------------------
+type TagModel struct {
+	ID          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Color       types.String `tfsdk:"color"`
+}
+
+func (m *TagModel) MapFromApi(api *sonatypeiq.ApiTagDTO) {
+	m.ID = types.StringPointerValue(api.Id)
+	m.Name = types.StringPointerValue(api.Name)
+	m.Description = types.StringPointerValue(api.Description)
+	m.Color = types.StringPointerValue(api.Color)
+}
+
+func (m *TagModel) MapToApi() *sonatypeiq.ApiTagDTO {
+	api := sonatypeiq.NewApiTagDTOWithDefaults()
+	api.Id = m.ID.ValueStringPointer()
+	api.Name = m.Name.ValueStringPointer()
+	api.Description = m.Description.ValueStringPointer()
+	api.Color = m.Color.ValueStringPointer()
+	return api
+}
+
 // ApplicationCategory
 // ------------------------------------------------------------
 type ApplicationCategory struct {
-	ID             types.String `tfsdk:"id"`
-	Name           types.String `tfsdk:"name"`
-	Description    types.String `tfsdk:"description"`
+	TagModel
 	OrganizationId types.String `tfsdk:"organization_id"`
-	Color          types.String `tfsdk:"color"`
 }
 
 // ApplicationCategories
@@ -44,10 +66,12 @@ func (m *ApplicationCategories) MapFromApi(api *[]sonatypeiq.ApiApplicationCateg
 	m.Categories = make([]ApplicationCategory, 0)
 	for _, category := range *api {
 		m.Categories = append(m.Categories, ApplicationCategory{
-			ID:             types.StringPointerValue(category.Id),
-			Name:           types.StringPointerValue(category.Name),
-			Description:    types.StringPointerValue(category.Description),
-			Color:          types.StringPointerValue(category.Color),
+			TagModel: TagModel{
+				ID:          types.StringPointerValue(category.Id),
+				Name:        types.StringPointerValue(category.Name),
+				Description: types.StringPointerValue(category.Description),
+				Color:       types.StringPointerValue(category.Color),
+			},
 			OrganizationId: types.StringPointerValue(category.OrganizationId),
 		})
 	}

@@ -27,8 +27,10 @@ const (
 	ERR_FAILED_READING_APPLICATION                    string = "Unable to read Application"
 	ERR_FAILED_READING_APPLICATIONS                   string = "Unable to read Applications"
 	ERR_FAILED_READING_APPLICATION_CATEGORIES_FOR_ORG string = "Unable to read IQ Application Categories for Organization"
+	ERR_FAILED_READING_ORGANIZATION                   string = "Unable to read Organization"
 	ERR_FAILED_READING_ORGANIZATIONS                  string = "Unable to read Organizations"
 	ERR_FAILED_READING_ROLES                          string = "Unable to read Roles"
 	ERR_FAILED_READING_SAML_METADATA                  string = "Unable to read SAML Metadata"
 	ERR_FAILED_READING_SYSTEM_CONFIG                  string = "Unable to read System Configuration"
+	ERR_ORGANIZATION_DID_NOT_EXIST                    string = "Organization did not exist: %s"
 )
