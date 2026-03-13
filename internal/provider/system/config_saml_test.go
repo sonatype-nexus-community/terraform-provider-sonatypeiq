@@ -23,114 +23,82 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 )
 
-const (
-	securitySamlResourceName = "sonatypeiq_config_saml.test"
-	securitySamlResourceType = "sonatypeiq_config_saml"
-)
-
-func TestAccSecuritySamlResourceBasic(t *testing.T) {
-	randomSuffix := acctest.RandStringFromCharSet(8, acctest.CharSetAlphaNum)
-
+func TestAccConfigSamlResource(t *testing.T) {
+	randomStr := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	resourceName := "sonatypeiq_config_saml.test"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccSecuritySamlResourceConfigBasic(randomSuffix),
+				Config: testAccSecuritySamlResourceConfigMinimum(randomStr),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(securitySamlResourceName, "identity_provider_name", fmt.Sprintf("Test-IDP-%s", randomSuffix)),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "username_attribute", "username"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "first_name_attribute", "firstName"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "last_name_attribute", "lastName"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "email_attribute", "email"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "groups_attribute", "groups"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "validate_response_signature", "true"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "validate_assertion_signature", "false"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "entity_id", fmt.Sprintf("test-entity-%s", randomSuffix)),
-					resource.TestCheckResourceAttrSet(securitySamlResourceName, "idp_metadata"),
+					resource.TestCheckResourceAttr(resourceName, "id", common.STATE_ID_SAML_CONFIGURATION),
+					resource.TestCheckResourceAttr(resourceName, "identity_provider_name", fmt.Sprintf("Test-IDP-%s", randomStr)),
+					resource.TestCheckResourceAttr(resourceName, "username_attribute", "username"),
+					resource.TestCheckResourceAttr(resourceName, "first_name_attribute", common.SAML_DEFAULT_FIRST_NAME_ATTRIBUTE),
+					resource.TestCheckResourceAttr(resourceName, "last_name_attribute", common.SAML_DEFAULT_LAST_NAME_ATTRIBUTE),
+					resource.TestCheckResourceAttr(resourceName, "email_attribute", common.SAML_DEFAULT_EMAIL_ATTRIBUTE),
+					resource.TestCheckResourceAttr(resourceName, "groups_attribute", common.SAML_DEFAULT_GROUPS_ATTRIBUTE),
+					resource.TestCheckResourceAttr(resourceName, "validate_response_signature", "false"),
+					resource.TestCheckResourceAttr(resourceName, "validate_assertion_signature", "false"),
+					resource.TestCheckResourceAttr(resourceName, "entity_id", fmt.Sprintf("test-entity-%s", randomStr)),
+					resource.TestCheckResourceAttr(resourceName, "idp_metadata", testSamlMetadata(false)),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
 			},
+			{
+				Config: testAccSecuritySamlResourceConfigFull(randomStr),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", common.STATE_ID_SAML_CONFIGURATION),
+					resource.TestCheckResourceAttr(resourceName, "identity_provider_name", fmt.Sprintf("Test-IDP-%s", randomStr)),
+					resource.TestCheckResourceAttr(resourceName, "username_attribute", "updatedUsername"),
+					resource.TestCheckResourceAttr(resourceName, "first_name_attribute", "updatedFirstName"),
+					resource.TestCheckResourceAttr(resourceName, "last_name_attribute", "updatedLastName"),
+					resource.TestCheckResourceAttr(resourceName, "email_attribute", "updatedEmail"),
+					resource.TestCheckResourceAttr(resourceName, "groups_attribute", "updatedGroups"),
+					resource.TestCheckResourceAttr(resourceName, "validate_response_signature", "true"),
+					resource.TestCheckResourceAttr(resourceName, "validate_assertion_signature", "true"),
+					resource.TestCheckResourceAttr(resourceName, "entity_id", fmt.Sprintf("updated-entity-%s", randomStr)),
+					resource.TestCheckResourceAttr(resourceName, "idp_metadata", testSamlMetadata(false)),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
+				),
+			},
+			// Validate
+			{
+				Config:             testAccSecuritySamlResourceConfigFull(randomStr),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"last_updated"},
+			},
+			// Delete testing automatically occurs in TestCase
 		},
 	})
 }
 
-func TestAccSecuritySamlResourceUpdate(t *testing.T) {
-	randomSuffix := acctest.RandStringFromCharSet(8, acctest.CharSetAlphaNum)
-
-	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
-		Steps: []resource.TestStep{
-			// Create initial resource
-			{
-				Config: testAccSecuritySamlResourceConfigBasic(randomSuffix),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(securitySamlResourceName, "identity_provider_name", fmt.Sprintf("Test-IDP-%s", randomSuffix)),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "username_attribute", "username"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "validate_response_signature", "true"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "entity_id", fmt.Sprintf("test-entity-%s", randomSuffix)),
-				),
-			},
-			// Update resource
-			{
-				Config: testAccSecuritySamlResourceConfigUpdated(randomSuffix),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(securitySamlResourceName, "identity_provider_name", fmt.Sprintf("Test-IDP-%s", randomSuffix)),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "username_attribute", "updatedUsername"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "first_name_attribute", "updatedFirstName"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "last_name_attribute", "updatedLastName"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "email_attribute", "updatedEmail"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "groups_attribute", "updatedGroups"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "validate_response_signature", "false"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "validate_assertion_signature", "true"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "entity_id", fmt.Sprintf("updated-entity-%s", randomSuffix)),
-				),
-			},
-		},
-	})
-}
-
-func TestAccSecuritySamlResourceMinimal(t *testing.T) {
-	randomSuffix := acctest.RandStringFromCharSet(8, acctest.CharSetAlphaNum)
-
-	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccSecuritySamlResourceConfigMinimal(randomSuffix),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(securitySamlResourceName, "identity_provider_name", fmt.Sprintf("Test-IDP-%s", randomSuffix)),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "username_attribute", "username"),
-					resource.TestCheckResourceAttrSet(securitySamlResourceName, "idp_metadata"),
-					resource.TestCheckResourceAttr(securitySamlResourceName, "entity_id", fmt.Sprintf("updated-entity-%s", randomSuffix)),
-				),
-			},
-		},
-	})
-}
-
-func testAccSecuritySamlResourceConfigBasic(randomSuffix string) string {
+func testAccSecuritySamlResourceConfigMinimum(randomSuffix string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
-resource "%s" "test" {
+resource "sonatypeiq_config_saml" "test" {
   identity_provider_name = "Test-IDP-%s"
   idp_metadata = %s
   username_attribute = "username"
-  first_name_attribute = "firstName"
-  last_name_attribute = "lastName"
-  email_attribute = "email"
-  groups_attribute = "groups"
-  validate_response_signature = true
-  validate_assertion_signature = false
   entity_id = "test-entity-%s"
 }
-`, securitySamlResourceType, randomSuffix, testSamlMetadata(), randomSuffix)
+`, randomSuffix, testSamlMetadata(true), randomSuffix)
 }
 
-func testAccSecuritySamlResourceConfigUpdated(randomSuffix string) string {
+func testAccSecuritySamlResourceConfigFull(randomSuffix string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
-resource "%s" "test" {
+resource "sonatypeiq_config_saml" "test" {
   identity_provider_name = "Test-IDP-%s"
   idp_metadata = %s
   username_attribute = "updatedUsername"
@@ -138,27 +106,15 @@ resource "%s" "test" {
   last_name_attribute = "updatedLastName"
   email_attribute = "updatedEmail"
   groups_attribute = "updatedGroups"
-  validate_response_signature = false
+  validate_response_signature = true
   validate_assertion_signature = true
   entity_id = "updated-entity-%s"
 }
-`, securitySamlResourceType, randomSuffix, testSamlMetadata(), randomSuffix)
+`, randomSuffix, testSamlMetadata(true), randomSuffix)
 }
 
-func testAccSecuritySamlResourceConfigMinimal(randomSuffix string) string {
-	return fmt.Sprintf(utils_test.ProviderConfig+`
-resource "%s" "test" {
-  identity_provider_name = "Test-IDP-%s"
-  idp_metadata = %s
-  username_attribute = "username"
-  entity_id = "updated-entity-%s"
-}
-`, securitySamlResourceType, randomSuffix, testSamlMetadata(), randomSuffix)
-}
-
-func testSamlMetadata() string {
-	return `<<-EOT
-<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" ID="test-id" entityID="https://test.example.com/saml">
+func testSamlMetadata(includeHeredoc bool) string {
+	metadata := `<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" ID="test-id" entityID="https://test.example.com/saml">
   <IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
     <KeyDescriptor use="signing">
       <KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#">
@@ -194,6 +150,14 @@ XBWQDGEjEr6wHCaLl3CLN3yIKxXzJW2wqFvpm0MNcM0E9W9gXQ==
     <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://test.example.com/saml/sso"/>
     <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://test.example.com/saml/sso"/>
   </IDPSSODescriptor>
-</EntityDescriptor>
-EOT`
+</EntityDescriptor>`
+
+	if includeHeredoc {
+		return fmt.Sprintf(`<<-EOT
+%s
+EOT
+`, metadata)
+	} else {
+		return metadata + "\n"
+	}
 }

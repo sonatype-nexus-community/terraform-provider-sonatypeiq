@@ -81,7 +81,7 @@ func (r *organizationRoleMembershipResource) ConfigValidators(ctx context.Contex
 func (r *organizationRoleMembershipResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
 	var plan model.OrganizationRoleMembershipModelResource
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
 	if resp.Diagnostics.HasError() {
 		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))

@@ -124,7 +124,7 @@ func (r *sourceControlResource) ModifyPlan(ctx context.Context, req resource.Mod
 // Create creates the resource and sets the initial Terraform state.
 func (r *sourceControlResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan model.SourceControlModelResource
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
 	if resp.Diagnostics.HasError() {
 		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))

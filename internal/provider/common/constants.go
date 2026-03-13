@@ -41,6 +41,7 @@ const (
 	STATE_ID_MAIL_CONFIGURATION       string = "system-mail-configuration"
 	STATE_ID_IQ_PRODUCT_LICENSE       string = "system-product-license"
 	STATE_ID_PROXY_CONFIGURATION      string = "system-proxy-configuration"
+	STATE_ID_SAML_CONFIGURATION       string = "system-saml-configuration"
 	USER_REALM_INTERNAL               string = "Internal"
 	USER_REALM_SAML                   string = "SAML"
 	USER_REALM_OAUTH2                 string = "OAUTH2"

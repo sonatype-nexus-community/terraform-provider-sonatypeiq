@@ -71,7 +71,7 @@ func (r *configProxyServerResource) Schema(_ context.Context, _ resource.SchemaR
 // Create creates the resource and sets the initial Terraform state.
 func (r *configProxyServerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan model.ConfigProxyModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
 	if resp.Diagnostics.HasError() {
 		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
@@ -115,7 +115,7 @@ func (r *configProxyServerResource) Read(ctx context.Context, req resource.ReadR
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *configProxyServerResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan model.ConfigProxyModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
 	if resp.Diagnostics.HasError() {
 		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
