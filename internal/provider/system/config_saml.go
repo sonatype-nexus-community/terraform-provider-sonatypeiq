@@ -40,7 +40,7 @@ import (
 
 // securitySamlResource is the resource implementation.
 type securitySamlResource struct {
-	common.BaseResourceWithImport
+	common.BaseResource
 }
 
 // NewConfigSamlResource is a helper function to simplify the provider implementation.

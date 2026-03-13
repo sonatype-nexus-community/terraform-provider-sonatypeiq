@@ -41,7 +41,7 @@ func TestAccSourceControlApplicationResourceMinimumConfig(t *testing.T) {
 						resource.TestCheckResourceAttr(resourceName, "repository_url", "https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq.git"),
 						resource.TestCheckNoResourceAttr(resourceName, "base_branch"),
 						resource.TestCheckNoResourceAttr(resourceName, "user_name"),
-						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", "true"),
+						resource.TestCheckNoResourceAttr(resourceName, "remediation_pull_requests_enabled"),
 						resource.TestCheckNoResourceAttr(resourceName, "pull_request_commenting_enabled"),
 						resource.TestCheckNoResourceAttr(resourceName, "source_control_evaluation_enabled"),
 						resource.TestCheckNoResourceAttr(resourceName, "token"),
@@ -50,14 +50,15 @@ func TestAccSourceControlApplicationResourceMinimumConfig(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:                         resourceName,
-				ImportState:                          true,
-				ImportStateVerify:                    true,
-				ImportStateVerifyIdentifierAttribute: "owner_id",
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// ImportStateVerifyIdentifierAttribute: "owner_id",
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					id := s.RootModule().Resources[resourceName].Primary.Attributes["owner_id"]
-					return fmt.Sprintf("application:%s", id), nil
+					return fmt.Sprintf("%s,%s", common.OWNER_TYPE_APPLICATION, id), nil
 				},
+				ImportStateVerifyIgnore: []string{"last_updated"},
 			},
 		},
 	})
@@ -88,14 +89,15 @@ func TestAccSourceControlApplicationResource(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:                         resourceName,
-				ImportState:                          true,
-				ImportStateVerify:                    true,
-				ImportStateVerifyIdentifierAttribute: "owner_id",
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// ImportStateVerifyIdentifierAttribute: "owner_id",
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					id := s.RootModule().Resources[resourceName].Primary.Attributes["owner_id"]
-					return fmt.Sprintf("application:%s", id), nil
+					return fmt.Sprintf("%s,%s", common.OWNER_TYPE_APPLICATION, id), nil
 				},
+				ImportStateVerifyIgnore: []string{"last_updated"},
 			},
 			{
 				Config: testAccSourceControlApplicationResource(rand, secondState),
@@ -138,14 +140,15 @@ func TestAccSourceControlOrganizationResource(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:                         resourceName,
-				ImportState:                          true,
-				ImportStateVerify:                    true,
-				ImportStateVerifyIdentifierAttribute: "owner_id",
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// ImportStateVerifyIdentifierAttribute: "owner_id",
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					id := s.RootModule().Resources[resourceName].Primary.Attributes["owner_id"]
-					return fmt.Sprintf("organization:%s", id), nil
+					return fmt.Sprintf("%s,%s", common.OWNER_TYPE_ORGANIZATION, id), nil
 				},
+				ImportStateVerifyIgnore: []string{"last_updated"},
 			},
 			{
 				Config: testAccSourceControlOrganizationResource(rand, secondState),

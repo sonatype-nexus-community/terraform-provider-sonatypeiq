@@ -37,7 +37,7 @@ import (
 
 // applicationCategoryResource is the resource implementation.
 type applicationCategoryResource struct {
-	common.BaseResourceWithImport
+	common.BaseResource
 }
 
 // NewApplicationCategoryResource is a helper function to simplify the provider implementation.

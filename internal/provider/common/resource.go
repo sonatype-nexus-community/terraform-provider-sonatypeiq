@@ -28,8 +28,9 @@ import (
 // Ensure the implementation satisfies the expected interfaces.
 var (
 	_ resource.Resource                = &BaseResource{}
-	_ resource.ResourceWithImportState = &BaseResourceWithImport{}
+	_ resource.ResourceWithImportState = &BaseResource{}
 	_ resource.ResourceWithConfigure   = &BaseResource{}
+	_ resource.ResourceWithModifyPlan  = &BaseResource{}
 )
 
 // Base Resource is the resource implementation.
@@ -95,12 +96,12 @@ func (r *BaseResource) Configure(_ context.Context, req resource.ConfigureReques
 	r.Client = config.Client
 }
 
-// Base Resource with Import
-type BaseResourceWithImport struct {
-	BaseResource
+// ImportState implements resource.ResourceWithImportState.
+func (b *BaseResource) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
+	panic("unimplemented")
 }
 
-// ImportState implements resource.ResourceWithImportState.
-func (b *BaseResourceWithImport) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
-	panic("unimplemented")
+// ModifyPlan implements resource.ResourceWithModifyPlan.
+func (r *BaseResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	return
 }
