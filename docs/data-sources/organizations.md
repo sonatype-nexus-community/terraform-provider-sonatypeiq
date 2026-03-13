@@ -30,13 +30,13 @@ data "sonatypeiq_organizations" "orgs" {}
 
 Read-Only:
 
+- `categories` (Attributes List) List of Application Categories defined in this Organization (see [below for nested schema](#nestedatt--organizations--categories))
 - `id` (String) Internal ID of the Organization
 - `name` (String) Name of the Organization
 - `parent_organization_id` (String) Internal ID of the Organization to which this Organization belongs
-- `tags` (Attributes List) List of any Tags associated to this Organization (see [below for nested schema](#nestedatt--organizations--tags))
 
-<a id="nestedatt--organizations--tags"></a>
-### Nested Schema for `organizations.tags`
+<a id="nestedatt--organizations--categories"></a>
+### Nested Schema for `organizations.categories`
 
 Read-Only:
 

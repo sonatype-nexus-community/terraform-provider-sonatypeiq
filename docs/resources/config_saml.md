@@ -32,7 +32,7 @@ resource "sonatypeiq_config_saml" "saml_config" {
 ### Required
 
 - `entity_id` (String) SAML Entity ID (typically a URI)
-- `identity_provider_name` (String) The name of the Identity Provider that is displayed on the login page when SAML is configured
+- `identity_provider_name` (String) Hostname of the Proxy Server
 - `idp_metadata` (String) SAML Identity Provider Metadata XML
 - `username_attribute` (String) IdP field mappings for username
 
@@ -47,6 +47,7 @@ resource "sonatypeiq_config_saml" "saml_config" {
 
 ### Read-Only
 
+- `id` (String) Internal ID for Terraform State
 - `last_updated` (String) String representation of the date/time the resource was last changed
 
 ## Import

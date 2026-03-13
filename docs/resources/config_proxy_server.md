@@ -3,12 +3,12 @@
 page_title: "sonatypeiq_config_proxy_server Resource - sonatypeiq"
 subcategory: ""
 description: |-
-  Manage outbound proxy server configuration for IQ Server
+  Manage outbound Proxy Server configuration for IQ Server
 ---
 
 # sonatypeiq_config_proxy_server (Resource)
 
-Manage outbound proxy server configuration for IQ Server
+Manage outbound Proxy Server configuration for IQ Server
 
 ## Example Usage
 
@@ -38,10 +38,9 @@ resource "sonatypeiq_config_proxy_server" "proxy_config" {
 
 - `exclude_hosts` (Set of String) Optional list of hosts to exclude communication via Proxy Server
 - `password` (String, Sensitive) Password for the Proxy Server
-- `password_is_included` (Boolean) Whether the password is included
 - `username` (String) Username for the Proxy Server
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
+- `id` (String) Internal ID for Terraform State
 - `last_updated` (String) String representation of the date/time the resource was last changed

@@ -40,5 +40,5 @@ resource "sonatypeiq_user" "example_user" {
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
+- `id` (String) Internal ID for Terraform State
 - `last_updated` (String) String representation of the date/time the resource was last changed

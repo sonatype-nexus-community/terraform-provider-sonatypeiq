@@ -30,5 +30,5 @@ resource "sonatypeiq_system_config" "iq_config" {
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
-- `last_updated` (String)
+- `id` (String) Internal ID for Terraform State
+- `last_updated` (String) String representation of the date/time the resource was last changed

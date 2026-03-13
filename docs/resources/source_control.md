@@ -60,12 +60,13 @@ resource "sonatypeiq_source_control" "organization" {
 - `remediation_pull_requests_enabled` (Boolean) Set to true to enable the Automated Pull Requests feature.
 - `repository_url` (String) The SCM provider URL for the repository, only valid for `owner_type` of `application`
 - `scm_provider` (String) The type of SCM Provider, must be one of 'azure, bitbucket, github or gitlab'. This is required when the organization is set to `ROOT_ORGANIZATION_ID`
-- `source_control_evaluation_enabled` (Boolean) Set to true to enable Nexus IQ triggered source control evaluations.
-- `token` (String) The token for use with the SCM Provider 'scm_provider'
+- `source_control_evaluation_enabled` (Boolean) Set to true to enable Sonatype Lifecycle triggered source control evaluations.
+- `token` (String) The token for use with the SCM Provider
 - `user_name` (String) The user name to use when setting `scm_provider` to `bitbucket`.
 
 ### Read-Only
 
+- `id` (String) Internal ID for Terraform State
 - `last_updated` (String) String representation of the date/time the resource was last changed
 
 ## Import

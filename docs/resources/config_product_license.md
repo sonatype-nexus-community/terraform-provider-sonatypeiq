@@ -3,12 +3,12 @@
 page_title: "sonatypeiq_config_product_license Resource - sonatypeiq"
 subcategory: ""
 description: |-
-  Configure and Sonatype IQ License
+  Configure Sonatype IQ Product License
 ---
 
 # sonatypeiq_config_product_license (Resource)
 
-Configure and Sonatype IQ License
+Configure Sonatype IQ Product License
 
 ## Example Usage
 
@@ -27,4 +27,5 @@ resource "sonatypeiq_config_product_license" "lic" {
 
 ### Read-Only
 
+- `id` (String) Internal ID for Terraform State
 - `last_updated` (String) String representation of the date/time the resource was last changed
