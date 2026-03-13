@@ -17,12 +17,14 @@
 package model
 
 import (
+	"terraform-provider-sonatypeiq/internal/provider/common"
+
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 type ConfigCrowdModel struct {
+	ID                  types.String `tfsdk:"id"`
 	ServerUrl           types.String `tfsdk:"server_url"`
 	ApplicationName     types.String `tfsdk:"application_name"`
 	ApplicationPassword types.String `tfsdk:"application_password"`
@@ -30,12 +32,15 @@ type ConfigCrowdModel struct {
 }
 
 func (m *ConfigCrowdModel) MapFromApi(api *sonatypeiq.ApiCrowdConfigurationDTO) {
-	m.ServerUrl = sharedutil.StringPtrToValue(api.ServerUrl)
-	m.ApplicationName = sharedutil.StringPtrToValue(api.ApplicationName)
+	m.ID = types.StringValue(common.STATE_ID_CROWD_CONFIGURATION)
+	m.ServerUrl = types.StringPointerValue(api.ServerUrl)
+	m.ApplicationName = types.StringPointerValue(api.ApplicationName)
 }
 
-func (m *ConfigCrowdModel) MapToApi(api *sonatypeiq.ApiCrowdConfigurationDTO) {
-	api.ServerUrl = sharedutil.StringToPtr(m.ServerUrl.ValueString())
-	api.ApplicationName = sharedutil.StringToPtr(m.ApplicationName.ValueString())
-	api.ApplicationPassword = sharedutil.StringToPtr(m.ApplicationPassword.ValueString())
+func (m *ConfigCrowdModel) MapToApi() *sonatypeiq.ApiCrowdConfigurationDTO {
+	api := sonatypeiq.NewApiCrowdConfigurationDTOWithDefaults()
+	api.ServerUrl = m.ServerUrl.ValueStringPointer()
+	api.ApplicationName = m.ApplicationName.ValueStringPointer()
+	api.ApplicationPassword = m.ApplicationPassword.ValueStringPointer()
+	return api
 }

@@ -46,6 +46,7 @@ func TestAccSourceControlApplicationResourceMinimumConfig(t *testing.T) {
 						resource.TestCheckNoResourceAttr(resourceName, "source_control_evaluation_enabled"),
 						resource.TestCheckNoResourceAttr(resourceName, "token"),
 						resource.TestCheckNoResourceAttr(resourceName, "scm_provider"),
+						resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 					),
 				),
 			},

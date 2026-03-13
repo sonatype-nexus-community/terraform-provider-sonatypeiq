@@ -17,34 +17,54 @@
 package system_test
 
 import (
+	"fmt"
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccConfigCrowdResource(t *testing.T) {
-
+	randomStr := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	resourceName := "sonatypeiq_config_crowd.crowd"
-
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: utils_test.ProviderConfig + `
-resource "sonatypeiq_config_crowd" "crowd" {
-  server_url = "http://something2"
-  application_name = "name"
-  application_password = "something"
-}`,
+				Config: testAccConfigCrowdResource(randomStr),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "server_url", "http://something2"),
-					resource.TestCheckResourceAttr(resourceName, "application_name", "name"),
+					resource.TestCheckResourceAttr(resourceName, "id", common.STATE_ID_CROWD_CONFIGURATION),
+					resource.TestCheckResourceAttr(resourceName, "server_url", fmt.Sprintf("http://something2/%s", randomStr)),
+					resource.TestCheckResourceAttr(resourceName, "application_name", fmt.Sprintf("name-%s", randomStr)),
 					resource.TestCheckResourceAttr(resourceName, "application_password", "something"),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
+			},
+			// Validate
+			{
+				Config:             testAccConfigCrowdResource(randomStr),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"application_password", "last_updated"},
 			},
 			// Delete testing automatically occurs in TestCase
 		},
 	})
+}
+
+func testAccConfigCrowdResource(randomStr string) string {
+	return fmt.Sprintf(utils_test.ProviderConfig+`
+resource "sonatypeiq_config_crowd" "crowd" {
+  server_url = "http://something2/%s"
+  application_name = "name-%s"
+  application_password = "something"
+}`, randomStr, randomStr)
 }

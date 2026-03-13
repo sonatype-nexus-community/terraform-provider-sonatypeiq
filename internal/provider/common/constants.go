@@ -34,6 +34,7 @@ const (
 	SCM_PROVIDER_BITBUCKET            string = "bitbucket"
 	SCM_PROVIDER_GITHUB               string = "github"
 	SCM_PROVIDER_GITLAB               string = "gitlab"
+	STATE_ID_CROWD_CONFIGURATION      string = "system-crowd-configuration"
 	USER_REALM_INTERNAL               string = "Internal"
 	USER_REALM_SAML                   string = "SAML"
 	USER_REALM_OAUTH2                 string = "OAUTH2"

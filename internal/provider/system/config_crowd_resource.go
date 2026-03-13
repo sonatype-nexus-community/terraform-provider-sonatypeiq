@@ -25,13 +25,13 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
@@ -55,6 +55,7 @@ func (r *configCrowdResource) Schema(_ context.Context, _ resource.SchemaRequest
 	resp.Schema = schema.Schema{
 		Description: "Manage Atlassian Crowd server configuration for IQ Server",
 		Attributes: map[string]schema.Attribute{
+			"id":                   sharedrschema.ResourceComputedString("Internal ID for Terraform State"),
 			"server_url":           sharedrschema.ResourceRequiredString("Crowd Server URL"),
 			"application_name":     sharedrschema.ResourceRequiredString("Crowd Application Name"),
 			"application_password": sharedrschema.ResourceSensitiveRequiredString("Crowd Application Password"),
@@ -65,18 +66,18 @@ func (r *configCrowdResource) Schema(_ context.Context, _ resource.SchemaRequest
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *configCrowdResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
 	var plan model.ConfigCrowdModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
 	r.doUpsert(ctx, &plan, &resp.Diagnostics)
 
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, plan)
+	// Update State
+	diags := resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -85,36 +86,38 @@ func (r *configCrowdResource) Create(ctx context.Context, req resource.CreateReq
 
 // Read refreshes the Terraform state with the latest data.
 func (r *configCrowdResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	// Retrieve values from state
 	var state model.ConfigCrowdModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
-	// Handle any errors
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Set API Context
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	apiResponse, httpResponse, err := r.Client.ConfigCrowdAPI.GetCrowdConfiguration(r.AuthContext(ctx)).Execute()
 
-	apiResponse, httpResponse, err := r.Client.ConfigCrowdAPI.GetCrowdConfiguration(ctx).Execute()
-
-	// Handle any errors
-	if err != nil && httpResponse.StatusCode != http.StatusNotFound {
-		sharederr.HandleAPIError(
-			"Unable to read Crowd configuration",
-			&err,
-			httpResponse,
-			&resp.Diagnostics,
-		)
+	if err != nil {
+		if httpResponse.StatusCode == http.StatusNotFound {
+			resp.State.RemoveResource(ctx)
+			errors.HandleAPIWarning(
+				"Crowd configuraiton does not exist",
+				&err,
+				httpResponse,
+				&resp.Diagnostics,
+			)
+		} else {
+			errors.HandleAPIError(
+				common.ERR_FAILED_READING_CROWD_CONFIGURATION,
+				&err,
+				httpResponse,
+				&resp.Diagnostics,
+			)
+		}
 		return
 	}
 
-	// Set refreshed state
+	// Update State based on Response
 	state.MapFromApi(apiResponse)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -124,18 +127,18 @@ func (r *configCrowdResource) Read(ctx context.Context, req resource.ReadRequest
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *configCrowdResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Retrieve values from plan
 	var plan model.ConfigCrowdModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
 	r.doUpsert(ctx, &plan, &resp.Diagnostics)
 
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, plan)
+	// Update State
+	diags := resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -144,66 +147,33 @@ func (r *configCrowdResource) Update(ctx context.Context, req resource.UpdateReq
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *configCrowdResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// Make Delete API Call
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	httpResponse, err := r.Client.ConfigCrowdAPI.DeleteCrowdConfiguration(r.AuthContext(ctx)).Execute()
 
-	httpResponse, err := r.Client.ConfigCrowdAPI.DeleteCrowdConfiguration(ctx).Execute()
-
-	if err != nil {
-		if sharederr.IsNotFound(httpResponse.StatusCode) {
-			resp.State.RemoveResource(ctx)
-			sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Crowd configuration", "There is no current Crowd configuration")
-		} else {
-			sharederr.HandleAPIError(
-				"Failed to delete Crowd configuration",
-				&err,
-				httpResponse,
-				&resp.Diagnostics,
-			)
-		}
-		return
-	}
-
-	if httpResponse.StatusCode != http.StatusNoContent {
-		sharederr.HandleAPIError(
-			"Unexpected response code deleting Crowd configuration",
-			&err,
-			httpResponse,
-			&resp.Diagnostics,
+	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
+		resp.Diagnostics.AddError(
+			common.ERR_CROWD_CONFIGURATION_DID_NOT_EXIST,
+			fmt.Sprintf("%v", err),
 		)
+		return
 	}
 }
 
 func (r *configCrowdResource) doUpsert(ctx context.Context, model *model.ConfigCrowdModel, respDiags *diag.Diagnostics) {
-	// Set API context
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	httpResponse, err := r.Client.ConfigCrowdAPI.InsertOrUpdateCrowdConfiguration(
+		r.AuthContext(ctx),
+	).ApiCrowdConfigurationDTO(*model.MapToApi()).Execute()
 
-	// Call API
-	apiDto := sonatypeiq.NewApiCrowdConfigurationDTOWithDefaults()
-	model.MapToApi(apiDto)
-	httpResponse, err := r.Client.ConfigCrowdAPI.InsertOrUpdateCrowdConfiguration(ctx).ApiCrowdConfigurationDTO(*apiDto).Execute()
-
-	// Handle Errors
 	if err != nil {
-		sharederr.HandleAPIError(
+		errors.HandleAPIError(
 			"Error creating Crowd configuration",
 			&err,
 			httpResponse,
 			respDiags,
 		)
 		return
-	}
-	if httpResponse.StatusCode != http.StatusNoContent {
-		sharederr.HandleAPIError(
-			"Creation of Crowd configuration unsuccesful",
+	} else if httpResponse.StatusCode != http.StatusNoContent {
+		errors.HandleAPIError(
+			"Creation of Crowd configuration was not successful",
 			&err,
 			httpResponse,
 			respDiags,
@@ -212,5 +182,10 @@ func (r *configCrowdResource) doUpsert(ctx context.Context, model *model.ConfigC
 	}
 
 	// Map response body to schema and populate Computed attribute values
+	model.ID = types.StringValue(common.STATE_ID_CROWD_CONFIGURATION)
 	model.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+}
+
+func (r *configCrowdResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
