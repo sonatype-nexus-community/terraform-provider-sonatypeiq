@@ -35,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
@@ -102,7 +101,7 @@ func (r *organizationRoleMembershipResource) Create(ctx context.Context, req res
 	).Execute()
 
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
-		sharederr.HandleAPIError(
+		errors.HandleAPIError(
 			"Error creating organization role membership",
 			&err,
 			httpResponse,

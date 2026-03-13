@@ -33,7 +33,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
@@ -100,7 +99,7 @@ func (r *applicationRoleMembershipResource) Create(ctx context.Context, req reso
 	).Execute()
 
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
-		sharederr.HandleAPIError(
+		errors.HandleAPIError(
 			"Error creating application role membership",
 			&err,
 			httpResponse,

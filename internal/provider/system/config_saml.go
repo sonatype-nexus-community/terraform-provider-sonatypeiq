@@ -192,12 +192,6 @@ func (r *securitySamlResource) Delete(ctx context.Context, req resource.DeleteRe
 		)
 		return
 	}
-
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
 }
 
 func (r *securitySamlResource) doRead(ctx context.Context, respState *tfsdk.State, respDiags *diag.Diagnostics) *sonatypeiq.ApiSamlConfigurationResponseDTO {

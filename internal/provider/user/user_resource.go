@@ -35,7 +35,6 @@ import (
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
@@ -161,10 +160,10 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	// Validation
 	if plan.Password.ValueString() != state.Password.ValueString() {
-		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "password", "Changing User Password is not supported by Sonatype IQ Server")
+		errors.AddValidationDiagnostic(&resp.Diagnostics, "password", "Changing User Password is not supported by Sonatype IQ Server")
 	}
 	if plan.Realm.ValueString() != common.USER_REALM_INTERNAL {
-		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "realm", fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM))
+		errors.AddValidationDiagnostic(&resp.Diagnostics, "realm", fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM))
 		return
 	}
 

@@ -103,5 +103,5 @@ func (b *BaseResource) ImportState(context.Context, resource.ImportStateRequest,
 
 // ModifyPlan implements resource.ResourceWithModifyPlan.
 func (r *BaseResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	return
+	// Not used for most resources
 }

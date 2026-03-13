@@ -27,7 +27,6 @@ import (
 	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
@@ -98,7 +97,7 @@ func (d *roleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 
 	// No Role found
 	if data.ID.IsNull() {
-		sharederr.AddValidationDiagnostic(&resp.Diagnostics, "Role", fmt.Sprintf("Role '%s' does not exist", data.Name.ValueString()))
+		errors.AddValidationDiagnostic(&resp.Diagnostics, "Role", fmt.Sprintf("Role '%s' does not exist", data.Name.ValueString()))
 		return
 	}
 

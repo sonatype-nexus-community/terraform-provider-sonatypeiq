@@ -75,7 +75,7 @@ func (r *systemConfigProductLicenseResource) Create(ctx context.Context, req res
 		return
 	}
 
-	var state model.ProductLicenseModelResource = model.ProductLicenseModelResource{}
+	var state = model.ProductLicenseModelResource{}
 
 	// Do the work
 	r.updateProductLicense(
