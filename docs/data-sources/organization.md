@@ -34,7 +34,7 @@ data "sonatypeiq_organization" "sandbox" {
 
 ### Read-Only
 
-- `categories` (Attributes List) List of Application Categories defined in this Organization (see [below for nested schema](#nestedatt--categories))
+- `categories` (Attributes Set) List of Application Categories defined in this Organization (see [below for nested schema](#nestedatt--categories))
 - `parent_organization_id` (String) Internal ID of the Parent Organization if this Organization has a Parent Organization
 
 <a id="nestedatt--categories"></a>
