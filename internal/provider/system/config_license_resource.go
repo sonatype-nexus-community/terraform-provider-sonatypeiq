@@ -29,7 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 
@@ -57,8 +56,9 @@ func (r *systemConfigProductLicenseResource) Metadata(_ context.Context, req res
 // Schema defines the schema for the resource.
 func (r *systemConfigProductLicenseResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Configure and Sonatype IQ License",
+		Description: "Configure Sonatype IQ Product License",
 		Attributes: map[string]schema.Attribute{
+			"id":           sharedrschema.ResourceComputedString("Internal ID for Terraform State"),
 			"license_data": sharedrschema.ResourceSensitiveRequiredString("Base64 encoded license data"),
 			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
@@ -67,16 +67,15 @@ func (r *systemConfigProductLicenseResource) Schema(_ context.Context, _ resourc
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *systemConfigProductLicenseResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
 	var plan model.ProductLicenseModelResource
-	var state = model.ProductLicenseModelResource{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
 
 	if resp.Diagnostics.HasError() {
 		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
+
+	var state model.ProductLicenseModelResource = model.ProductLicenseModelResource{}
 
 	// Do the work
 	r.updateProductLicense(
@@ -95,18 +94,17 @@ func (r *systemConfigProductLicenseResource) Read(ctx context.Context, req resou
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *systemConfigProductLicenseResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Retrieve values from plan & state
 	var plan model.ProductLicenseModelResource
 	var state model.ProductLicenseModelResource
-
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, fmt.Sprintf("Getting plan data has errors: %v", resp.Diagnostics.Errors()))
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
 		return
 	}
+
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, fmt.Sprintf("Getting state data has errors: %v", resp.Diagnostics.Errors()))
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
@@ -122,13 +120,7 @@ func (r *systemConfigProductLicenseResource) Update(ctx context.Context, req res
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *systemConfigProductLicenseResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// Set API Context
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-	httpResponse, err := r.Client.ProductLicenseAPI.UninstallLicense(ctx).Execute()
+	httpResponse, err := r.Client.ProductLicenseAPI.UninstallLicense(r.AuthContext(ctx)).Execute()
 
 	// Handle Error
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
@@ -173,13 +165,7 @@ func (r *systemConfigProductLicenseResource) updateProductLicense(ctx context.Co
 	defer func() { _ = os.Remove(productLicenseFileName) }()
 
 	// Call API to Create
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	httpReponse, err := r.Client.ProductLicenseAPI.InstallLicense(ctx).File(productLicenseFile).Execute()
+	httpReponse, err := r.Client.ProductLicenseAPI.InstallLicense(r.AuthContext(ctx)).File(productLicenseFile).Execute()
 
 	// Handle Error
 	if err != nil || httpReponse.StatusCode != http.StatusOK {
@@ -192,6 +178,7 @@ func (r *systemConfigProductLicenseResource) updateProductLicense(ctx context.Co
 		return
 	}
 
+	stateModel.ID = types.StringValue(common.STATE_ID_IQ_PRODUCT_LICENSE)
 	stateModel.LicenseData = types.StringValue(licenseDataBase64)
 	stateModel.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 	diags := tfState.Set(ctx, stateModel)

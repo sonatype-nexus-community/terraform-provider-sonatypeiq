@@ -23,6 +23,7 @@ import (
 // ProductLicenseModelResource
 // -----------------------------------
 type ProductLicenseModelResource struct {
+	ID          types.String `tfsdk:"id"`
 	LicenseData types.String `tfsdk:"license_data"`
 	LastUpdated types.String `tfsdk:"last_updated"`
 }
