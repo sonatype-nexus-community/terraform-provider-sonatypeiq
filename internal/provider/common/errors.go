@@ -26,6 +26,7 @@ const (
 	ERR_MAIL_CONFIGURATION_DID_NOT_EXIST              string = "Mail configuration did not exist"
 	ERR_PROXY_CONFIGURATION_DID_NOT_EXIST             string = "Proxy Server configuration did not exist"
 	ERR_SAML_CONFIGURATION_DID_NOT_EXIST              string = "SAML configuration did not exist"
+	ERR_SYSTEM_CONFIGURATION_DID_NOT_EXIST            string = "System Property configuration did not exist"
 	ERR_FAILED_DELETING_APPLICATION_ROLE_MAPPING      string = "Failed to delete Application Role Mapping: %s"
 	ERR_FAILED_DELETING_ORGANIZATION_ROLE_MAPPING     string = "Failed to delete Organization Role Mapping: %s"
 	ERR_FAILED_MOVING_APPLICATION                     string = "Failed moving Application to a new Organization"
