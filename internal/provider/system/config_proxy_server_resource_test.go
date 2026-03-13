@@ -26,46 +26,42 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccConfigMailResource(t *testing.T) {
+func TestAccConfigProxyServerResource(t *testing.T) {
 	randomStr := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	resourceName := "sonatypeiq_config_mail.test"
+	resourceName := "sonatypeiq_config_proxy_server.test"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccConfigMailMinimalResource(randomStr),
+				Config: testAccConfigProxyMinimalResource(randomStr),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify mail configuration
-					resource.TestCheckResourceAttr(resourceName, "id", common.STATE_ID_MAIL_CONFIGURATION),
+					resource.TestCheckResourceAttr(resourceName, "id", common.STATE_ID_PROXY_CONFIGURATION),
 					resource.TestCheckResourceAttr(resourceName, "hostname", fmt.Sprintf("smtp.%s.tld", randomStr)),
-					resource.TestCheckResourceAttr(resourceName, "port", "25"),
+					resource.TestCheckResourceAttr(resourceName, "port", "8080"),
 					resource.TestCheckNoResourceAttr(resourceName, "username"),
 					resource.TestCheckNoResourceAttr(resourceName, "password"),
-					resource.TestCheckResourceAttr(resourceName, "ssl_enabled", "false"),
-					resource.TestCheckResourceAttr(resourceName, "start_tls_enabled", "false"),
-					resource.TestCheckResourceAttr(resourceName, "system_email", fmt.Sprintf("no-reply@%s.tld", randomStr)),
+					resource.TestCheckResourceAttr(resourceName, "exclude_hosts.#", "0"),
 					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
 			},
 			{
-				Config: testAccConfigMailFullResource(randomStr),
+				Config: testAccConfigProxyFullResource(randomStr),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify mail configuration
-					resource.TestCheckResourceAttr(resourceName, "id", common.STATE_ID_MAIL_CONFIGURATION),
+					resource.TestCheckResourceAttr(resourceName, "id", common.STATE_ID_PROXY_CONFIGURATION),
 					resource.TestCheckResourceAttr(resourceName, "hostname", fmt.Sprintf("smtp.%s.tld", randomStr)),
 					resource.TestCheckResourceAttr(resourceName, "port", "465"),
 					resource.TestCheckResourceAttr(resourceName, "username", randomStr),
 					resource.TestCheckResourceAttr(resourceName, "password", "fake-password"),
-					resource.TestCheckResourceAttr(resourceName, "ssl_enabled", "true"),
-					resource.TestCheckResourceAttr(resourceName, "start_tls_enabled", "true"),
-					resource.TestCheckResourceAttr(resourceName, "system_email", fmt.Sprintf("no-reply@%s.tld", randomStr)),
+					resource.TestCheckResourceAttr(resourceName, "exclude_hosts.#", "2"),
 					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
 			},
 			// Validate
 			{
-				Config:             testAccConfigMailFullResource(randomStr),
+				Config:             testAccConfigProxyFullResource(randomStr),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
@@ -79,26 +75,25 @@ func TestAccConfigMailResource(t *testing.T) {
 		},
 	})
 }
-func testAccConfigMailMinimalResource(randomStr string) string {
+
+func testAccConfigProxyMinimalResource(randomStr string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
-resource "sonatypeiq_config_mail" "test" {
+resource "sonatypeiq_config_proxy_server" "test" {
   hostname          = "smtp.%s.tld"
-  port              = 25
-  ssl_enabled       = false
-  start_tls_enabled = false
-  system_email      = "no-reply@%s.tld"
-}`, randomStr, randomStr)
+  port              = 8080
+}`, randomStr)
 }
 
-func testAccConfigMailFullResource(randomStr string) string {
+func testAccConfigProxyFullResource(randomStr string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
-resource "sonatypeiq_config_mail" "test" {
+resource "sonatypeiq_config_proxy_server" "test" {
   hostname          = "smtp.%s.tld"
   port              = 465
   username 			= "%s"
   password 			= "fake-password"
-  ssl_enabled       = true
-  start_tls_enabled = true
-  system_email      = "no-reply@%s.tld"
-}`, randomStr, randomStr, randomStr)
+  exclude_hosts = [
+	"*.somewhere.tld",
+	"*.elsewhere.tld"
+  ]
+}`, randomStr, randomStr)
 }
