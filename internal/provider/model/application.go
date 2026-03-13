@@ -81,9 +81,11 @@ func (m *ApplicationModelResource) MapFromApi(api *sonatypeiq.ApiApplicationDTO)
 	m.ContactUserName = types.StringPointerValue(api.ContactUserName)
 }
 
-func (m *ApplicationModelResource) MapToApi() sonatypeiq.ApiApplicationDTO {
+func (m *ApplicationModelResource) MapToApi(includeId bool) sonatypeiq.ApiApplicationDTO {
 	api := sonatypeiq.NewApiApplicationDTOWithDefaults()
-	api.Id = m.ID.ValueStringPointer()
+	if includeId {
+		api.Id = m.ID.ValueStringPointer()
+	}
 	api.PublicId = m.PublicId.ValueStringPointer()
 	api.Name = m.Name.ValueStringPointer()
 	api.OrganizationId = m.OrganizationId.ValueStringPointer()

@@ -77,7 +77,7 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	apiResponse, httpResponse, err := r.Client.ApplicationsAPI.AddApplication(r.AuthContext(ctx)).ApiApplicationDTO(plan.MapToApi()).Execute()
+	apiResponse, httpResponse, err := r.Client.ApplicationsAPI.AddApplication(r.AuthContext(ctx)).ApiApplicationDTO(plan.MapToApi(false)).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(
@@ -184,7 +184,7 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	// Second Update Application
-	apiResponse, httpResponse, err := r.Client.ApplicationsAPI.UpdateApplication(r.AuthContext(ctx), state.ID.ValueString()).ApiApplicationDTO(plan.MapToApi()).Execute()
+	apiResponse, httpResponse, err := r.Client.ApplicationsAPI.UpdateApplication(r.AuthContext(ctx), state.ID.ValueString()).ApiApplicationDTO(plan.MapToApi(true)).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(

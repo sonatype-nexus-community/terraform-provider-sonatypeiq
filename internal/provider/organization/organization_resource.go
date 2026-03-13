@@ -83,7 +83,7 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	apiResponse, httpResponse, err := r.Client.OrganizationsAPI.AddOrganization(r.AuthContext(ctx)).ApiOrganizationDTO(*plan.MapToApi()).Execute()
+	apiResponse, httpResponse, err := r.Client.OrganizationsAPI.AddOrganization(r.AuthContext(ctx)).ApiOrganizationDTO(*plan.MapToApi(false)).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(
@@ -104,7 +104,7 @@ func (r *organizationResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	// Map response to State
-	plan.MapFromApi(apiResponse)
+	plan.MapFromApi(ctx, apiResponse)
 
 	// Update State
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
@@ -149,7 +149,7 @@ func (r *organizationResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	// Update State based on Response
-	state.MapFromApi(apiResponse)
+	state.MapFromApi(ctx, apiResponse)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return

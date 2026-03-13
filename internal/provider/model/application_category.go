@@ -17,6 +17,7 @@
 package model
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
@@ -45,6 +46,17 @@ func (m *TagModel) MapToApi() *sonatypeiq.ApiTagDTO {
 	api.Description = m.Description.ValueStringPointer()
 	api.Color = m.Color.ValueStringPointer()
 	return api
+}
+
+func TagModelType() attr.Type {
+	return types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"id":          types.StringType,
+			"name":        types.StringType,
+			"description": types.StringType,
+			"color":       types.StringType,
+		},
+	}
 }
 
 // ApplicationCategory

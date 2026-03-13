@@ -17,6 +17,8 @@
 package model
 
 import (
+	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
@@ -28,11 +30,11 @@ type OrganizationsModel struct {
 	Organizations []OrganizationModel `tfsdk:"organizations"`
 }
 
-func (m *OrganizationsModel) MapFromApi(api *sonatypeiq.ApiOrganizationListDTO) {
+func (m *OrganizationsModel) MapFromApi(ctx context.Context, api *sonatypeiq.ApiOrganizationListDTO) {
 	m.Organizations = make([]OrganizationModel, 0)
 	for _, apiOrg := range api.Organizations {
 		org := OrganizationModel{}
-		org.MapFromApi(&apiOrg)
+		org.MapFromApi(ctx, &apiOrg)
 		m.Organizations = append(m.Organizations, org)
 	}
 }
@@ -43,19 +45,21 @@ type OrganizationModel struct {
 	ID                    types.String `tfsdk:"id"`
 	Name                  types.String `tfsdk:"name"`
 	ParentOrganiziationId types.String `tfsdk:"parent_organization_id"`
-	Categories            []TagModel   `tfsdk:"categories"`
+	Categories            types.Set    `tfsdk:"categories"`
 }
 
-func (m *OrganizationModel) MapFromApi(api *sonatypeiq.ApiOrganizationDTO) {
+func (m *OrganizationModel) MapFromApi(ctx context.Context, api *sonatypeiq.ApiOrganizationDTO) {
 	m.ID = types.StringPointerValue(api.Id)
 	m.Name = types.StringPointerValue(api.Name)
 	m.ParentOrganiziationId = types.StringPointerValue(api.ParentOrganizationId)
-	m.Categories = make([]TagModel, 0)
+
+	tags := make([]TagModel, 0)
 	for _, apiTag := range api.Tags {
 		t := TagModel{}
 		t.MapFromApi(&apiTag)
-		m.Categories = append(m.Categories, t)
+		tags = append(tags, t)
 	}
+	m.Categories, _ = types.SetValueFrom(ctx, TagModelType(), tags)
 }
 
 // OrganizationModelResource
@@ -65,9 +69,11 @@ type OrganizationModelResource struct {
 	LastUpdated types.String `tfsdk:"last_updated"`
 }
 
-func (m *OrganizationModelResource) MapToApi() *sonatypeiq.ApiOrganizationDTO {
+func (m *OrganizationModelResource) MapToApi(includeId bool) *sonatypeiq.ApiOrganizationDTO {
 	api := sonatypeiq.NewApiOrganizationDTOWithDefaults()
-	api.Id = m.ID.ValueStringPointer()
+	if includeId {
+		api.Id = m.ID.ValueStringPointer()
+	}
 	api.Name = m.Name.ValueStringPointer()
 	api.ParentOrganizationId = m.ParentOrganiziationId.ValueStringPointer()
 	// api.Tags = make([]sonatypeiq.ApiTagDTO, 0)

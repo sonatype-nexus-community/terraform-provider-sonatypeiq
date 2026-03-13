@@ -66,7 +66,7 @@ func (d *organizationsDataSource) Schema(_ context.Context, _ datasource.SchemaR
 						"id":                     schema.DataSourceComputedString("Internal ID of the Organization"),
 						"name":                   schema.DataSourceComputedString("Name of the Organization"),
 						"parent_organization_id": schema.DataSourceComputedString("Internal ID of the Organization to which this Organization belongs"),
-						"categories": schema.DataSourceComputedListNestedAttribute(
+						"categories": schema.DataSourceComputedSetNestedAttribute(
 							"List of Application Categories defined in this Organization",
 							tfschema.NestedAttributeObject{
 								Attributes: map[string]tfschema.Attribute{
@@ -111,7 +111,7 @@ func (d *organizationsDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	// Assign Response Data to State
 	data.ID = types.StringValue("all-organizations")
-	data.MapFromApi(apiResponse)
+	data.MapFromApi(ctx, apiResponse)
 
 	// Set state
 	diags := resp.State.Set(ctx, &data)
