@@ -19,6 +19,9 @@ package common
 import "regexp"
 
 const (
+	DEFAULT_MAIL_SERVER_PORT          int32  = 465
+	DEFAULT_MAIL_SSL_ENABLED          bool   = true
+	DEFAULT_MAIL_START_TLS_ENABLED    bool   = true
 	DEFAULT_USER_REALM                string = "Internal"
 	MEMBER_TYPE_GROUP                 string = "group"
 	MEMBER_TYPE_USER                  string = "user"
@@ -35,6 +38,7 @@ const (
 	SCM_PROVIDER_GITHUB               string = "github"
 	SCM_PROVIDER_GITLAB               string = "gitlab"
 	STATE_ID_CROWD_CONFIGURATION      string = "system-crowd-configuration"
+	STATE_ID_MAIL_CONFIGURATION       string = "system-mail-configuration"
 	STATE_ID_IQ_PRODUCT_LICENSE       string = "system-product-license"
 	USER_REALM_INTERNAL               string = "Internal"
 	USER_REALM_SAML                   string = "SAML"

@@ -18,43 +18,28 @@ package system
 
 import (
 	"context"
-	"math/rand"
-	"strconv"
+	"fmt"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
+	"terraform-provider-sonatypeiq/internal/provider/model"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
-	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
-	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
-)
-
-const (
-	mailDefaultPort            int64 = 465
-	mailDefaultSSLEnabled      bool  = true
-	mailDefaultStartTLSEnabled bool  = true
 )
 
 // configMailResource is the resource implementation.
 type configMailResource struct {
 	common.BaseResource
-}
-
-type configMailModelResource struct {
-	ID                 types.String `tfsdk:"id"`
-	Hostname           types.String `tfsdk:"hostname"`
-	Port               types.Int64  `tfsdk:"port"`
-	Username           types.String `tfsdk:"username"`
-	Password           types.String `tfsdk:"password"`
-	PasswordIsIncluded types.Bool   `tfsdk:"password_is_included"`
-	SSLEnabled         types.Bool   `tfsdk:"ssl_enabled"`
-	StartTLSEnabled    types.Bool   `tfsdk:"start_tls_enabled"`
-	SystemEmail        types.String `tfsdk:"system_email"`
-	LastUpdated        types.String `tfsdk:"last_updated"`
 }
 
 // NewConfigMailResource is a helper function to simplify the provider implementation.
@@ -72,75 +57,33 @@ func (r *configMailResource) Schema(_ context.Context, _ resource.SchemaRequest,
 	resp.Schema = schema.Schema{
 		Description: "Manage outbound email server configuration for IQ Server",
 		Attributes: map[string]schema.Attribute{
-			"id":                   sharedrschema.ResourceComputedString(""),
-			"hostname":             sharedrschema.ResourceRequiredString("Hostname of the SMTP server"),
-			"port":                 sharedrschema.ResourceComputedOptionalInt64WithDefault("Port Number for the SMTP server", mailDefaultPort),
-			"username":             sharedrschema.ResourceOptionalString("Username for the SMTP server"),
-			"password":             sharedrschema.ResourceSensitiveString("Password for the SMTP server"),
-			"password_is_included": sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether the password is included", false),
-			"ssl_enabled":          sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether SSL is enabled to SMTP server", mailDefaultSSLEnabled),
-			"start_tls_enabled":    sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether STARTTLS is enabled to SMTP server", mailDefaultStartTLSEnabled),
-			"system_email":         sharedrschema.ResourceRequiredString("The email address emails sent by Sonatype IQ Server will appear FROM"),
-			"last_updated":         sharedrschema.ResourceLastUpdated(),
+			"id":                sharedrschema.ResourceComputedString("Internal ID for Terraform State"),
+			"hostname":          sharedrschema.ResourceRequiredString("Hostname of the SMTP server"),
+			"port":              sharedrschema.ResourceComputedOptionalInt32WithDefault("Port Number for the SMTP server", common.DEFAULT_MAIL_SERVER_PORT),
+			"username":          sharedrschema.ResourceOptionalString("Username for the SMTP server"),
+			"password":          sharedrschema.ResourceSensitiveString("Password for the SMTP server"),
+			"ssl_enabled":       sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether SSL is enabled to SMTP server", common.DEFAULT_MAIL_SSL_ENABLED),
+			"start_tls_enabled": sharedrschema.ResourceComputedOptionalBoolWithDefault("Whether STARTTLS is enabled to SMTP server", common.DEFAULT_MAIL_START_TLS_ENABLED),
+			"system_email":      sharedrschema.ResourceRequiredString("The email address emails sent by Sonatype IQ Server will appear FROM"),
+			"last_updated":      sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *configMailResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
-	var plan configMailModelResource
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	var plan model.ConfigMailModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Call API to create Application
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	r.doUpsert(ctx, &plan, &resp.State, &resp.Diagnostics)
 
-	var port = new(int32)
-	*port = int32(plan.Port.ValueInt64())
-	mail_config := sonatypeiq.ApiMailConfigurationDTO{
-		Hostname:        sharedutil.StringToPtr(plan.Hostname.ValueString()),
-		Port:            port,
-		Username:        sharedutil.StringToPtr(plan.Username.ValueString()),
-		SslEnabled:      sharedutil.BoolToPtr(plan.SSLEnabled.ValueBool()),
-		StartTlsEnabled: sharedutil.BoolToPtr(plan.StartTLSEnabled.ValueBool()),
-		SystemEmail:     sharedutil.StringToPtr(plan.SystemEmail.ValueString()),
-	}
-	if !plan.Password.IsNull() {
-		mail_config.Password = sharedutil.StringToPtr(plan.Password.ValueString())
-		mail_config.SetPasswordIsIncluded(true)
-	} else {
-		mail_config.SetPasswordIsIncluded(false)
-	}
-
-	mail_config_request := r.Client.ConfigMailAPI.SetConfiguration2(ctx)
-	mail_config_request = mail_config_request.ApiMailConfigurationDTO(mail_config)
-	api_response, err := mail_config_request.Execute()
-
-	// Call API
-	if err != nil {
-		sharederr.HandleAPIError(
-			"Error creating Mail Configuration",
-			&err,
-			api_response,
-			&resp.Diagnostics,
-		)
-		return
-	}
-
-	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(strconv.FormatUint(uint64(rand.Uint32())<<32+uint64(rand.Uint32()), 36))
-	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, plan)
+	// Update State
+	diags := resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -149,51 +92,22 @@ func (r *configMailResource) Create(ctx context.Context, req resource.CreateRequ
 
 // Read refreshes the Terraform state with the latest data.
 func (r *configMailResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state configMailModelResource
-
+	// Retrieve values from state
+	var state model.ConfigMailModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	// Get refreshed Mail Config from IQ
-	mail_config, api_response, err := r.Client.ConfigMailAPI.GetConfiguration2(ctx).Execute()
-
-	if err != nil {
-		if sharederr.IsNotFound(api_response.StatusCode) {
-			resp.State.RemoveResource(ctx)
-		} else {
-			sharederr.HandleAPIError(
-				"Error Reading IQ Mail Configuration",
-				&err,
-				api_response,
-				&resp.Diagnostics,
-			)
-		}
+	apiResponse := r.doRead(ctx, &resp.State, &resp.Diagnostics)
+	if apiResponse == nil {
 		return
 	}
 
-	// Overwrite items with refreshed state
-	state.Hostname = sharedutil.StringPtrToValue(mail_config.Hostname)
-	state.Port = types.Int64Value(int64(*mail_config.Port))
-	state.Username = types.StringNull()
-	if mail_config.HasUsername() {
-		state.Username = sharedutil.StringPtrToValue(mail_config.Username)
-	}
-	state.Password = types.StringNull()
-	state.PasswordIsIncluded = sharedutil.BoolPtrToValue(mail_config.PasswordIsIncluded)
-	state.SSLEnabled = sharedutil.BoolPtrToValue(mail_config.SslEnabled)
-	state.StartTLSEnabled = sharedutil.BoolPtrToValue(mail_config.StartTlsEnabled)
-	state.SystemEmail = sharedutil.StringPtrToValue(mail_config.SystemEmail)
-
-	// Set refreshed state
+	// Update State based on Response
+	state.MapFromApi(apiResponse)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -202,59 +116,18 @@ func (r *configMailResource) Read(ctx context.Context, req resource.ReadRequest,
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *configMailResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Retrieve values from plan
-	var plan configMailModelResource
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	var plan model.ConfigMailModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Call API to create Application
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	r.doUpsert(ctx, &plan, &resp.State, &resp.Diagnostics)
 
-	var port = new(int32)
-	*port = int32(plan.Port.ValueInt64())
-	mail_config := sonatypeiq.ApiMailConfigurationDTO{
-		Hostname:        sharedutil.StringToPtr(plan.Hostname.ValueString()),
-		Port:            port,
-		Username:        sharedutil.StringToPtr(plan.Username.ValueString()),
-		SslEnabled:      sharedutil.BoolToPtr(plan.SSLEnabled.ValueBool()),
-		StartTlsEnabled: sharedutil.BoolToPtr(plan.StartTLSEnabled.ValueBool()),
-		SystemEmail:     sharedutil.StringToPtr(plan.SystemEmail.ValueString()),
-	}
-	if !plan.Password.IsNull() {
-		mail_config.Password = sharedutil.StringToPtr(plan.Password.ValueString())
-		mail_config.SetPasswordIsIncluded(true)
-	} else {
-		mail_config.SetPasswordIsIncluded(false)
-	}
-
-	mail_config_request := r.Client.ConfigMailAPI.SetConfiguration2(ctx)
-	mail_config_request = mail_config_request.ApiMailConfigurationDTO(mail_config)
-	api_response, err := mail_config_request.Execute()
-
-	// Call API
-	if err != nil {
-		sharederr.HandleAPIError(
-			"Error updating Mail Configuration",
-			&err,
-			api_response,
-			&resp.Diagnostics,
-		)
-		return
-	}
-
-	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(strconv.FormatUint(uint64(rand.Uint32())<<32+uint64(rand.Uint32()), 36))
-	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, plan)
+	// Update State
+	diags := resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -263,22 +136,75 @@ func (r *configMailResource) Update(ctx context.Context, req resource.UpdateRequ
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *configMailResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// Make Delete API Call
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	httpResponse, err := r.Client.ConfigMailAPI.DeleteConfiguration2(r.AuthContext(ctx)).Execute()
 
-	api_response, err := r.Client.ConfigMailAPI.DeleteConfiguration2(ctx).Execute()
-
-	if err != nil {
-		sharederr.HandleAPIError(
-			"Error deleting Mail Configuration",
-			&err,
-			api_response,
-			&resp.Diagnostics,
+	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
+		resp.Diagnostics.AddError(
+			common.ERR_MAIL_CONFIGURATION_DID_NOT_EXIST,
+			fmt.Sprintf("%v", err),
 		)
 		return
 	}
+}
+
+func (r *configMailResource) doRead(ctx context.Context, respState *tfsdk.State, respDiags *diag.Diagnostics) *sonatypeiq.ApiMailConfigurationDTO {
+	apiResponse, httpResponse, err := r.Client.ConfigMailAPI.GetConfiguration2(r.AuthContext(ctx)).Execute()
+
+	if err != nil {
+		if httpResponse.StatusCode == http.StatusNotFound {
+			respState.RemoveResource(ctx)
+			errors.HandleAPIWarning(
+				"Mail configuration did not exist",
+				&err,
+				httpResponse,
+				respDiags,
+			)
+		} else {
+			errors.HandleAPIError(
+				common.ERR_FAILED_READING_MAIL_CONFIGURATION,
+				&err,
+				httpResponse,
+				respDiags,
+			)
+		}
+		return nil
+	}
+
+	return apiResponse
+}
+
+func (r *configMailResource) doUpsert(ctx context.Context, model *model.ConfigMailModel, respState *tfsdk.State, respDiags *diag.Diagnostics) {
+	httpResponse, err := r.Client.ConfigMailAPI.SetConfiguration2(r.AuthContext(ctx)).ApiMailConfigurationDTO(*model.MapToApi()).Execute()
+
+	if err != nil {
+		errors.HandleAPIError(
+			"Error creating/updating Mail configuration",
+			&err,
+			httpResponse,
+			respDiags,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusNoContent {
+		errors.HandleAPIError(
+			"Upsertion of Mail configuration was not successful",
+			&err,
+			httpResponse,
+			respDiags,
+		)
+		return
+	}
+
+	apiResponse := r.doRead(ctx, respState, respDiags)
+	if apiResponse == nil {
+		return
+	}
+
+	// Map response to State
+	model.MapFromApi(apiResponse)
+	model.ID = types.StringValue(common.STATE_ID_MAIL_CONFIGURATION)
+	model.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+}
+
+func (r *configMailResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
