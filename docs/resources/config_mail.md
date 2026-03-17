@@ -45,3 +45,14 @@ resource "sonatypeiq_config_mail" "mail_config" {
 
 - `id` (String) Internal ID for Terraform State
 - `last_updated` (String) String representation of the date/time the resource was last changed
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# System Mail Configuration can be imported.
+
+# Example
+terraform import sonatypeiq_config_mail.config system-mail-configuration
+```

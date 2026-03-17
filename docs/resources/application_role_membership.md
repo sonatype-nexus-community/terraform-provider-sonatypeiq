@@ -57,3 +57,15 @@ resource "sonatypeiq_application_role_membership" "application_role_membership" 
 
 - `id` (String) The ID of this resource.
 - `last_updated` (String) String representation of the date/time the resource was last changed
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Application Role Memberships can be imported.
+
+# Example
+terraform import sonatypeiq_application_role_membership.rm1 <APPLICATION-ID>,<ROLE-ID>,<group|user>,<group-name|user-name>
+terraform import sonatypeiq_application_role_membership.rm1 11614d18e28b4cbe9dae03d1cf00d663,11614d18e28b4cbe9dae03d1cf00d663,group,saml-admins
+```
