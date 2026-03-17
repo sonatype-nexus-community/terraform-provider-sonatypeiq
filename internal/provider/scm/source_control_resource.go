@@ -83,6 +83,7 @@ func (r *sourceControlResource) Schema(_ context.Context, _ resource.SchemaReque
 					"The token for use with the SCM Provider",
 					stringplanmodifier.UseStateForUnknown(),
 				)
+				attr.Computed = false
 				attr.Validators = append(attr.Validators, stringvalidator.AlsoRequires(path.MatchRoot("scm_provider")))
 				return attr
 			}(),

@@ -105,7 +105,7 @@ func (r *configProxyServerResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	// Update State based on Response
-	state.MapFromApi(apiResponse)
+	state.MapFromApi(ctx, apiResponse)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -172,7 +172,7 @@ func (r *configProxyServerResource) doRead(ctx context.Context, respState *tfsdk
 }
 
 func (r *configProxyServerResource) doUpsert(ctx context.Context, model *model.ConfigProxyModel, respState *tfsdk.State, respDiags *diag.Diagnostics) {
-	httpResponse, err := r.Client.ConfigProxyServerAPI.SetConfiguration3(r.AuthContext(ctx)).ApiProxyServerConfigurationDTO(*model.MapToApi()).Execute()
+	httpResponse, err := r.Client.ConfigProxyServerAPI.SetConfiguration3(r.AuthContext(ctx)).ApiProxyServerConfigurationDTO(*model.MapToApi(ctx)).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(
@@ -198,7 +198,7 @@ func (r *configProxyServerResource) doUpsert(ctx context.Context, model *model.C
 	}
 
 	// Map response to State
-	model.MapFromApi(apiResponse)
+	model.MapFromApi(ctx, apiResponse)
 	model.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 }
 

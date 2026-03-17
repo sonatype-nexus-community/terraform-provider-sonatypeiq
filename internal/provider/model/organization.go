@@ -76,10 +76,5 @@ func (m *OrganizationModelResource) MapToApi(includeId bool) *sonatypeiq.ApiOrga
 	}
 	api.Name = m.Name.ValueStringPointer()
 	api.ParentOrganizationId = m.ParentOrganiziationId.ValueStringPointer()
-	// api.Tags = make([]sonatypeiq.ApiTagDTO, 0)
-	// for _, mCat := range m.Categories {
-	// 	tag := mCat.MapToApi()
-	// 	api.Tags = append(api.Tags, *tag)
-	// }
 	return api
 }

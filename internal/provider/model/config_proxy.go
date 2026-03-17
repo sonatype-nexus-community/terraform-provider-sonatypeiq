@@ -17,6 +17,7 @@
 package model
 
 import (
+	"context"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -24,28 +25,29 @@ import (
 )
 
 type ConfigProxyModel struct {
-	ID           types.String   `tfsdk:"id"`
-	Hostname     types.String   `tfsdk:"hostname"`
-	Port         types.Int32    `tfsdk:"port"`
-	Username     types.String   `tfsdk:"username"`
-	Password     types.String   `tfsdk:"password"`
-	ExcludeHosts []types.String `tfsdk:"exclude_hosts"`
-	LastUpdated  types.String   `tfsdk:"last_updated"`
+	ID           types.String `tfsdk:"id"`
+	Hostname     types.String `tfsdk:"hostname"`
+	Port         types.Int32  `tfsdk:"port"`
+	Username     types.String `tfsdk:"username"`
+	Password     types.String `tfsdk:"password"`
+	ExcludeHosts types.Set    `tfsdk:"exclude_hosts"`
+	LastUpdated  types.String `tfsdk:"last_updated"`
 }
 
-func (m *ConfigProxyModel) MapFromApi(api *sonatypeiq.ApiProxyServerConfigurationDTO) {
+func (m *ConfigProxyModel) MapFromApi(ctx context.Context, api *sonatypeiq.ApiProxyServerConfigurationDTO) {
 	m.ID = types.StringValue(common.STATE_ID_PROXY_CONFIGURATION)
 	m.Hostname = types.StringPointerValue(api.Hostname)
 	m.Port = types.Int32PointerValue(api.Port)
 	m.Username = types.StringPointerValue(api.Username)
 	// Password never returned by API
-	m.ExcludeHosts = make([]types.String, 0)
+	excludeHosts := make([]string, 0)
 	for _, excludeHost := range api.GetExcludeHosts() {
-		m.ExcludeHosts = append(m.ExcludeHosts, types.StringValue(excludeHost))
+		excludeHosts = append(excludeHosts, excludeHost)
 	}
+	m.ExcludeHosts, _ = types.SetValueFrom(ctx, types.StringType, excludeHosts)
 }
 
-func (m *ConfigProxyModel) MapToApi() *sonatypeiq.ApiProxyServerConfigurationDTO {
+func (m *ConfigProxyModel) MapToApi(ctx context.Context) *sonatypeiq.ApiProxyServerConfigurationDTO {
 	api := sonatypeiq.NewApiProxyServerConfigurationDTOWithDefaults()
 	api.Hostname = m.Hostname.ValueStringPointer()
 	api.Port = m.Port.ValueInt32Pointer()
@@ -56,9 +58,8 @@ func (m *ConfigProxyModel) MapToApi() *sonatypeiq.ApiProxyServerConfigurationDTO
 	} else {
 		api.PasswordIsIncluded = sonatypeiq.PtrBool(true)
 	}
-	api.ExcludeHosts = make([]string, 0)
-	for _, excludeHost := range m.ExcludeHosts {
-		api.ExcludeHosts = append(api.ExcludeHosts, excludeHost.ValueString())
-	}
+	var excludeHosts []string
+	m.ExcludeHosts.ElementsAs(ctx, &excludeHosts, false)
+	api.SetExcludeHosts(excludeHosts)
 	return api
 }

@@ -41,7 +41,7 @@ func TestAccSourceControlApplicationResourceMinimumConfig(t *testing.T) {
 						resource.TestCheckResourceAttr(resourceName, "repository_url", "https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq.git"),
 						resource.TestCheckNoResourceAttr(resourceName, "base_branch"),
 						resource.TestCheckNoResourceAttr(resourceName, "user_name"),
-						resource.TestCheckNoResourceAttr(resourceName, "remediation_pull_requests_enabled"),
+						resource.TestCheckResourceAttr(resourceName, "remediation_pull_requests_enabled", "false"),
 						resource.TestCheckNoResourceAttr(resourceName, "pull_request_commenting_enabled"),
 						resource.TestCheckNoResourceAttr(resourceName, "source_control_evaluation_enabled"),
 						resource.TestCheckNoResourceAttr(resourceName, "token"),
