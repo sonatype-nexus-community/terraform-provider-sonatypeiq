@@ -2,6 +2,18 @@
 
 ## X.Y.Z (Unreleased)
 
+BREAKING CHANGES:
+
+See the [Migration Guide](./MIGRATION-1.0.md) for help migrating from v0.x.x versions of this provider.
+
+* Updated Data Sources to always have an `id` and be defined consistently [GH-63]. See [Migration Guide](./MIGRATION-1.0.md) for impacted data sources.
+* Updated Resources to ensure they always have an `id` and `last_updated` for consistency [Gh-64]. See [Migration Guide](./MIGRATION-1.0.md) for impacted resources.
+
+ENHANCEMENTS:
+
+* Adopted shared library to improve mantainability and consistency [GH-60]
+* A number of additional resources now support import - see [Migration Guide](./MIGRATION-1.0.md)
+* Resource `sonatypeiq_organization` now includes nested `categories`
 
 ## 0.12.1 October 24, 2025
 
