@@ -109,10 +109,11 @@ jobs:
                     # - '1.191.0-01' # Known issues fresh booting with H2 internal DB
                     #- '1.192.0-01'
                     #- '1.193.0-01'
-                    - '1.194.0-01'
+                    # - '1.194.0-01'
                     - '1.195.0-01'
                     - '1.196.0-01'
-                    - '1.197.0-01' # LATEST
+                    - '1.197.0-01'
+                    - '1.198.0-01' # LATEST
                 # list whatever Terraform versions here you would like to support
                 terraform:
                     - '1.0.*' # Minimum
