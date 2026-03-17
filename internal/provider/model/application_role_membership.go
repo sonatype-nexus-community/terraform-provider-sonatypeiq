@@ -16,11 +16,17 @@
 
 package model
 
-import "github.com/hashicorp/terraform-plugin-framework/types"
+import (
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
-type TagModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Color       types.String `tfsdk:"color"`
+// ApplicationRoleMembershipModelResource
+// ------------------------------------------------------------
+type ApplicationRoleMembershipModelResource struct {
+	ID            types.String `tfsdk:"id"`
+	RoleId        types.String `tfsdk:"role_id"`
+	ApplicationId types.String `tfsdk:"application_id"`
+	UserName      types.String `tfsdk:"user_name"`
+	GroupName     types.String `tfsdk:"group_name"`
+	LastUpdated   types.String `tfsdk:"last_updated"`
 }

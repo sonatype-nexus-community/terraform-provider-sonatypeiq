@@ -19,15 +19,16 @@ package application
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -46,11 +47,6 @@ type applicationsDataSource struct {
 	common.BaseDataSource
 }
 
-type applicationsDataSourceModel struct {
-	ID           types.String             `tfsdk:"id"`
-	Applications []model.ApplicationModel `tfsdk:"applications"`
-}
-
 // Metadata returns the data source type name.
 func (d *applicationsDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_applications"
@@ -58,118 +54,67 @@ func (d *applicationsDataSource) Metadata(_ context.Context, req datasource.Meta
 
 // Schema defines the schema for the data source.
 func (d *applicationsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+	resp.Schema = tfschema.Schema{
 		Description: "Use this data source to get all Applications",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"applications": schema.ListNestedAttribute{
-				Computed: true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"id": schema.StringAttribute{
-							Description: "Internal ID of the Application",
-							Computed:    true,
-							Optional:    true,
-						},
-						"public_id": schema.StringAttribute{
-							Description: "Public ID of the Application",
-							Computed:    true,
-							Optional:    true,
-						},
-						"name": schema.StringAttribute{
-							Description: "Name of the Application",
-							Computed:    true,
-							Optional:    true,
-						},
-						"organization_id": schema.StringAttribute{
-							Description: "Internal ID of the Organization to which this Application belongs",
-							Computed:    true,
-						},
-						"contact_user_name": schema.StringAttribute{
-							Description: "User Name of the Contact for the Application",
-							Computed:    true,
-							Optional:    true,
-						},
-						"application_tags": schema.ListNestedAttribute{
-							Description: "List of Tags applied to this Application",
-							Computed:    true,
-							NestedObject: schema.NestedAttributeObject{
-								Attributes: map[string]schema.Attribute{
-									"id": schema.StringAttribute{
-										Description: "Internal ID of the Application-Tag link",
-										Computed:    true,
-									},
-									"tag_id": schema.StringAttribute{
-										Description: "Internal ID of the Tag",
-										Computed:    true,
-									},
-									"application_id": schema.StringAttribute{
-										Description: "Internal ID of the Application",
-										Computed:    true,
-									},
+		Attributes: map[string]tfschema.Attribute{
+			"id": schema.DataSourceComputedString("The ID of this resource."),
+			"applications": schema.DataSourceComputedListNestedAttribute(
+				"List of Applications",
+				tfschema.NestedAttributeObject{
+					Attributes: map[string]tfschema.Attribute{
+						"id":                schema.DataSourceComputedString("Internal ID of the Application"),
+						"public_id":         schema.DataSourceComputedString("Public ID of the Application"),
+						"name":              schema.DataSourceComputedString("Name of the Application"),
+						"organization_id":   schema.DataSourceComputedString("Internal ID of the Organization to which this Application belongs"),
+						"contact_user_name": schema.DataSourceComputedString("User Name of the Contact for the Application"),
+						"application_tags": schema.DataSourceComputedListNestedAttribute(
+							"List of Tags applied to this Application",
+							tfschema.NestedAttributeObject{
+								Attributes: map[string]tfschema.Attribute{
+									"id":             schema.DataSourceComputedString("Internal ID of the Application-Tag link"),
+									"tag_id":         schema.DataSourceComputedString("Internal ID of the Tag"),
+									"application_id": schema.DataSourceComputedString("Internal ID of the Application"),
 								},
 							},
-						},
+						),
 					},
 				},
-			},
+			),
 		},
 	}
 }
 
 // Read refreshes the Terraform state with the latest data.
 func (d *applicationsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state applicationsDataSourceModel
+	var data model.ApplicationsModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		d.Auth,
-	)
-
-	applicationList, _, err := d.Client.ApplicationsAPI.GetApplications(ctx).Execute()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read IQ Applications",
-			err.Error(),
-		)
+	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Iterating %d Applications", len(applicationList.Applications)))
+	apiResponse, httpResponse, err := d.Client.ApplicationsAPI.GetApplications(d.AuthContext(ctx)).Execute()
 
-	for _, application := range applicationList.Applications {
-		var contactUserName = types.StringNull()
-		if application.ContactUserName != nil {
-			contactUserName = types.StringValue(*application.ContactUserName)
-		}
-		applicationState := model.ApplicationModel{
-			ID:              types.StringValue(*application.Id),
-			PublicId:        types.StringValue(*application.PublicId),
-			Name:            types.StringValue(*application.Name),
-			OrganizationId:  types.StringValue(*application.OrganizationId),
-			ContactUserName: contactUserName,
-		}
-		for _, tag := range application.ApplicationTags {
-			applicationState.ApplicationTags = append(applicationState.ApplicationTags, model.ApplicationTagLinkModel{
-				ID:            types.StringValue(*tag.Id),
-				TagId:         types.StringValue(*tag.TagId),
-				ApplicationId: types.StringValue(*tag.ApplicationId),
-			})
-		}
-
-		state.Applications = append(state.Applications, applicationState)
-
-		tflog.Debug(ctx, fmt.Sprintf("   Appended: %p", state.Applications))
+	if err != nil {
+		errors.HandleAPIError(
+			common.ERR_FAILED_READING_APPLICATIONS,
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Applications", httpResponse, err)
+		return
 	}
 
-	// For test framework
-	state.ID = types.StringValue("placeholder")
+	// Assign Response Data to State
+	data.ID = types.StringValue("all-applications")
+	data.MapFromApi(apiResponse)
 
 	// Set state
-	diags := resp.State.Set(ctx, &state)
+	diags := resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -24,6 +24,7 @@ import (
 )
 
 func TestAccRoleDataSource(t *testing.T) {
+	var resourceName = "data.sonatypeiq_role.role_by_name"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -33,8 +34,8 @@ func TestAccRoleDataSource(t *testing.T) {
 					name = "Developer"
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.sonatypeiq_role.role_by_name", "name", "Developer"),
-					resource.TestCheckResourceAttr("data.sonatypeiq_role.role_by_name", "id", "1da70fae1fd54d6cb7999871ebdb9a36"),
+					resource.TestCheckResourceAttr(resourceName, "id", "1da70fae1fd54d6cb7999871ebdb9a36"),
+					resource.TestCheckResourceAttr(resourceName, "name", "Developer"),
 				),
 			},
 		},

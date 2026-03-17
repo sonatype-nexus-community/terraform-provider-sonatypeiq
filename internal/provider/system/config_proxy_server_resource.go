@@ -18,34 +18,28 @@ package system
 
 import (
 	"context"
-	"io"
-	"math/rand"
-	"strconv"
+	"fmt"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
+	"terraform-provider-sonatypeiq/internal/provider/model"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // configProxyServerResource is the resource implementation.
 type configProxyServerResource struct {
 	common.BaseResource
-}
-
-type configProxyServerModelResource struct {
-	ID                 types.String `tfsdk:"id"`
-	Hostname           types.String `tfsdk:"hostname"`
-	Port               types.Int64  `tfsdk:"port"`
-	Username           types.String `tfsdk:"username"`
-	Password           types.String `tfsdk:"password"`
-	PasswordIsIncluded types.Bool   `tfsdk:"password_is_included"`
-	ExcludeHosts       types.Set    `tfsdk:"exclude_hosts"`
-	LastUpdated        types.String `tfsdk:"last_updated"`
 }
 
 // NewConfigProxyServerResource is a helper function to simplify the provider implementation.
@@ -61,102 +55,33 @@ func (r *configProxyServerResource) Metadata(_ context.Context, req resource.Met
 // Schema defines the schema for the resource.
 func (r *configProxyServerResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manage outbound proxy server configuration for IQ Server",
+		Description: "Manage outbound Proxy Server configuration for IQ Server",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"hostname": schema.StringAttribute{
-				Description: "Hostname of the Proxy Server",
-				Required:    true,
-			},
-			"port": schema.Int64Attribute{
-				Description: "Port Number for the Proxy Server",
-				Required:    true,
-			},
-			"username": schema.StringAttribute{
-				Description: "Username for the Proxy Server",
-				Optional:    true,
-			},
-			"password": schema.StringAttribute{
-				Description: "Password for the Proxy Server",
-				Optional:    true,
-				Sensitive:   true,
-			},
-			"password_is_included": schema.BoolAttribute{
-				Description: "Whether the password is included",
-				Default:     booldefault.StaticBool(false),
-				Computed:    true,
-				Optional:    true,
-			},
-			"exclude_hosts": schema.SetAttribute{
-				Description: "Optional list of hosts to exclude communication via Proxy Server",
-				Computed:    true,
-				Optional:    true,
-				ElementType: types.StringType,
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"id":            sharedrschema.ResourceComputedString("Internal ID for Terraform State"),
+			"hostname":      sharedrschema.ResourceRequiredString("Hostname of the Proxy Server"),
+			"port":          sharedrschema.ResourceRequiredInt32("Port Number for the Proxy Server"),
+			"username":      sharedrschema.ResourceOptionalString("Username for the Proxy Server"),
+			"password":      sharedrschema.ResourceSensitiveString("Password for the Proxy Server"),
+			"exclude_hosts": sharedrschema.ResourceComputedOptionalStringSet("Optional list of hosts to exclude communication via Proxy Server"),
+			"last_updated":  sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *configProxyServerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
-	var plan configProxyServerModelResource
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	var plan model.ConfigProxyModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Call API to create Application
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	r.doUpsert(ctx, &plan, &resp.State, &resp.Diagnostics)
 
-	var port = new(int32)
-	*port = int32(plan.Port.ValueInt64())
-	proxy_config := sonatypeiq.ApiProxyServerConfigurationDTO{
-		Hostname: plan.Hostname.ValueStringPointer(),
-		Port:     port,
-		Username: plan.Username.ValueStringPointer(),
-	}
-	if !plan.Password.IsNull() {
-		proxy_config.Password = plan.Password.ValueStringPointer()
-		proxy_config.SetPasswordIsIncluded(true)
-	} else {
-		proxy_config.SetPasswordIsIncluded(false)
-	}
-
-	for _, exclude_host := range plan.ExcludeHosts.Elements() {
-		proxy_config.ExcludeHosts = append(proxy_config.ExcludeHosts, exclude_host.String())
-	}
-
-	proxy_config_request := r.Client.ConfigProxyServerAPI.SetConfiguration3(ctx)
-	proxy_config_request = proxy_config_request.ApiProxyServerConfigurationDTO(proxy_config)
-	api_response, err := proxy_config_request.Execute()
-
-	// Call API
-	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
-			"Error creating Proxy Server Configuration",
-			"Could not create Proxy Server Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
-		)
-		return
-	}
-
-	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(strconv.FormatUint(uint64(rand.Uint32())<<32+uint64(rand.Uint32()), 36))
-	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, plan)
+	// Update State
+	diags := resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -165,44 +90,22 @@ func (r *configProxyServerResource) Create(ctx context.Context, req resource.Cre
 
 // Read refreshes the Terraform state with the latest data.
 func (r *configProxyServerResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state configProxyServerModelResource
-
+	// Retrieve values from state
+	var state model.ConfigProxyModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	// Get refreshed Proxy Server Config from IQ
-	proxy_config, api_response, err := r.Client.ConfigProxyServerAPI.GetConfiguration3(ctx).Execute()
-
-	if err != nil {
-		if api_response.StatusCode == 404 {
-			resp.State.RemoveResource(ctx)
-		} else {
-			resp.Diagnostics.AddError(
-				"Error Reading IQ Proxy Server Configuration",
-				"Could not read Proxy Server Configuration: "+err.Error(),
-			)
-		}
+	apiResponse := r.doRead(ctx, &resp.State, &resp.Diagnostics)
+	if apiResponse == nil {
 		return
 	}
 
-	// Overwrite items with refreshed state
-	state.Hostname = types.StringValue(*proxy_config.Hostname)
-	state.Port = types.Int64Value(int64(*proxy_config.Port))
-	state.Username = types.StringValue(*proxy_config.Username)
-	state.Password = types.StringNull()
-	state.PasswordIsIncluded = types.BoolValue(*proxy_config.PasswordIsIncluded)
-	state.ExcludeHosts, _ = types.SetValueFrom(ctx, types.StringType, proxy_config.ExcludeHosts)
-
-	// Set refreshed state
+	// Update State based on Response
+	state.MapFromApi(ctx, apiResponse)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -211,58 +114,18 @@ func (r *configProxyServerResource) Read(ctx context.Context, req resource.ReadR
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *configProxyServerResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Retrieve values from plan
-	var plan configProxyServerModelResource
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	var plan model.ConfigProxyModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Call API to create Application
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	r.doUpsert(ctx, &plan, &resp.State, &resp.Diagnostics)
 
-	var port = new(int32)
-	*port = int32(plan.Port.ValueInt64())
-	proxy_config := sonatypeiq.ApiProxyServerConfigurationDTO{
-		Hostname: plan.Hostname.ValueStringPointer(),
-		Port:     port,
-		Username: plan.Username.ValueStringPointer(),
-	}
-	if !plan.Password.IsNull() {
-		proxy_config.Password = plan.Password.ValueStringPointer()
-		proxy_config.SetPasswordIsIncluded(true)
-	} else {
-		proxy_config.SetPasswordIsIncluded(false)
-	}
-
-	for _, exclude_host := range plan.ExcludeHosts.Elements() {
-		proxy_config.ExcludeHosts = append(proxy_config.ExcludeHosts, exclude_host.String())
-	}
-
-	proxy_config_request := r.Client.ConfigProxyServerAPI.SetConfiguration3(ctx)
-	proxy_config_request = proxy_config_request.ApiProxyServerConfigurationDTO(proxy_config)
-	api_response, err := proxy_config_request.Execute()
-
-	// Call API
-	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
-			"Error updating Proxy Server Configuration",
-			"Could not update Proxy Server Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
-		)
-		return
-	}
-
-	// Map response body to schema and populate Computed attribute values
-	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, plan)
+	// Update State
+	diags := resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -271,21 +134,74 @@ func (r *configProxyServerResource) Update(ctx context.Context, req resource.Upd
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *configProxyServerResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// Make Delete API Call
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	httpResponse, err := r.Client.ConfigProxyServerAPI.DeleteConfiguration3(r.AuthContext(ctx)).Execute()
 
-	api_response, err := r.Client.ConfigProxyServerAPI.DeleteConfiguration3(ctx).Execute()
-
-	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
+	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
 		resp.Diagnostics.AddError(
-			"Error deleting Proxy Server Configuration",
-			"Could not delete  Proxy Server Configuration, unexpected error: "+api_response.Status+": "+string(error_body),
+			common.ERR_PROXY_CONFIGURATION_DID_NOT_EXIST,
+			fmt.Sprintf("%v", err),
 		)
 		return
 	}
+}
+
+func (r *configProxyServerResource) doRead(ctx context.Context, respState *tfsdk.State, respDiags *diag.Diagnostics) *sonatypeiq.ApiProxyServerConfigurationDTO {
+	apiResponse, httpResponse, err := r.Client.ConfigProxyServerAPI.GetConfiguration3(r.AuthContext(ctx)).Execute()
+
+	if err != nil {
+		if httpResponse.StatusCode == http.StatusNotFound {
+			respState.RemoveResource(ctx)
+			errors.HandleAPIWarning(
+				"Proxy Server configuration did not exist",
+				&err,
+				httpResponse,
+				respDiags,
+			)
+		} else {
+			errors.HandleAPIError(
+				common.ERR_FAILED_READING_PROXY_CONFIGURATION,
+				&err,
+				httpResponse,
+				respDiags,
+			)
+		}
+		return nil
+	}
+
+	return apiResponse
+}
+
+func (r *configProxyServerResource) doUpsert(ctx context.Context, model *model.ConfigProxyModel, respState *tfsdk.State, respDiags *diag.Diagnostics) {
+	httpResponse, err := r.Client.ConfigProxyServerAPI.SetConfiguration3(r.AuthContext(ctx)).ApiProxyServerConfigurationDTO(*model.MapToApi(ctx)).Execute()
+
+	if err != nil {
+		errors.HandleAPIError(
+			"Error creating/updating Proxy Server configuration",
+			&err,
+			httpResponse,
+			respDiags,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusNoContent {
+		errors.HandleAPIError(
+			"Upsertion of Proxy Server configuration was not successful",
+			&err,
+			httpResponse,
+			respDiags,
+		)
+		return
+	}
+
+	apiResponse := r.doRead(ctx, respState, respDiags)
+	if apiResponse == nil {
+		return
+	}
+
+	// Map response to State
+	model.MapFromApi(ctx, apiResponse)
+	model.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+}
+
+func (r *configProxyServerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

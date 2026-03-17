@@ -17,6 +17,7 @@
 package application_test
 
 import (
+	"fmt"
 	"testing"
 
 	"terraform-provider-sonatypeiq/internal/provider/common"
@@ -26,19 +27,37 @@ import (
 )
 
 func TestAccApplicationCategoriesDataSource(t *testing.T) {
-	resourceName := "data.sonatypeiq_application_categories.root_cats"
+	resourceName := "data.sonatypeiq_application_categories.categories"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Read testing
 			{
-				Config: utils_test.ProviderConfig + `data "sonatypeiq_application_categories" "root_cats" {
+				Config: utils_test.ProviderConfig + `data "sonatypeiq_application_categories" "categories" {
 					organization_id = "` + common.ROOT_ORGANIZATION_ID + `"
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "id", fmt.Sprintf("application-categories-%s", common.ROOT_ORGANIZATION_ID)),
 					resource.TestCheckResourceAttr(resourceName, "organization_id", common.ROOT_ORGANIZATION_ID),
-					resource.TestCheckResourceAttrSet(resourceName, "categories.#"),
+					resource.TestCheckResourceAttr(resourceName, "categories.#", "3"),
+					// Distributed
+					resource.TestCheckResourceAttrSet(resourceName, "categories.0.id"),
+					resource.TestCheckResourceAttr(resourceName, "categories.0.name", "Distributed"),
+					resource.TestCheckResourceAttr(resourceName, "categories.0.description", "Applications that are provided for consumption outside the company"),
+					resource.TestCheckResourceAttr(resourceName, "categories.0.organization_id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttr(resourceName, "categories.0.color", "yellow"),
+					// Hosted
+					resource.TestCheckResourceAttrSet(resourceName, "categories.1.id"),
+					resource.TestCheckResourceAttr(resourceName, "categories.1.name", "Hosted"),
+					resource.TestCheckResourceAttr(resourceName, "categories.1.description", "Applications that are hosted such as services or software as a service."),
+					resource.TestCheckResourceAttr(resourceName, "categories.1.organization_id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttr(resourceName, "categories.1.color", "light-purple"),
+					// Internal
+					resource.TestCheckResourceAttrSet(resourceName, "categories.2.id"),
+					resource.TestCheckResourceAttr(resourceName, "categories.2.name", "Internal"),
+					resource.TestCheckResourceAttr(resourceName, "categories.2.description", "Applications that are used only by your employees"),
+					resource.TestCheckResourceAttr(resourceName, "categories.2.organization_id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttr(resourceName, "categories.2.color", "dark-green"),
 				),
 			},
 		},

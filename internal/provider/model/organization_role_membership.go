@@ -20,14 +20,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// ProductLicenseModelResource
-// -----------------------------------
-type ProductLicenseModelResource struct {
-	ID          types.String `tfsdk:"id"`
-	LicenseData types.String `tfsdk:"license_data"`
-	LastUpdated types.String `tfsdk:"last_updated"`
-}
-
-type ProductLicenseCreateModel struct {
-	LicenseData types.String `tfsdk:"license_data"`
+// OrganizationRoleMembershipModelResource
+// ------------------------------------------------------------
+type OrganizationRoleMembershipModelResource struct {
+	ID             types.String `tfsdk:"id"`
+	RoleId         types.String `tfsdk:"role_id"`
+	OrganizationId types.String `tfsdk:"organization_id"`
+	UserName       types.String `tfsdk:"user_name"`
+	GroupName      types.String `tfsdk:"group_name"`
+	LastUpdated    types.String `tfsdk:"last_updated"`
 }

@@ -26,10 +26,11 @@ import (
 
 func TestAccApplicationDataSource(t *testing.T) {
 	resourceName := "data.sonatypeiq_application.app_by_public_id"
+	resourceNameByInternalid := "data.sonatypeiq_application.app_by_internal_id"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// Read testing
+			// Read by Public ID
 			{
 				Config: utils_test.ProviderConfig + `data "sonatypeiq_application" "app_by_public_id" {
 					public_id = "sandbox-application"
@@ -39,6 +40,21 @@ func TestAccApplicationDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "public_id", "sandbox-application"),
 					resource.TestCheckResourceAttr(resourceName, "name", "Sandbox Application"),
 					resource.TestCheckResourceAttrSet(resourceName, "organization_id"),
+				),
+			},
+			// Read by Internal ID
+			{
+				Config: utils_test.ProviderConfig + `data "sonatypeiq_application" "app_by_public_id" {
+					public_id = "sandbox-application"
+				}
+				data "sonatypeiq_application" "app_by_internal_id" {
+					id = data.sonatypeiq_application.app_by_public_id.id
+				}`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceNameByInternalid, "id"),
+					resource.TestCheckResourceAttr(resourceNameByInternalid, "public_id", "sandbox-application"),
+					resource.TestCheckResourceAttr(resourceNameByInternalid, "name", "Sandbox Application"),
+					resource.TestCheckResourceAttrSet(resourceNameByInternalid, "organization_id"),
 				),
 			},
 		},

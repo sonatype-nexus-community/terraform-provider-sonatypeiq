@@ -18,40 +18,29 @@ package user
 
 import (
 	"context"
-	"crypto/sha1"
 	"fmt"
-	"io"
+	"net/http"
+	"strings"
 	"terraform-provider-sonatypeiq/internal/provider/common"
+	"terraform-provider-sonatypeiq/internal/provider/model"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // userResource is the resource implementation.
 type userResource struct {
 	common.BaseResource
-}
-
-type userModelResource struct {
-	ID          types.String `tfsdk:"id"`
-	Username    types.String `tfsdk:"username"`
-	Password    types.String `tfsdk:"password"`
-	FirstName   types.String `tfsdk:"first_name"`
-	LastName    types.String `tfsdk:"last_name"`
-	Email       types.String `tfsdk:"email"`
-	Realm       types.String `tfsdk:"realm"`
-	LastUpdated types.String `tfsdk:"last_updated"`
-}
-
-func (u *userModelResource) GenerateID() {
-	hash := sha1.New()
-	hash.Write([]byte(u.Username.ValueString() + u.Realm.ValueString()))
-	u.ID = types.StringValue(fmt.Sprintf("%x", hash.Sum(nil)))
 }
 
 // NewUserResource is a helper function to simplify the provider implementation.
@@ -69,104 +58,61 @@ func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	resp.Schema = schema.Schema{
 		Description: "Use this data source to manage Users",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"username": schema.StringAttribute{
-				Description: "Username used to log in to Sonatype IQ Server",
-				Required:    true,
-			},
-			"password": schema.StringAttribute{
-				Description: "Password used to log in to Sonatype IQ Server",
-				Optional:    true,
-				Sensitive:   true,
-			},
-			"first_name": schema.StringAttribute{
-				Description: "Users first name",
-				Required:    true,
-			},
-			"last_name": schema.StringAttribute{
-				Description: "Users last name",
-				Required:    true,
-			},
-			"email": schema.StringAttribute{
-				Description: "Users email address",
-				Required:    true,
-			},
-			"realm": schema.StringAttribute{
-				Description: fmt.Sprintf("Realm the User belongs to. Only '%s' is supported at this time.", common.DEFAULT_USER_REALM),
-				Default:     stringdefault.StaticString(common.DEFAULT_USER_REALM),
-				Computed:    true,
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"id":         sharedrschema.ResourceComputedString("Internal ID for Terraform State"),
+			"username":   sharedrschema.ResourceRequiredString("Username used to log in to Sonatype IQ Server"),
+			"password":   sharedrschema.ResourceSensitiveString("Password used to log in to Sonatype IQ Server"),
+			"first_name": sharedrschema.ResourceRequiredString("Users first name"),
+			"last_name":  sharedrschema.ResourceRequiredString("Users last name"),
+			"email":      sharedrschema.ResourceRequiredString("Users email address"),
+			"realm": sharedrschema.ResourceStringEnumWithDefault(
+				fmt.Sprintf("Realm the User belongs to. Only '%s' is supported at this time.", common.DEFAULT_USER_REALM),
+				common.DEFAULT_USER_REALM,
+				common.DEFAULT_USER_REALM,
+			),
+			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
-	var plan userModelResource
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	var plan model.UserModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Validation
-	if plan.Password.IsNull() || plan.Password.IsUnknown() {
-		resp.Diagnostics.AddError(
-			"No Password supplied",
-			"Password is required when creating a User",
-		)
-		return
-	}
-	if !plan.Realm.Equal(types.StringValue(common.DEFAULT_USER_REALM)) {
-		resp.Diagnostics.AddError(
-			"Unsupported Realm",
-			fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM),
-		)
-		return
-	}
+	httpResponse, err := r.Client.UsersAPI.Add(r.AuthContext(ctx)).ApiUserDTO(*plan.MapToApi(true)).Execute()
 
-	// Call API to create Organization
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	user_request := r.Client.UsersAPI.Add(ctx)
-	user_config := sonatypeiq.ApiUserDTO{
-		Username:  plan.Username.ValueStringPointer(),
-		Password:  plan.Password.ValueStringPointer(),
-		FirstName: plan.FirstName.ValueStringPointer(),
-		LastName:  plan.LastName.ValueStringPointer(),
-		Email:     plan.Email.ValueStringPointer(),
-		Realm:     plan.Realm.ValueStringPointer(),
-	}
-	user_request = user_request.ApiUserDTO(user_config)
-	api_response, err := user_request.Execute()
-
-	// Call API
-	if err != nil || api_response.StatusCode != 204 {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+	if err != nil {
+		errors.HandleAPIError(
 			"Error creating User",
-			"Could not create User, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusNoContent {
+		errors.HandleAPIError(
+			"Creation of User was not successful",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}
 
-	// Map response body to schema and populate Computed attribute values
-	plan.GenerateID()
-	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	apiResponse := r.doRead(ctx, plan.Username.ValueString(), plan.Realm.ValueString(), &resp.State, &resp.Diagnostics)
+	if apiResponse == nil {
+		return
+	}
 
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+	// Update State based on Response
+	plan.MapFromApi(apiResponse)
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -174,36 +120,22 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 // Read refreshes the Terraform state with the latest data.
 func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state userModelResource
+	// Retrieve values from state
+	var state model.UserModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	// Lookup System Configuration
-	user, api_response, err := r.Client.UsersAPI.Get1(ctx, state.Username.ValueString()).Execute()
-
-	if err != nil || api_response.StatusCode != 200 {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
-			"Error reading User",
-			"Could not read User, unexpected error: "+api_response.Status+": "+string(error_body),
-		)
+	apiResponse := r.doRead(ctx, state.Username.ValueString(), state.Realm.ValueString(), &resp.State, &resp.Diagnostics)
+	if apiResponse == nil {
 		return
 	}
 
-	state.FirstName = types.StringValue(*user.FirstName)
-	state.LastName = types.StringValue(*user.LastName)
-	state.Email = types.StringValue(*user.Email)
-	state.Realm = types.StringValue(*user.Realm)
-
-	// Set refreshed state
+	// Update State based on Response
+	state.MapFromApi(apiResponse)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -212,79 +144,55 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Retrieve values from plan
-	var plan userModelResource
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	var plan model.UserModel
+	var state model.UserModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
 		return
 	}
 
-	var state userModelResource
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
 	// Validation
-	if !plan.Password.IsNull() || !plan.Password.IsUnknown() {
-		resp.Diagnostics.AddWarning(
-			"Cannot change User Password - will be skipped",
-			"Changing User Password is not supported by Sonatype IQ Server",
-		)
+	if plan.Password.ValueString() != state.Password.ValueString() {
+		errors.AddValidationDiagnostic(&resp.Diagnostics, "password", "Changing User Password is not supported by Sonatype IQ Server")
 	}
-	if !plan.Realm.Equal(types.StringValue("Internal")) {
-		resp.Diagnostics.AddError(
-			"Unsupported Realm",
-			fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM),
-		)
+	if plan.Realm.ValueString() != common.USER_REALM_INTERNAL {
+		errors.AddValidationDiagnostic(&resp.Diagnostics, "realm", fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM))
 		return
 	}
 
-	// Call API to create Organization
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	apiResponse, httpResponse, err := r.Client.UsersAPI.Update(r.AuthContext(ctx), state.Username.ValueString()).ApiUserDTO(*plan.MapToApi(false)).Execute()
 
-	user_request := r.Client.UsersAPI.Update(ctx, state.Username.ValueString())
-	user_config := sonatypeiq.ApiUserDTO{
-		Username:  plan.Username.ValueStringPointer(),
-		FirstName: plan.FirstName.ValueStringPointer(),
-		LastName:  plan.LastName.ValueStringPointer(),
-		Email:     plan.Email.ValueStringPointer(),
-		Realm:     plan.Realm.ValueStringPointer(),
-	}
-	// Changing User Password not supported by IQ
-	// if !plan.Password.IsNull() {
-	// 	user_config.Password = plan.Password.ValueStringPointer()
-	// }
-	user_request = user_request.ApiUserDTO(user_config)
-	user, api_response, err := user_request.Execute()
-
-	// Call API
-	if err != nil || api_response.StatusCode != 200 {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+	if err != nil {
+		errors.HandleAPIError(
 			"Error updating User",
-			"Could not update User, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.HandleAPIError(
+			"Updating User was not successful",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}
 
-	// Map response body to schema and populate Computed attribute values
-	plan.Username = types.StringValue(*user.Username)
-	plan.FirstName = types.StringValue(*user.FirstName)
-	plan.LastName = types.StringValue(*user.LastName)
-	plan.Email = types.StringValue(*user.Email)
-	plan.Realm = types.StringValue(*user.Realm)
-	plan.GenerateID()
-	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	// Map response to State
+	state.MapFromApi(apiResponse)
 
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, plan)
+	// Update State
+	state.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	diags := resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -293,29 +201,62 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *userResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// Retrieve values from plan
-	var plan userModelResource
-	diags := req.State.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	// Retrieve values from state
+	var state model.UserModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Call API to create Organization
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	httpResponse, err := r.Client.UsersAPI.Delete1(r.AuthContext(ctx), state.Username.ValueString()).Realm(state.Realm.ValueString()).Execute()
 
-	// Call Delete API
-	api_response, err := r.Client.UsersAPI.Delete1(ctx, plan.Username.ValueString()).Execute()
-	if err != nil || api_response.StatusCode != 204 {
-		error_body, _ := io.ReadAll(api_response.Body)
+	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
 		resp.Diagnostics.AddError(
-			"Error deleting User",
-			"Could not delete User, unexpected error: "+api_response.Status+": "+string(error_body),
+			fmt.Sprintf(common.ERR_USER_DID_NOT_EXIST, state.ID.ValueString()),
+			fmt.Sprintf("%v", err),
 		)
 		return
 	}
+}
+
+func (r *userResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	idParts := strings.Split(req.ID, "-")
+	if len(idParts) < 3 {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected import identifier with format: user-[REALM]-[USERNAME] - Got: %q", req.ID),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("realm"), idParts[1])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("username"), idParts[2])...)
+}
+
+func (r *userResource) doRead(ctx context.Context, username, realm string, respState *tfsdk.State, respDiags *diag.Diagnostics) *sonatypeiq.ApiUserDTO {
+	apiResponse, httpResponse, err := r.Client.UsersAPI.Get1(r.AuthContext(ctx), username).Realm(realm).Execute()
+
+	if err != nil {
+		if httpResponse.StatusCode == http.StatusNotFound {
+			respState.RemoveResource(ctx)
+			errors.HandleAPIWarning(
+				"User did not exist",
+				&err,
+				httpResponse,
+				respDiags,
+			)
+		} else {
+			errors.HandleAPIError(
+				fmt.Sprintf(common.ERR_FAILED_READING_USER_AT_REALM, username, realm),
+				&err,
+				httpResponse,
+				respDiags,
+			)
+		}
+		return nil
+	}
+
+	return apiResponse
 }

@@ -36,7 +36,6 @@ resource "sonatypeiq_config_mail" "mail_config" {
 ### Optional
 
 - `password` (String, Sensitive) Password for the SMTP server
-- `password_is_included` (Boolean) Whether the password is included
 - `port` (Number) Port Number for the SMTP server
 - `ssl_enabled` (Boolean) Whether SSL is enabled to SMTP server
 - `start_tls_enabled` (Boolean) Whether STARTTLS is enabled to SMTP server
@@ -44,5 +43,5 @@ resource "sonatypeiq_config_mail" "mail_config" {
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
-- `last_updated` (String)
+- `id` (String) Internal ID for Terraform State
+- `last_updated` (String) String representation of the date/time the resource was last changed

@@ -20,24 +20,24 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // applicationCategoryResource is the resource implementation.
 type applicationCategoryResource struct {
-	common.BaseResourceWithImport
+	common.BaseResource
 }
 
 // NewApplicationCategoryResource is a helper function to simplify the provider implementation.
@@ -55,34 +55,15 @@ func (r *applicationCategoryResource) Schema(_ context.Context, _ resource.Schem
 	resp.Schema = schema.Schema{
 		Description: "Use this resource to manage Application Categories/Tags which can then be applied to Applications.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Internal ID of the Application Category",
-				Computed:    true,
-				Required:    false,
-				Optional:    false,
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the Application Category",
-				Required:    true,
-			},
-			"description": schema.StringAttribute{
-				Description: "Description of the Application Category",
-				Required:    true,
-			},
-			"organization_id": schema.StringAttribute{
-				Description: "Internal ID of the Organization to which this Application Category belongs. Use `ROOT_ORGANIZATION_ID` for the Root Organization.",
-				Required:    true,
-			},
-			"color": schema.StringAttribute{
-				Description: "Color of the Application Category",
-				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.OneOf(model.AllColors()...),
-				},
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"id":              sharedrschema.ResourceComputedString("Internal ID of the Application Category"),
+			"name":            sharedrschema.ResourceRequiredString("Name of the Application Category"),
+			"description":     sharedrschema.ResourceRequiredString("Description of the Application Category"),
+			"organization_id": sharedrschema.ResourceRequiredString("Internal ID of the Organization to which this Application Category belongs. Use `ROOT_ORGANIZATION_ID` for the Root Organization."),
+			"color": sharedrschema.ResourceRequiredStringEnum(
+				"Color of the Application Category",
+				model.AllColors()...,
+			),
+			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }
@@ -91,47 +72,43 @@ func (r *applicationCategoryResource) Schema(_ context.Context, _ resource.Schem
 func (r *applicationCategoryResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
 	var plan model.ApplicationCategoryModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Call API to Create
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	apiDto := sonatypeiq.NewApiApplicationCategoryDTOWithDefaults()
-	plan.MapToApi(apiDto)
 	apiResponse, httpResponse, err := r.Client.ApplicationCategoriesAPI.AddTag(
-		ctx, plan.OrganizationId.ValueString(),
-	).ApiApplicationCategoryDTO(*apiDto).Execute()
+		r.AuthContext(ctx),
+		plan.OrganizationId.ValueString(),
+	).ApiApplicationCategoryDTO(*plan.MapToApi(false)).Execute()
 
-	// Handle Errors
 	if err != nil {
-		common.HandleApiError(
+		errors.HandleAPIError(
 			"Error creating Application Category",
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
 		)
 		return
-	}
-	if httpResponse.StatusCode != http.StatusOK {
-		common.HandleApiError(
-			"Creation of Application Category unsuccesful",
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.HandleAPIError(
+			"Creation of Application Category was not successful",
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
 		)
+		return
 	}
 
+	// Map response to State
 	plan.MapFromApi(apiResponse)
+
+	// Update State
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	diags := resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -141,47 +118,47 @@ func (r *applicationCategoryResource) Create(ctx context.Context, req resource.C
 func (r *applicationCategoryResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// Retrieve values from state
 	var state model.ApplicationCategoryModel
-	resp.Diagnostics.Append(resp.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
-	// Handle any errors
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Set API Context
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	apiResponse, httpResponse, err := r.Client.ApplicationCategoriesAPI.GetTags(r.AuthContext(ctx), state.OrganizationId.ValueString()).Execute()
 
-	// Make API Request
-	apiResponse, httpResponse, err := r.Client.ApplicationCategoriesAPI.GetTags(ctx, state.OrganizationId.ValueString()).Execute()
-
-	// Handle any errors
 	if err != nil {
-		common.HandleApiError(
-			"Unable to read Application Categories",
-			&err,
-			httpResponse,
-			&resp.Diagnostics,
-		)
+		if httpResponse.StatusCode == http.StatusNotFound {
+			resp.State.RemoveResource(ctx)
+			errors.HandleAPIWarning(
+				"Organization with ID did not exist to read Application Categories",
+				&err,
+				httpResponse,
+				&resp.Diagnostics,
+			)
+		} else {
+			errors.HandleAPIError(
+				common.ERR_FAILED_READING_APPLICATION_CATEGORIES_FOR_ORG,
+				&err,
+				httpResponse,
+				&resp.Diagnostics,
+			)
+		}
 		return
 	}
 
 	if len(apiResponse) == 0 {
 		resp.State.RemoveResource(ctx)
-		common.HandleApiWarning(
-			"No Application Categories exist",
-			&err,
-			httpResponse,
+		errors.AddValidationDiagnostic(
 			&resp.Diagnostics,
+			"Application Categories",
+			"No Application Categories exist for Organizatio ID",
 		)
 		return
 	}
 
-	found := false
+	// Iterate all Role Memberships looking for a match
+	var found = false
 	for _, ac := range apiResponse {
 		if *ac.Id == state.ID.ValueString() {
 			state.MapFromApi(&ac)
@@ -192,11 +169,10 @@ func (r *applicationCategoryResource) Read(ctx context.Context, req resource.Rea
 
 	if !found {
 		resp.State.RemoveResource(ctx)
-		common.HandleApiWarning(
-			fmt.Sprintf("Application Category with ID %s does not exist", state.ID.ValueString()),
-			&err,
-			httpResponse,
+		errors.AddValidationDiagnostic(
 			&resp.Diagnostics,
+			"Application Category",
+			fmt.Sprintf("Application Category with ID %s does not exist", state.ID.ValueString()),
 		)
 		return
 	}
@@ -211,56 +187,51 @@ func (r *applicationCategoryResource) Read(ctx context.Context, req resource.Rea
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *applicationCategoryResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan model.ApplicationCategoryModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
-		return
-	}
-
 	var state model.ApplicationCategoryModel
-	resp.Diagnostics.Append(resp.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Request Context
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
+		return
+	}
 
-	// Make API Request
-	apiDto := sonatypeiq.NewApiApplicationCategoryDTOWithDefaults()
-	plan.MapToApi(apiDto)
+	apiAppCategory := *plan.MapToApi(true)
+	apiAppCategory.Id = state.ID.ValueStringPointer()
 	apiResponse, httpResponse, err := r.Client.ApplicationCategoriesAPI.UpdateTag(
-		ctx, plan.OrganizationId.ValueString(),
-	).ApiApplicationCategoryDTO(*apiDto).Execute()
+		r.AuthContext(ctx),
+		plan.OrganizationId.ValueString(),
+	).ApiApplicationCategoryDTO(apiAppCategory).Execute()
 
-	// Handle Errors
 	if err != nil {
-		common.HandleApiError(
-			"Error updating Application Category",
+		errors.HandleAPIError(
+			"Error updating Application Category for Organization",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.HandleAPIError(
+			"Updating Application Category for Organization was not successful",
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
 		)
 		return
 	}
-	if httpResponse.StatusCode != http.StatusOK {
-		common.HandleApiError(
-			"Updating Application Category unsuccesful",
-			&err,
-			httpResponse,
-			&resp.Diagnostics,
-		)
-	}
+
+	// Map response to State
+	plan.MapFromApi(apiResponse)
 
 	// Update State
-	plan.MapFromApi(apiResponse)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	diags := resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -268,55 +239,42 @@ func (r *applicationCategoryResource) Update(ctx context.Context, req resource.U
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *applicationCategoryResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	// Retrieve values from state
 	var state model.ApplicationCategoryModel
-	resp.Diagnostics.Append(resp.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Request Context
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	// Make API request
 	httpResponse, err := r.Client.ApplicationCategoriesAPI.DeleteTag(
-		ctx, state.OrganizationId.ValueString(), state.ID.ValueString(),
+		r.AuthContext(ctx),
+		state.OrganizationId.ValueString(),
+		state.ID.ValueString(),
 	).Execute()
 
-	if err != nil {
-		if httpResponse.StatusCode == http.StatusNotFound {
-			resp.State.RemoveResource(ctx)
-			common.HandleApiWarning(
-				"Application Category does not exist in Organization with ID in state",
-				&err,
-				httpResponse,
-				&resp.Diagnostics,
-			)
-		} else {
-			common.HandleApiError(
-				"Failed to delete Application Category",
-				&err,
-				httpResponse,
-				&resp.Diagnostics,
-			)
-		}
-		return
-	}
-
-	if httpResponse.StatusCode != http.StatusNoContent {
-		common.HandleApiError(
-			"Unexpected response code deleting Application Category",
-			&err,
-			httpResponse,
-			&resp.Diagnostics,
+	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf(common.ERR_APPLICATION_CATEGORY_FOR_ORG_DID_NOT_EXIST, state.ID.ValueString()),
+			fmt.Sprintf("%v", err),
 		)
+		return
 	}
 }
 
+// Import
+// Format: ORGANIZATION_ID,APPLICATION_CATEGORY_ID
 func (r *applicationCategoryResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	idParts := strings.Split(req.ID, ",")
+	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected import identifier with format: <organization-id>,<applicaiton-category-id> - Got: %q", req.ID),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("organization_id"), idParts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), idParts[1])...)
 }

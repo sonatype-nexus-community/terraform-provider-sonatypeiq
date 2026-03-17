@@ -17,11 +17,23 @@
 package model
 
 import (
+	"terraform-provider-sonatypeiq/internal/provider/common"
+
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
 
-type SecuritySamlModel struct {
+// SecuritySamlMetadataModel
+// ------------------------------------------------------------
+type SecuritySamlMetadataModel struct {
+	ID           types.String `tfsdk:"id"`
+	SamlMetadata types.String `tfsdk:"saml_metadata"`
+}
+
+// ConfigSamlModel
+// ------------------------------------------------------------
+type ConfigSamlModel struct {
+	ID                         types.String `tfsdk:"id"`
 	IdentityProviderName       types.String `tfsdk:"identity_provider_name"`
 	IdpMetadata                types.String `tfsdk:"idp_metadata"`
 	UsernameAttribute          types.String `tfsdk:"username_attribute"`
@@ -32,9 +44,11 @@ type SecuritySamlModel struct {
 	ValidateResponseSignature  types.Bool   `tfsdk:"validate_response_signature"`
 	ValidateAssertionSignature types.Bool   `tfsdk:"validate_assertion_signature"`
 	EntityId                   types.String `tfsdk:"entity_id"`
+	LastUpdated                types.String `tfsdk:"last_updated"`
 }
 
-func (m *SecuritySamlModel) MapToApi(api *sonatypeiq.ApiSamlConfigurationDTO) {
+func (m *ConfigSamlModel) MapToApi() *sonatypeiq.ApiSamlConfigurationDTO {
+	api := sonatypeiq.NewApiSamlConfigurationDTOWithDefaults()
 	api.IdentityProviderName = m.IdentityProviderName.ValueStringPointer()
 	api.EntityId = m.EntityId.ValueStringPointer()
 	api.FirstNameAttributeName = m.FirstNameAttribute.ValueStringPointer()
@@ -44,9 +58,11 @@ func (m *SecuritySamlModel) MapToApi(api *sonatypeiq.ApiSamlConfigurationDTO) {
 	api.GroupsAttributeName = m.GroupsAttribute.ValueStringPointer()
 	api.ValidateAssertionSignature = m.ValidateAssertionSignature.ValueBoolPointer()
 	api.ValidateResponseSignature = m.ValidateResponseSignature.ValueBoolPointer()
+	return api
 }
 
-func (m *SecuritySamlModel) MapFromApi(api *sonatypeiq.ApiSamlConfigurationResponseDTO) {
+func (m *ConfigSamlModel) MapFromApi(api *sonatypeiq.ApiSamlConfigurationResponseDTO) {
+	m.ID = types.StringValue(common.STATE_ID_SAML_CONFIGURATION)
 	m.IdentityProviderName = types.StringPointerValue(api.IdentityProviderName)
 	m.IdpMetadata = types.StringPointerValue(api.IdentityProviderMetadataXml)
 	m.UsernameAttribute = types.StringPointerValue(api.UsernameAttributeName)

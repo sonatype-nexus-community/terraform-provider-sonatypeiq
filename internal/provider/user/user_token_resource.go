@@ -31,6 +31,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharederr "github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // userTokenResource is the resource implementation.
@@ -68,18 +70,9 @@ func (r *userTokenResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			// 	Description: "The authentication Realm that this User belongs to",
 			// 	Computed:    true,
 			// },
-			"user_code": schema.StringAttribute{
-				Description: "User Code portion of the User Token",
-				Computed:    true,
-			},
-			"pass_code": schema.StringAttribute{
-				Description: "Pass Code portion of the User Token",
-				Computed:    true,
-				Sensitive:   true,
-			},
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"user_code":    sharedrschema.ResourceComputedString("User Code portion of the User Token"),
+			"pass_code":    sharedrschema.ResourceComputedSensitiveString("Pass Code portion of the User Token"),
+			"last_updated": sharedrschema.ResourceComputedString("String representation of the date/time the resource was last changed by Terraform"),
 		},
 	}
 }
@@ -121,22 +114,12 @@ func (r *userTokenResource) Read(ctx context.Context, req resource.ReadRequest, 
 	_, httpResponse, err := r.Client.UserTokensAPI.GetUserTokenExistsForCurrentUser(ctx).Execute()
 
 	if err != nil {
-		if httpResponse.StatusCode == http.StatusNotFound {
+		if sharederr.IsNotFound(httpResponse.StatusCode) {
 			// There is no User Token currently with the Username + Realm combo
 			resp.State.RemoveResource(ctx)
-			common.HandleApiWarning(
-				"No User Token exists for User in Realm",
-				&err,
-				httpResponse,
-				&resp.Diagnostics,
-			)
+			sharederr.AddNotFoundDiagnostic(&resp.Diagnostics, "User Token", "current user")
 		} else {
-			common.HandleApiError(
-				"Error checking User Token",
-				&err,
-				httpResponse,
-				&resp.Diagnostics,
-			)
+			sharederr.HandleAPIError("Error checking User Token", &err, httpResponse, &resp.Diagnostics)
 		}
 		return
 	}
@@ -194,13 +177,12 @@ func (r *userTokenResource) createUserToken(stateModel *model.UserTokenModelReso
 
 	apiResponse, httpResponse, err := r.Client.UserTokensAPI.CreateUserToken(ctx).Execute()
 
-	if err != nil || httpResponse.StatusCode != http.StatusOK {
-		common.HandleApiError(
-			"Error creating User Token",
-			&err,
-			httpResponse,
-			respDiags,
-		)
+	if err != nil {
+		sharederr.HandleAPIError("Error creating User Token", &err, httpResponse, respDiags)
+		return
+	}
+	if httpResponse.StatusCode != http.StatusOK {
+		sharederr.AddAPIErrorDiagnostic(respDiags, "create", "User Token", httpResponse, err)
 		return
 	}
 
@@ -218,13 +200,12 @@ func (r *userTokenResource) deleteUserToken(ctx context.Context, respDiags *diag
 
 	httpResponse, err := r.Client.UserTokensAPI.DeleteCurrentUserToken(ctx).Execute()
 
-	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
-		common.HandleApiError(
-			"Error deleting User Token",
-			&err,
-			httpResponse,
-			respDiags,
-		)
+	if err != nil {
+		sharederr.HandleAPIError("Error deleting User Token", &err, httpResponse, respDiags)
+		return
+	}
+	if httpResponse.StatusCode != http.StatusNoContent {
+		sharederr.AddAPIErrorDiagnostic(respDiags, "delete", "User Token", httpResponse, err)
 		return
 	}
 }

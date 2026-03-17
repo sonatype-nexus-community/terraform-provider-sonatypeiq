@@ -19,9 +19,11 @@ package organization
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
+	"strings"
 	"terraform-provider-sonatypeiq/internal/provider/common"
+	"terraform-provider-sonatypeiq/internal/provider/model"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -30,21 +32,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // organizatonRoleMembershipResource is the resource implementation.
 type organizationRoleMembershipResource struct {
 	common.BaseResource
-}
-
-type organizationRoleMembershipModelResource struct {
-	ID             types.String `tfsdk:"id"`
-	RoleId         types.String `tfsdk:"role_id"`
-	OrganizationId types.String `tfsdk:"organization_id"`
-	UserName       types.String `tfsdk:"user_name"`
-	GroupName      types.String `tfsdk:"group_name"`
 }
 
 // NewOrganizationRoleMembershipResource is a helper function to simplify the provider implementation.
@@ -61,37 +57,12 @@ func (r *organizationRoleMembershipResource) Metadata(_ context.Context, req res
 func (r *organizationRoleMembershipResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"role_id": schema.StringAttribute{
-				Required:    true,
-				Description: "The role ID",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"organization_id": schema.StringAttribute{
-				Required:    true,
-				Description: "The organization ID",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"user_name": schema.StringAttribute{
-				Optional:    true,
-				Description: "The username of the user (mutually exclusive with group_name)",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"group_name": schema.StringAttribute{
-				Optional:    true,
-				Description: "The group name of the group (mutually exclusive with user_name)",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			"id":              sharedrschema.ResourceComputedString("The ID of this resource."),
+			"role_id":         sharedrschema.ResourceRequiredStringWithPlanModifier("The role ID", []planmodifier.String{stringplanmodifier.RequiresReplace()}),
+			"organization_id": sharedrschema.ResourceRequiredStringWithPlanModifier("The organization ID", []planmodifier.String{stringplanmodifier.RequiresReplace()}),
+			"user_name":       sharedrschema.ResourceOptionalStringWithPlanModifier("The username of the user (mutually exclusive with group_name)", stringplanmodifier.RequiresReplace()),
+			"group_name":      sharedrschema.ResourceOptionalStringWithPlanModifier("The group name of the group (mutually exclusive with user_name)", stringplanmodifier.RequiresReplace()),
+			"last_updated":    sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }
@@ -107,52 +78,44 @@ func (r *organizationRoleMembershipResource) ConfigValidators(ctx context.Contex
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *organizationRoleMembershipResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data organizationRoleMembershipModelResource
+	// Retrieve values from plan
+	var plan model.OrganizationRoleMembershipModelResource
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
-	// Read Terraform plan data into the model
-	diags := req.Plan.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Call API to create organization role membership
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
 	// Determine the member type, which can be any of group or user.
 	// The resource validator makes sure that exactly one of these is configured.
-	var memberType, memberName string
-	if !data.GroupName.IsNull() {
-		memberType = "group"
-		memberName = data.GroupName.ValueString()
-	} else {
-		memberType = "user"
-		memberName = data.UserName.ValueString()
-	}
+	var memberType, memberName string = memberTypeAndName(&plan)
 
-	apiRequest := r.Client.RoleMembershipsAPI.GrantRoleMembershipApplicationOrOrganization(ctx, "organization", data.OrganizationId.ValueString(), data.RoleId.ValueString(), memberType, memberName)
-	apiResponse, err := r.Client.RoleMembershipsAPI.GrantRoleMembershipApplicationOrOrganizationExecute(apiRequest)
+	httpResponse, err := r.Client.RoleMembershipsAPI.GrantRoleMembershipApplicationOrOrganization(
+		r.AuthContext(ctx),
+		common.OWNER_TYPE_ORGANIZATION,
+		plan.OrganizationId.ValueString(),
+		plan.RoleId.ValueString(),
+		memberType,
+		memberName,
+	).Execute()
 
-	// Call API
-	if err != nil {
-		error_body, _ := io.ReadAll(apiResponse.Body)
-		resp.Diagnostics.AddError(
+	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
+		errors.HandleAPIError(
 			"Error creating organization role membership",
-			"Could not create organization role membership, unexpected error: "+apiResponse.Status+": "+string(error_body),
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}
 
-	// Map response body to schema and populate Computed attribute values.
-	// Because the organization role membership does not have an ID of its own, we create a synthetic one based on the provided attributes.
-	data.ID = types.StringValue(fmt.Sprintf("%s_%s_%s_%s", data.OrganizationId.ValueString(), data.RoleId.ValueString(), memberType, memberName))
+	// Because the application role membership does not have an ID of its own, we create a synthetic one based on the provided attributes.
+	plan.ID = types.StringValue(fmt.Sprintf("%s,%s,%s,%s", plan.OrganizationId.ValueString(), plan.RoleId.ValueString(), memberType, memberName))
 
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, data)
+	// Update State
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	diags := resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -161,57 +124,45 @@ func (r *organizationRoleMembershipResource) Create(ctx context.Context, req res
 
 // Read refreshes the Terraform state with the latest data.
 func (r *organizationRoleMembershipResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data organizationRoleMembershipModelResource
-
-	// Read Terraform prior state data into the model
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	// Retrieve values from state
+	var state model.OrganizationRoleMembershipModelResource
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	// Get refreshed organization role membership from IQ
-	apiRequest := r.Client.RoleMembershipsAPI.GetRoleMembershipsApplicationOrOrganization(ctx, "organization", data.OrganizationId.ValueString())
-	roleMemberships, apiResponse, err := r.Client.RoleMembershipsAPI.GetRoleMembershipsApplicationOrOrganizationExecute(apiRequest)
-
-	// Check if we received a list of role mappings.
-	if err != nil {
-		if apiResponse.StatusCode == http.StatusNotFound {
-			resp.State.RemoveResource(ctx)
-		} else {
-			resp.Diagnostics.AddError(
-				"Error Reading IQ organization role membership",
-				"Could not read organization role membership with ID "+data.ID.ValueString()+": "+err.Error(),
-			)
-		}
-		return
-	}
-
-	// Determine the member type, which can be any of group or user.
 	// The resource validator makes sure that exactly one of these is configured.
-	var memberType, memberName string
-	if !data.GroupName.IsNull() {
-		memberType = "GROUP"
-		memberName = data.GroupName.ValueString()
-	} else {
-		memberType = "USER"
-		memberName = data.UserName.ValueString()
+	var memberType, memberName string = memberTypeAndName(&state)
+
+	apiResponse, httpResponse, err := r.Client.RoleMembershipsAPI.GetRoleMembershipsApplicationOrOrganization(
+		r.AuthContext(ctx),
+		common.OWNER_TYPE_ORGANIZATION,
+		state.OrganizationId.ValueString(),
+	).Execute()
+
+	if err != nil {
+		resp.State.RemoveResource(ctx)
+		errors.HandleAPIWarning(
+			"Role Mappings for Organization could not be read",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
+		return
 	}
 
-	// Check for organization role membership existence.
+	// Iterate all Role Memberships looking for a match
 	var membershipFound bool
-	for _, roleMembership := range roleMemberships.MemberMappings {
-		if *roleMembership.RoleId == data.RoleId.ValueString() {
+	for _, roleMembership := range apiResponse.MemberMappings {
+		if *roleMembership.RoleId == state.RoleId.ValueString() {
 			for _, member := range roleMembership.Members {
-				if *member.Type == memberType && *member.UserOrGroupName == memberName && *member.OwnerType == "ORGANIZATION" && *member.OwnerId == data.OrganizationId.ValueString() {
-					membershipFound = true
-					break
+				if strings.ToLower(*member.OwnerType) == common.OWNER_TYPE_ORGANIZATION && *member.OwnerId == state.OrganizationId.ValueString() {
+					if strings.ToLower(*member.Type) == memberType && *member.UserOrGroupName == memberName {
+						membershipFound = true
+						break
+					}
 				}
 			}
 		}
@@ -219,11 +170,22 @@ func (r *organizationRoleMembershipResource) Read(ctx context.Context, req resou
 
 	if !membershipFound {
 		resp.State.RemoveResource(ctx)
+		errors.HandleAPIWarning(
+			"Role Mapping not found for Organization",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
 		return
 	}
 
+	// During Import - ID will be nil - so set it
+	if state.ID.IsNull() {
+		state.ID = types.StringValue(fmt.Sprintf("%s,%s,%s,%s", state.OrganizationId.ValueString(), state.RoleId.ValueString(), memberType, memberName))
+	}
+
 	// Set refreshed state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -231,38 +193,65 @@ func (r *organizationRoleMembershipResource) Read(ctx context.Context, req resou
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *organizationRoleMembershipResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data organizationRoleMembershipModelResource
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	// Retrieve values from state
+	var state model.OrganizationRoleMembershipModelResource
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Make Delete API Call
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	// Determine the member type, which can be any of group or user.
 	// The resource validator makes sure that exactly one of these is configured.
-	var memberType, memberName string
-	if !data.GroupName.IsNull() {
-		memberType = "group"
-		memberName = data.GroupName.ValueString()
-	} else {
-		memberType = "user"
-		memberName = data.UserName.ValueString()
-	}
+	var memberType, memberName string = memberTypeAndName(&state)
 
-	apiRequest := r.Client.RoleMembershipsAPI.RevokeRoleMembershipApplicationOrOrganization(ctx, "organization", data.OrganizationId.ValueString(), data.RoleId.ValueString(), memberType, memberName)
-	apiResponse, err := r.Client.RoleMembershipsAPI.RevokeRoleMembershipApplicationOrOrganizationExecute(apiRequest)
-	if err != nil {
-		error_body, _ := io.ReadAll(apiResponse.Body)
+	httpResponse, err := r.Client.RoleMembershipsAPI.RevokeRoleMembershipApplicationOrOrganization(
+		r.AuthContext(ctx),
+		common.OWNER_TYPE_ORGANIZATION,
+		state.OrganizationId.ValueString(),
+		state.RoleId.ValueString(),
+		memberType,
+		memberName,
+	).Execute()
+
+	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
 		resp.Diagnostics.AddError(
-			"Error deleting organization role membership",
-			"Could not delete organization role membership, unexpected error: "+apiResponse.Status+": "+string(error_body),
+			fmt.Sprintf(common.ERR_FAILED_DELETING_ORGANIZATION_ROLE_MAPPING, state.ID.ValueString()),
+			fmt.Sprintf("%v", err),
 		)
 		return
+	}
+}
+
+// Import
+// Key is "%s,%s,%s,%s", plan.OrganizationId.ValueString(), plan.RoleId.ValueString(), memberType, memberName (lower case)
+func (r *organizationRoleMembershipResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	idParts := strings.Split(req.ID, ",")
+	if len(idParts) != 4 || idParts[0] == "" || idParts[1] == "" || idParts[2] == "" || idParts[3] == "" {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected import identifier with format: <organization-internal-id>,<role-internal-id>,[group|user],<username-or-group-name> - Got: %q", req.ID),
+		)
+		return
+	}
+
+	switch strings.ToLower(idParts[2]) {
+	case common.MEMBER_TYPE_GROUP:
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("group_name"), idParts[3])...)
+	case common.MEMBER_TYPE_USER:
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("user_name"), idParts[3])...)
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("organization_id"), idParts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("role_id"), idParts[1])...)
+}
+
+func memberTypeAndName(state *model.OrganizationRoleMembershipModelResource) (string, string) {
+	if !state.GroupName.IsNull() && state.GroupName.ValueString() != "" {
+		state.UserName = types.StringNull()
+		return common.MEMBER_TYPE_GROUP, state.GroupName.ValueString()
+	} else {
+		state.GroupName = types.StringNull()
+		return common.MEMBER_TYPE_USER, state.UserName.ValueString()
 	}
 }

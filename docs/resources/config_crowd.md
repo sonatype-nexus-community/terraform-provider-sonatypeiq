@@ -31,4 +31,5 @@ resource "sonatypeiq_config_crowd" "crowd" {
 
 ### Read-Only
 
-- `last_updated` (String)
+- `id` (String) Internal ID for Terraform State
+- `last_updated` (String) String representation of the date/time the resource was last changed

@@ -18,16 +18,17 @@ package model
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
 
-// ProductLicenseModelResource
-// -----------------------------------
-type ProductLicenseModelResource struct {
-	ID          types.String `tfsdk:"id"`
-	LicenseData types.String `tfsdk:"license_data"`
-	LastUpdated types.String `tfsdk:"last_updated"`
+// RoleModel
+// ------------------------------------------------------------
+type RoleModel struct {
+	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
 }
 
-type ProductLicenseCreateModel struct {
-	LicenseData types.String `tfsdk:"license_data"`
+func (m *RoleModel) MapFromApi(api *sonatypeiq.ApiRoleDTO) {
+	m.ID = types.StringPointerValue(api.Id)
+	m.Name = types.StringPointerValue(api.Name)
 }

@@ -18,6 +18,7 @@ package application_test
 
 import (
 	"fmt"
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
@@ -26,15 +27,42 @@ import (
 )
 
 func TestAccApplicationRoleMembershipResource(t *testing.T) {
-
+	resourceName := "sonatypeiq_application_role_membership.test"
 	userName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: fmt.Sprintf(utils_test.ProviderConfig+`
+				Config: testConfigApplicationRoleMapping(userName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Verify application role membership
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "role_id", common.ROLE_ID_REGEX),
+					resource.TestMatchResourceAttr(resourceName, "application_id", common.APPLICATION_INTERNAL_ID_REGEX),
+					resource.TestCheckResourceAttr(resourceName, "user_name", userName),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
+				),
+			},
+			// Validate
+			{
+				Config:             testConfigApplicationRoleMapping(userName),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"last_updated"},
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func testConfigApplicationRoleMapping(userName string) string {
+	return fmt.Sprintf(utils_test.ProviderConfig+`
         data "sonatypeiq_application" "sandbox" {
           public_id = "sandbox-application"
         }
@@ -55,15 +83,7 @@ func TestAccApplicationRoleMembershipResource(t *testing.T) {
           role_id        = data.sonatypeiq_role.developer.id
           application_id = data.sonatypeiq_application.sandbox.id
           user_name      = sonatypeiq_user.user.username
-        }
-
-        `, userName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Verify application role membership
-					resource.TestCheckResourceAttrSet("sonatypeiq_application_role_membership.test", "id"),
-					resource.TestCheckResourceAttr("sonatypeiq_application_role_membership.test", "user_name", userName),
-				),
-			},
-		},
-	})
+        }`,
+		userName,
+	)
 }

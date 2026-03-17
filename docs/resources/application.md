@@ -45,7 +45,7 @@ output "example_app" {
 ### Read-Only
 
 - `id` (String) Internal ID of the Application
-- `last_updated` (String) String representation of the date/time the resource was last changed by Terraform
+- `last_updated` (String) String representation of the date/time the resource was last changed
 
 ## Import
 

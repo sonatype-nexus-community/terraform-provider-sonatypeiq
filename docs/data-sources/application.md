@@ -29,14 +29,14 @@ data "sonatypeiq_application" "app" {
 
 ### Optional
 
-- `contact_user_name` (String) User Name of the Contact for the Application
 - `id` (String) Internal ID of the Application
-- `name` (String) Name of the Application
 - `public_id` (String) Public ID of the Application
 
 ### Read-Only
 
 - `application_tags` (Attributes List) List of Tags applied to this Application (see [below for nested schema](#nestedatt--application_tags))
+- `contact_user_name` (String) User Name of the Contact for the Application
+- `name` (String) Name of the Application
 - `organization_id` (String) Internal ID of the Organization to which this Application belongs
 
 <a id="nestedatt--application_tags"></a>
