@@ -41,9 +41,7 @@ func (m *ConfigProxyModel) MapFromApi(ctx context.Context, api *sonatypeiq.ApiPr
 	m.Username = types.StringPointerValue(api.Username)
 	// Password never returned by API
 	excludeHosts := make([]string, 0)
-	for _, excludeHost := range api.GetExcludeHosts() {
-		excludeHosts = append(excludeHosts, excludeHost)
-	}
+	excludeHosts = append(excludeHosts, api.GetExcludeHosts()...)
 	m.ExcludeHosts, _ = types.SetValueFrom(ctx, types.StringType, excludeHosts)
 }
 
