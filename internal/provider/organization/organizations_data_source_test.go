@@ -17,6 +17,7 @@
 package organization_test
 
 import (
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
@@ -24,6 +25,7 @@ import (
 )
 
 func TestAccOrganizationsDataSource(t *testing.T) {
+	resourceName := "data.sonatypeiq_organizations.orgs"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -32,8 +34,17 @@ func TestAccOrganizationsDataSource(t *testing.T) {
 				Config: utils_test.ProviderConfig + `data "sonatypeiq_organizations" "orgs" {
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.sonatypeiq_organizations.orgs", "id", "all-organizations"),
-					resource.TestCheckResourceAttr("data.sonatypeiq_organizations.orgs", "organizations.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "id", "all-organizations"),
+					// ROOT ORG
+					resource.TestCheckResourceAttr(resourceName, "organizations.0.id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttr(resourceName, "organizations.0.name", "Root Organization"),
+					resource.TestCheckNoResourceAttr(resourceName, "organizations.0.parent_organization_id"),
+					resource.TestCheckResourceAttr(resourceName, "organizations.0.categories.#", "3"),
+					// SANDBOX ORG
+					resource.TestMatchResourceAttr(resourceName, "organizations.1.id", common.ORGANIZATION_ID_REGEX),
+					resource.TestCheckResourceAttr(resourceName, "organizations.1.name", "Sandbox Organization"),
+					resource.TestCheckResourceAttr(resourceName, "organizations.1.parent_organization_id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttr(resourceName, "organizations.1.categories.#", "0"),
 				),
 			},
 		},
