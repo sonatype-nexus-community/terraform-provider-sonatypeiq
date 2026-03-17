@@ -39,7 +39,7 @@ func TestAccOrganizationDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "id", common.ROOT_ORGANIZATION_ID),
 					resource.TestCheckResourceAttr(resourceName, "name", "Root Organization"),
 					resource.TestCheckNoResourceAttr(resourceName, "parent_organization_id"),
-					resource.TestCheckResourceAttr(resourceName, "tags.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "categories.#", "3"),
 				),
 			},
 			// Read by Name
@@ -51,7 +51,7 @@ func TestAccOrganizationDataSource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name", "Sandbox Organization"),
 					resource.TestCheckResourceAttr(resourceName, "parent_organization_id", common.ROOT_ORGANIZATION_ID),
-					resource.TestCheckResourceAttr(resourceName, "tags.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "categories.#", "0"),
 				),
 			},
 		},
