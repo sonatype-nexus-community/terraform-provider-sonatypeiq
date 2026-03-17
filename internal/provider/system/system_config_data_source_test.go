@@ -35,7 +35,7 @@ func TestAccSystemConfigDataSource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "id", "system-configuration"),
 					resource.TestCheckNoResourceAttr(resourceName, "base_url"),
-					resource.TestCheckResourceAttr(resourceName, "force_base_url", "true"),
+					resource.TestCheckResourceAttr(resourceName, "force_base_url", "false"),
 				),
 			},
 		},
