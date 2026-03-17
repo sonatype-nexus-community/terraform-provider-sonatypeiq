@@ -167,7 +167,7 @@ func TestAccSourceControlOrganizationResource(t *testing.T) {
 	})
 }
 
-func testAccSourceControlApplicationResource(rand string, enabled string) string {
+func testAccSourceControlApplicationResource(rand, enabled string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
 data "sonatypeiq_organization" "sandbox" {
   name = "Sandbox Organization"
@@ -236,7 +236,7 @@ resource "sonatypeiq_source_control" "test" {
 }`, rand, rand)
 }
 
-func testAccSourceControlOrganizationResource(rand string, enabled string) string {
+func testAccSourceControlOrganizationResource(rand, enabled string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
 data "sonatypeiq_organization" "sandbox" {
   name = "Sandbox Organization"
