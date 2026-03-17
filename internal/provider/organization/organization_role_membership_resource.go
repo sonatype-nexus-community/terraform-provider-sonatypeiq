@@ -247,9 +247,11 @@ func (r *organizationRoleMembershipResource) ImportState(ctx context.Context, re
 }
 
 func memberTypeAndName(state *model.OrganizationRoleMembershipModelResource) (string, string) {
-	if !state.GroupName.IsNull() {
+	if !state.GroupName.IsNull() && state.GroupName.ValueString() != "" {
+		state.UserName = types.StringNull()
 		return common.MEMBER_TYPE_GROUP, state.GroupName.ValueString()
 	} else {
+		state.GroupName = types.StringNull()
 		return common.MEMBER_TYPE_USER, state.UserName.ValueString()
 	}
 }

@@ -104,9 +104,11 @@ func (m *ApplicationCategoryModel) MapFromApi(api *sonatypeiq.ApiApplicationCate
 	m.OrganizationId = types.StringPointerValue(api.OrganizationId)
 }
 
-func (m *ApplicationCategoryModel) MapToApi() *sonatypeiq.ApiApplicationCategoryDTO {
+func (m *ApplicationCategoryModel) MapToApi(includeId bool) *sonatypeiq.ApiApplicationCategoryDTO {
 	api := sonatypeiq.NewApiApplicationCategoryDTOWithDefaults()
-	api.Id = m.ID.ValueStringPointer()
+	if includeId {
+		api.Id = m.ID.ValueStringPointer()
+	}
 	api.Name = m.Name.ValueStringPointer()
 	api.Description = m.Description.ValueStringPointer()
 	api.Color = m.Color.ValueStringPointer()

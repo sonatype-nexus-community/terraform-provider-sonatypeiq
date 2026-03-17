@@ -82,7 +82,7 @@ func (r *applicationCategoryResource) Create(ctx context.Context, req resource.C
 	apiResponse, httpResponse, err := r.Client.ApplicationCategoriesAPI.AddTag(
 		r.AuthContext(ctx),
 		plan.OrganizationId.ValueString(),
-	).ApiApplicationCategoryDTO(*plan.MapToApi()).Execute()
+	).ApiApplicationCategoryDTO(*plan.MapToApi(false)).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(
@@ -200,7 +200,7 @@ func (r *applicationCategoryResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	apiAppCategory := *plan.MapToApi()
+	apiAppCategory := *plan.MapToApi(true)
 	apiAppCategory.Id = state.ID.ValueStringPointer()
 	apiResponse, httpResponse, err := r.Client.ApplicationCategoriesAPI.UpdateTag(
 		r.AuthContext(ctx),
