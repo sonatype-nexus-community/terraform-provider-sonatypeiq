@@ -21,6 +21,7 @@ NOTES:
 * Tested against [Sonatype IQ Server 198](https://help.sonatype.com/en/sonatype-iq-server-198-release-notes.html) [GH-71]
 * Tested against [Sonatype IQ Server 199](https://help.sonatype.com/en/sonatype-iq-server-199-release-notes.html) [GH-72]
 * Tested against [Sonatype IQ Server 200](https://help.sonatype.com/en/sonatype-iq-server-200-release-notes.html) [GH-73]
+* Tested against [Sonatype IQ Server 201](https://help.sonatype.com/en/sonatype-iq-server-201-release-notes.html) [GH-74]
 
 ## 0.12.1 October 24, 2025
 

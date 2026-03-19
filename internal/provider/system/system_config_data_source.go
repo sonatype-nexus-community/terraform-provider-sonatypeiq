@@ -75,7 +75,7 @@ func (d *systemConfigDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	apiResponse, httpResponse, err := d.Client.ConfigurationAPI.GetConfiguration(d.AuthContext(ctx)).Property([]sonatypeiq.SystemConfigProperty{"baseUrl", "forceBaseUrl"}).Execute()
+	apiResponse, httpResponse, err := d.Client.ConfigurationAPI.GetConfiguration1(d.AuthContext(ctx)).Property([]sonatypeiq.SystemConfigProperty{"baseUrl", "forceBaseUrl"}).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(
