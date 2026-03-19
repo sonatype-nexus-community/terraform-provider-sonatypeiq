@@ -20,47 +20,43 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
 	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
-// userResource is the resource implementation.
-type userResource struct {
+// roleResource is the resource implementation.
+type roleResource struct {
 	common.BaseResource
 }
 
-// NewUserResource is a helper function to simplify the provider implementation.
-func NewUserResource() resource.Resource {
-	return &userResource{}
+// NewRoleResource is a helper function to simplify the provider implementation.
+func NewRoleResource() resource.Resource {
+	return &roleResource{}
 }
 
 // Metadata returns the resource type name.
-func (r *userResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *roleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_role"
 }
 
 // Schema defines the schema for the resource.
-func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *roleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Use this data source to manage Users",
+		Description: "Use this to manage Custom Roles",
 		Attributes: map[string]schema.Attribute{
 			"id":          sharedrschema.ResourceComputedString("Internal Role ID for Terraform State"),
 			"name":        sharedrschema.ResourceRequiredString("Role Name"),
-			"description": sharedrschema.ResourceSensitiveString("Password used to log in to Sonatype IQ Server"),
+			"description": sharedrschema.ResourceRequiredString("Role Description"),
 			"built_in":    sharedrschema.ResourceComputedBool("Whether this is a built-in Role in Sonatype IQ"),
 			"permissions": sharedrschema.ResourceRequiredSingleNestedAttribute(
 				"Permissions for this Role",
@@ -156,7 +152,7 @@ func (r *userResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *roleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan model.RoleModelResource
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
@@ -165,28 +161,23 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	httpResponse, err := r.Client.RolesAPI. .Add(r.AuthContext(ctx)).ApiUserDTO(*plan.MapToApi(true)).Execute()
+	apiResponse, httpResponse, err := r.Client.RolesAPI.AddRole(r.AuthContext(ctx)).ApiRoleDTO(*plan.MapToApi(true)).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(
-			"Error creating User",
+			"Error creating Role",
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
 		)
 		return
-	} else if httpResponse.StatusCode != http.StatusNoContent {
+	} else if httpResponse.StatusCode != http.StatusOK {
 		errors.HandleAPIError(
-			"Creation of User was not successful",
+			"Creation of Role was not successful",
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
 		)
-		return
-	}
-
-	apiResponse := r.doRead(ctx, plan.Username.ValueString(), plan.Realm.ValueString(), &resp.State, &resp.Diagnostics)
-	if apiResponse == nil {
 		return
 	}
 
@@ -200,9 +191,9 @@ func (r *userResource) Create(ctx context.Context, req resource.CreateRequest, r
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// Retrieve values from state
-	var state model.UserModel
+	var state model.RoleModelResource
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
@@ -210,8 +201,23 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	apiResponse := r.doRead(ctx, state.Username.ValueString(), state.Realm.ValueString(), &resp.State, &resp.Diagnostics)
-	if apiResponse == nil {
+	apiResponse, httpResponse, err := r.Client.RolesAPI.GetRoleById(r.AuthContext(ctx), state.ID.ValueString()).Execute()
+
+	if err != nil {
+		errors.HandleAPIError(
+			"Error reading Role",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.HandleAPIError(
+			"Reading Role by ID was not successful",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
 		return
 	}
 
@@ -223,10 +229,10 @@ func (r *userResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
-func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan model.UserModel
-	var state model.UserModel
+// // Update updates the resource and sets the updated Terraform state on success.
+func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan model.RoleModelResource
+	var state model.RoleModelResource
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
@@ -239,20 +245,12 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	// Validation
-	if plan.Password.ValueString() != state.Password.ValueString() {
-		errors.AddValidationDiagnostic(&resp.Diagnostics, "password", "Changing User Password is not supported by Sonatype IQ Server")
-	}
-	if plan.Realm.ValueString() != common.USER_REALM_INTERNAL {
-		errors.AddValidationDiagnostic(&resp.Diagnostics, "realm", fmt.Sprintf("Only the '%s' Realm is supported currently.", common.DEFAULT_USER_REALM))
-		return
-	}
-
-	apiResponse, httpResponse, err := r.Client.UsersAPI.Update(r.AuthContext(ctx), state.Username.ValueString()).ApiUserDTO(*plan.MapToApi(false)).Execute()
+	plan.ID = state.ID
+	apiResponse, httpResponse, err := r.Client.RolesAPI.UpdateRole(r.AuthContext(ctx), state.ID.ValueString()).ApiRoleDTO(*plan.MapToApi(true)).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(
-			"Error updating User",
+			"Error updating Role",
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
@@ -260,7 +258,7 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	} else if httpResponse.StatusCode != http.StatusOK {
 		errors.HandleAPIError(
-			"Updating User was not successful",
+			"Updating Role was not successful",
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
@@ -281,9 +279,9 @@ func (r *userResource) Update(ctx context.Context, req resource.UpdateRequest, r
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *userResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *roleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Retrieve values from state
-	var state model.UserModel
+	var state model.RoleModelResource
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
@@ -291,53 +289,17 @@ func (r *userResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	httpResponse, err := r.Client.UsersAPI.Delete1(r.AuthContext(ctx), state.Username.ValueString()).Realm(state.Realm.ValueString()).Execute()
+	httpResponse, err := r.Client.RolesAPI.DeleteRole(r.AuthContext(ctx), state.ID.ValueString()).Execute()
 
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
 		resp.Diagnostics.AddError(
-			fmt.Sprintf(common.ERR_USER_DID_NOT_EXIST, state.ID.ValueString()),
+			fmt.Sprintf(common.ERR_ROLE_DID_NOT_EXIST, state.ID.ValueString()),
 			fmt.Sprintf("%v", err),
 		)
 		return
 	}
 }
 
-func (r *userResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	idParts := strings.Split(req.ID, "-")
-	if len(idParts) < 3 {
-		resp.Diagnostics.AddError(
-			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected import identifier with format: user-[REALM]-[USERNAME] - Got: %q", req.ID),
-		)
-		return
-	}
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("realm"), idParts[1])...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("username"), idParts[2])...)
-}
-
-func (r *userResource) doRead(ctx context.Context, username, realm string, respState *tfsdk.State, respDiags *diag.Diagnostics) *sonatypeiq.ApiUserDTO {
-	apiResponse, httpResponse, err := r.Client.UsersAPI.Get1(r.AuthContext(ctx), username).Realm(realm).Execute()
-
-	if err != nil {
-		if httpResponse.StatusCode == http.StatusNotFound {
-			respState.RemoveResource(ctx)
-			errors.HandleAPIWarning(
-				"User did not exist",
-				&err,
-				httpResponse,
-				respDiags,
-			)
-		} else {
-			errors.HandleAPIError(
-				fmt.Sprintf(common.ERR_FAILED_READING_USER_AT_REALM, username, realm),
-				&err,
-				httpResponse,
-				respDiags,
-			)
-		}
-		return nil
-	}
-
-	return apiResponse
+func (r *roleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
