@@ -119,7 +119,8 @@ jobs:
                     - '1.197.0-01'
                     - '1.198.0-01'
                     - '1.199.0-01'
-                    - '1.200.0-01' # LATEST
+                    - '1.200.0-01'
+                    - '1.201.0-01' # LATEST
                 # list whatever Terraform versions here you would like to support
                 terraform:
                     - '1.0.*' # Minimum
