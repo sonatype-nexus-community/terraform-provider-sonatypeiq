@@ -366,6 +366,8 @@ github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.199.0 h1:qUvW/s1ns
 github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.199.0/go.mod h1:l4BJPA4QzKv93upbfyG8UeWf5XQ22Q/lgoCb9yoB2KE=
 github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.200.0 h1:XzYGZO8VCCZZ8cvWYyX6Dt7Gdb5WUkQd4bW4LFCthhw=
 github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.200.0/go.mod h1:l4BJPA4QzKv93upbfyG8UeWf5XQ22Q/lgoCb9yoB2KE=
+github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.201.0 h1:opE28HH9xg8eKzEmzm/IoaljCRmQEkvlj/XGDvvaxCg=
+github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.201.0/go.mod h1:l4BJPA4QzKv93upbfyG8UeWf5XQ22Q/lgoCb9yoB2KE=
 github.com/sonatype-nexus-community/terraform-provider-shared v0.9.3 h1:4ozHSzfl1MerPyQrVEr0yRT98YWQLHwPEjNT/DbBAso=
 github.com/sonatype-nexus-community/terraform-provider-shared v0.9.3/go.mod h1:WMs2zRL3dPwQj1A9As16dLzVs9jRFJKEHOtNfKeZqjM=
 github.com/sonatype-nexus-community/terraform-provider-shared v0.9.4 h1:U7pdTOdwl/RS+5Zvz7mUE01XrS5ntONzxD9OmN6ymJw=

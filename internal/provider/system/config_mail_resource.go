@@ -136,7 +136,7 @@ func (r *configMailResource) Update(ctx context.Context, req resource.UpdateRequ
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *configMailResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	httpResponse, err := r.Client.ConfigMailAPI.DeleteConfiguration2(r.AuthContext(ctx)).Execute()
+	httpResponse, err := r.Client.ConfigMailAPI.DeleteConfiguration3(r.AuthContext(ctx)).Execute()
 
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
 		resp.Diagnostics.AddError(
@@ -148,7 +148,7 @@ func (r *configMailResource) Delete(ctx context.Context, req resource.DeleteRequ
 }
 
 func (r *configMailResource) doRead(ctx context.Context, respState *tfsdk.State, respDiags *diag.Diagnostics) *sonatypeiq.ApiMailConfigurationDTO {
-	apiResponse, httpResponse, err := r.Client.ConfigMailAPI.GetConfiguration2(r.AuthContext(ctx)).Execute()
+	apiResponse, httpResponse, err := r.Client.ConfigMailAPI.GetConfiguration3(r.AuthContext(ctx)).Execute()
 
 	if err != nil {
 		if httpResponse.StatusCode == http.StatusNotFound {
@@ -174,7 +174,7 @@ func (r *configMailResource) doRead(ctx context.Context, respState *tfsdk.State,
 }
 
 func (r *configMailResource) doUpsert(ctx context.Context, model *model.ConfigMailModel, respState *tfsdk.State, respDiags *diag.Diagnostics) {
-	httpResponse, err := r.Client.ConfigMailAPI.SetConfiguration2(r.AuthContext(ctx)).ApiMailConfigurationDTO(*model.MapToApi()).Execute()
+	httpResponse, err := r.Client.ConfigMailAPI.SetConfiguration3(r.AuthContext(ctx)).ApiMailConfigurationDTO(*model.MapToApi()).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(
