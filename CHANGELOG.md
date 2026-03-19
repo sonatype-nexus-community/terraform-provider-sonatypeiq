@@ -15,6 +15,14 @@ ENHANCEMENTS:
 * A number of additional resources now support import - see [Migration Guide](./MIGRATION-1.0.md)
 * Resource `sonatypeiq_organization` now includes nested `categories`
 
+NOTES:
+
+* Tested against [Sonatype IQ Server 197](https://help.sonatype.com/en/sonatype-iq-server-197-release-notes.html) [GH-70]
+* Tested against [Sonatype IQ Server 198](https://help.sonatype.com/en/sonatype-iq-server-198-release-notes.html) [GH-71]
+* Tested against [Sonatype IQ Server 199](https://help.sonatype.com/en/sonatype-iq-server-199-release-notes.html) [GH-72]
+* Tested against [Sonatype IQ Server 200](https://help.sonatype.com/en/sonatype-iq-server-200-release-notes.html) [GH-73]
+* Tested against [Sonatype IQ Server 201](https://help.sonatype.com/en/sonatype-iq-server-201-release-notes.html) [GH-74]
+
 ## 0.12.1 October 24, 2025
 
 NOTES:

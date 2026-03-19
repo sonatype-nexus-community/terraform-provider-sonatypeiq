@@ -18,16 +18,14 @@ on:
 env:
     LC_APPLICATION_ID: terraform-provider-sonatypeiq
 
-# Testing only needs permissions to read the repository contents.
-permissions:
-    contents: read
-
 jobs:
     # Ensure project builds before running testing matrix
     build:
         name: Build
         runs-on: ubuntu-latest
         timeout-minutes: 5
+        permissions:
+            contents: read
         steps:
             - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
             - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
@@ -44,6 +42,8 @@ jobs:
     sonatype:
         name: Sonatype Scan
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
         steps:
             - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
             - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
@@ -69,6 +69,8 @@ jobs:
     generate:
         name: Ensure Docs are Generated
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
         steps:
             - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
             - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
@@ -99,6 +101,8 @@ jobs:
             - generate
         runs-on: ubuntu-latest
         timeout-minutes: 15
+        permissions:
+            contents: read
         strategy:
             fail-fast: false
             matrix:
@@ -108,10 +112,15 @@ jobs:
                     #- '1.190.0-01'
                     # - '1.191.0-01' # Known issues fresh booting with H2 internal DB
                     #- '1.192.0-01'
-                    - '1.193.0-01'
-                    - '1.194.0-01'
+                    #- '1.193.0-01'
+                    # - '1.194.0-01'
                     - '1.195.0-01'
-                    - '1.196.0-01' # LATEST
+                    - '1.196.0-01'
+                    - '1.197.0-01'
+                    - '1.198.0-01'
+                    - '1.199.0-01'
+                    - '1.200.0-01'
+                    - '1.201.0-02' # LATEST
                 # list whatever Terraform versions here you would like to support
                 terraform:
                     - '1.0.*' # Minimum

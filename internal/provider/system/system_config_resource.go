@@ -130,7 +130,7 @@ func (r *systemConfigResource) Update(ctx context.Context, req resource.UpdateRe
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *systemConfigResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	httpResponse, err := r.Client.ConfigurationAPI.DeleteConfiguration(r.AuthContext(ctx)).Property(sonatypeiq.AllowedSystemConfigPropertyEnumValues).Execute()
+	httpResponse, err := r.Client.ConfigurationAPI.DeleteConfiguration1(r.AuthContext(ctx)).Property(sonatypeiq.AllowedSystemConfigPropertyEnumValues).Execute()
 
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
 		resp.Diagnostics.AddError(
@@ -142,7 +142,7 @@ func (r *systemConfigResource) Delete(ctx context.Context, req resource.DeleteRe
 }
 
 func (r *systemConfigResource) doRead(ctx context.Context, respState *tfsdk.State, respDiags *diag.Diagnostics) *sonatypeiq.SystemConfig {
-	apiResponse, httpResponse, err := r.Client.ConfigurationAPI.GetConfiguration(r.AuthContext(ctx)).Property(sonatypeiq.AllowedSystemConfigPropertyEnumValues).Execute()
+	apiResponse, httpResponse, err := r.Client.ConfigurationAPI.GetConfiguration1(r.AuthContext(ctx)).Property(sonatypeiq.AllowedSystemConfigPropertyEnumValues).Execute()
 
 	if err != nil {
 		if httpResponse.StatusCode == http.StatusNotFound {
@@ -168,7 +168,7 @@ func (r *systemConfigResource) doRead(ctx context.Context, respState *tfsdk.Stat
 }
 
 func (r *systemConfigResource) doUpsert(ctx context.Context, model *model.SystemConfigResource, respState *tfsdk.State, respDiags *diag.Diagnostics) {
-	httpResponse, err := r.Client.ConfigurationAPI.SetConfiguration(r.AuthContext(ctx)).SystemConfig(*model.MapToApi()).Execute()
+	httpResponse, err := r.Client.ConfigurationAPI.SetConfiguration1(r.AuthContext(ctx)).SystemConfig(*model.MapToApi()).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(

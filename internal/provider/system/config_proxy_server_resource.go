@@ -134,7 +134,7 @@ func (r *configProxyServerResource) Update(ctx context.Context, req resource.Upd
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *configProxyServerResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	httpResponse, err := r.Client.ConfigProxyServerAPI.DeleteConfiguration3(r.AuthContext(ctx)).Execute()
+	httpResponse, err := r.Client.ConfigProxyServerAPI.DeleteConfiguration4(r.AuthContext(ctx)).Execute()
 
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
 		resp.Diagnostics.AddError(
@@ -146,7 +146,7 @@ func (r *configProxyServerResource) Delete(ctx context.Context, req resource.Del
 }
 
 func (r *configProxyServerResource) doRead(ctx context.Context, respState *tfsdk.State, respDiags *diag.Diagnostics) *sonatypeiq.ApiProxyServerConfigurationDTO {
-	apiResponse, httpResponse, err := r.Client.ConfigProxyServerAPI.GetConfiguration3(r.AuthContext(ctx)).Execute()
+	apiResponse, httpResponse, err := r.Client.ConfigProxyServerAPI.GetConfiguration4(r.AuthContext(ctx)).Execute()
 
 	if err != nil {
 		if httpResponse.StatusCode == http.StatusNotFound {
@@ -172,7 +172,7 @@ func (r *configProxyServerResource) doRead(ctx context.Context, respState *tfsdk
 }
 
 func (r *configProxyServerResource) doUpsert(ctx context.Context, model *model.ConfigProxyModel, respState *tfsdk.State, respDiags *diag.Diagnostics) {
-	httpResponse, err := r.Client.ConfigProxyServerAPI.SetConfiguration3(r.AuthContext(ctx)).ApiProxyServerConfigurationDTO(*model.MapToApi(ctx)).Execute()
+	httpResponse, err := r.Client.ConfigProxyServerAPI.SetConfiguration4(r.AuthContext(ctx)).ApiProxyServerConfigurationDTO(*model.MapToApi(ctx)).Execute()
 
 	if err != nil {
 		errors.HandleAPIError(
