@@ -11,10 +11,11 @@ See the [Migration Guide](./MIGRATION-1.0.md) for help migrating from v0.x.x ver
 
 FEATURES:
 
-* **New Resource:** `sonatypeiq_role` [GH-16]
+* **New Resource:** `sonatypeiq_role` [GH-61]
 
 ENHANCEMENTS:
 
+* `sonatypeiq_role` data source now returns more complete fields including permissions [GH-67]
 * Adopted shared library to improve mantainability and consistency [GH-60]
 * A number of additional resources now support import - see [Migration Guide](./MIGRATION-1.0.md)
 * Resource `sonatypeiq_organization` now includes nested `categories`
