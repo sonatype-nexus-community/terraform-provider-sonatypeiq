@@ -8,13 +8,6 @@ on:
         tags:
             - 'v*'
 
-# Releases need permissions to read and write the repository contents.
-# GitHub considers creating releases and uploading assets as writing contents.
-permissions:
-    contents: write         # required for goreleaser && semantic-release
-    issues: write           # required for semantic-release
-    pull-requests: write    # required for semantic-release
-
 env:
     LC_APPLICATION_ID: terraform-provider-sonatyperepo
 
@@ -22,6 +15,8 @@ jobs:
     sonatype:
         name: Sonatype Scan
         runs-on: ubuntu-latest
+        permissions:
+            contents: write         # required for goreleaser && semantic-release
         steps:
             - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
             - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
@@ -48,6 +43,10 @@ jobs:
         name: Run Goreleaser
         needs: sonatype
         runs-on: ubuntu-latest
+        permissions:
+            contents: write         # required for goreleaser && semantic-release
+            issues: write           # required for semantic-release
+            pull-requests: write    # required for semantic-release
         steps:
             - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
               with:
