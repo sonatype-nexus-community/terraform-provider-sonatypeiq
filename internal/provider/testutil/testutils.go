@@ -65,8 +65,5 @@ func VersionInRange(ver, low, high int32) (bool, error) {
 }
 
 func VersionOlderThan(thisVer, testVer int32) bool {
-	if thisVer < testVer {
-		return true
-	}
-	return false
+	return thisVer < testVer
 }

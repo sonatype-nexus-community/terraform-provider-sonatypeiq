@@ -3,12 +3,15 @@
 page_title: "sonatypeiq_role Resource - sonatypeiq"
 subcategory: ""
 description: |-
-  Use this to manage Custom Roles
+  Use this to manage Custom Roles.
+  NOTE: Requires Sonatype IQ Server 198 or later.
 ---
 
 # sonatypeiq_role (Resource)
 
-Use this to manage Custom Roles
+Use this to manage Custom Roles.
+		
+**NOTE:** Requires Sonatype IQ Server 198 or later.
 
 
 
