@@ -17,6 +17,7 @@
 package role_test
 
 import (
+	testutil "terraform-provider-sonatypeiq/internal/provider/testutil"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
@@ -27,6 +28,10 @@ func TestAccRoleDataSource(t *testing.T) {
 	var resourceName = "data.sonatypeiq_role.role_by_name"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
+		PreCheck: func() {
+			// Not supported prior to NXIQ 198
+			testutil.SkipIfNxiqVersionOlderThan(t, 198)
+		},
 		Steps: []resource.TestStep{
 			// Read testing
 			{
