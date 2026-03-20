@@ -22,6 +22,8 @@ import (
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
+	testutil "terraform-provider-sonatypeiq/internal/provider/testutil"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -31,6 +33,10 @@ func TestAccRoleResource(t *testing.T) {
 	resourceName := "sonatypeiq_role.test"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
+		PreCheck: func() {
+			// Not supported prior to NXIQ 198
+			testutil.SkipIfNxiqVersionOlderThan(t, 198)
+		},
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{

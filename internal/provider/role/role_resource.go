@@ -52,7 +52,9 @@ func (r *roleResource) Metadata(_ context.Context, req resource.MetadataRequest,
 // Schema defines the schema for the resource.
 func (r *roleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Use this to manage Custom Roles",
+		Description: `Use this to manage Custom Roles.
+		
+**NOTE:** Requires Sonatype IQ Server 198 or later.`,
 		Attributes: map[string]schema.Attribute{
 			"id":          sharedrschema.ResourceComputedString("Internal Role ID for Terraform State"),
 			"name":        sharedrschema.ResourceRequiredString("Role Name"),

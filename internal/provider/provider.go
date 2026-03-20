@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"terraform-provider-sonatypeiq/internal/provider/application"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/organization"
@@ -35,6 +36,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
@@ -87,12 +89,29 @@ func (p *SonatypeIqProvider) Schema(ctx context.Context, req provider.SchemaRequ
 
 func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var config SonatypeIqProviderModel
+
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	iqUrl, username, password := p.parseConfig(&config)
+
+	p.validateConfig(resp, iqUrl, &config)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ds := p.createClient(iqUrl, username, password)
+
+	p.checkVersion(ctx, &ds, resp)
+
+	resp.DataSourceData = ds
+	resp.ResourceData = ds
+}
+
+func (p *SonatypeIqProvider) parseConfig(config *SonatypeIqProviderModel) (string, string, string) {
 	iqUrl := os.Getenv("IQ_SERVER_URL")
 	username := os.Getenv("IQ_SERVER_USERNAME")
 	password := os.Getenv("IQ_SERVER_PASSWORD")
@@ -109,7 +128,10 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 		password = config.Password.ValueString()
 	}
 
-	// Validate Provider Configuration
+	return iqUrl, username, password
+}
+
+func (p *SonatypeIqProvider) validateConfig(resp *provider.ConfigureResponse, iqUrl string, config *SonatypeIqProviderModel) {
 	if len(iqUrl) == 0 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("url"),
@@ -130,23 +152,20 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 		resp.Diagnostics.AddAttributeError(
 			path.Root("username"),
 			"Username not supplied",
-			fmt.Sprintf("Administrative credentials for your Sonatype IQ Server are required: Config is '%s', Env is '%s'", config.Username.ValueString(), os.Getenv("IQ_SERVER_USERNAME")),
+			"Administratrive credentials for your Sonatype IQ Server are required",
 		)
 	}
 
 	if config.Password.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("password"),
-			"password not supplied",
-			"Administrative credentials for your Sonatype IQ Server are required",
+			"Password not supplied",
+			"Administratrive credentials for your Sonatype IQ Server are required",
 		)
 	}
+}
 
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Example client configuration for data sources and resources
+func (p *SonatypeIqProvider) createClient(iqUrl, username, password string) common.SonatypeDataSourceData {
 	configuration := sonatypeiq.NewConfiguration()
 	configuration.UserAgent = "sonatypeiq-terraform/" + p.version
 	configuration.Servers = []sonatypeiq.ServerConfiguration{
@@ -157,13 +176,22 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 	}
 
 	client := sonatypeiq.NewAPIClient(configuration)
-	resp.DataSourceData = common.SonatypeDataSourceData{
-		Auth:   sonatypeiq.BasicAuth{UserName: username, Password: password},
-		Client: client,
+	return common.SonatypeDataSourceData{
+		Auth:    sonatypeiq.BasicAuth{UserName: username, Password: password},
+		BaseUrl: strings.TrimRight(iqUrl, "/"),
+		Client:  client,
 	}
-	resp.ResourceData = common.SonatypeDataSourceData{
-		Auth:   sonatypeiq.BasicAuth{UserName: username, Password: password},
-		Client: client,
+}
+
+func (p *SonatypeIqProvider) checkVersion(ctx context.Context, ds *common.SonatypeDataSourceData, resp *provider.ConfigureResponse) {
+	ds.CheckWritableAndGetVersion(ctx, &resp.Diagnostics)
+	tflog.Info(ctx, fmt.Sprintf("Detected Sonatype IQ Server to be version %v", ds.IqVersion))
+
+	if ds.IqVersion < 186 {
+		resp.Diagnostics.AddWarning(
+			`You are running against Sonatype IQ Server version older than 186`,
+			`This provide has not been validated against versions older than 186 - things will probably work fine, but proceed with caution.`,
+		)
 	}
 }
 
