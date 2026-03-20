@@ -17,12 +17,64 @@
 package model
 
 import (
+	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
 )
 
+// OrganizationsModel
+// ------------------------------------------------------------
+type OrganizationsModel struct {
+	ID            types.String        `tfsdk:"id"`
+	Organizations []OrganizationModel `tfsdk:"organizations"`
+}
+
+func (m *OrganizationsModel) MapFromApi(ctx context.Context, api *sonatypeiq.ApiOrganizationListDTO) {
+	m.Organizations = make([]OrganizationModel, 0)
+	for _, apiOrg := range api.Organizations {
+		org := OrganizationModel{}
+		org.MapFromApi(ctx, &apiOrg)
+		m.Organizations = append(m.Organizations, org)
+	}
+}
+
+// OrganizationModel
+// ------------------------------------------------------------
 type OrganizationModel struct {
 	ID                    types.String `tfsdk:"id"`
 	Name                  types.String `tfsdk:"name"`
 	ParentOrganiziationId types.String `tfsdk:"parent_organization_id"`
-	Tags                  []TagModel   `tfsdk:"tags"`
+	Categories            types.Set    `tfsdk:"categories"`
+}
+
+func (m *OrganizationModel) MapFromApi(ctx context.Context, api *sonatypeiq.ApiOrganizationDTO) {
+	m.ID = types.StringPointerValue(api.Id)
+	m.Name = types.StringPointerValue(api.Name)
+	m.ParentOrganiziationId = types.StringPointerValue(api.ParentOrganizationId)
+
+	tags := make([]TagModel, 0)
+	for _, apiTag := range api.Tags {
+		t := TagModel{}
+		t.MapFromApi(&apiTag)
+		tags = append(tags, t)
+	}
+	m.Categories, _ = types.SetValueFrom(ctx, TagModelType(), tags)
+}
+
+// OrganizationModelResource
+// ------------------------------------------------------------
+type OrganizationModelResource struct {
+	OrganizationModel
+	LastUpdated types.String `tfsdk:"last_updated"`
+}
+
+func (m *OrganizationModelResource) MapToApi(includeId bool) *sonatypeiq.ApiOrganizationDTO {
+	api := sonatypeiq.NewApiOrganizationDTOWithDefaults()
+	if includeId {
+		api.Id = m.ID.ValueStringPointer()
+	}
+	api.Name = m.Name.ValueStringPointer()
+	api.ParentOrganizationId = m.ParentOrganiziationId.ValueStringPointer()
+	return api
 }

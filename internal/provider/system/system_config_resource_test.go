@@ -19,6 +19,7 @@ package system_test
 import (
 	"fmt"
 	"os"
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
@@ -26,10 +27,8 @@ import (
 )
 
 func TestAccSystemConfigResource(t *testing.T) {
-
-	// appName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	iqUrl := os.Getenv("IQ_SERVER_URL") + "/"
-
+	resourceName := "sonatypeiq_system_config.test"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -37,12 +36,32 @@ func TestAccSystemConfigResource(t *testing.T) {
 			{
 				Config: testAccSystemConfigResource(iqUrl, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Verify Application
-					resource.TestCheckResourceAttrSet("sonatypeiq_system_config.config", "id"),
-					resource.TestCheckResourceAttr("sonatypeiq_system_config.config", "base_url", iqUrl),
-					resource.TestCheckResourceAttr("sonatypeiq_system_config.config", "force_base_url", "true"),
-					resource.TestCheckResourceAttrSet("sonatypeiq_system_config.config", "last_updated"),
+					resource.TestCheckResourceAttr(resourceName, "id", common.STATE_ID_SYSTEM_CONFIGURATION),
+					resource.TestCheckResourceAttr(resourceName, "base_url", iqUrl),
+					resource.TestCheckResourceAttr(resourceName, "force_base_url", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
+			},
+			{
+				Config: testAccSystemConfigResource(iqUrl, false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", common.STATE_ID_SYSTEM_CONFIGURATION),
+					resource.TestCheckResourceAttr(resourceName, "base_url", iqUrl),
+					resource.TestCheckResourceAttr(resourceName, "force_base_url", "false"),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
+				),
+			},
+			// Validate
+			{
+				Config:             testAccSystemConfigResource(iqUrl, false),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"last_updated"},
 			},
 			// Delete testing automatically occurs in TestCase
 		},
@@ -51,7 +70,7 @@ func TestAccSystemConfigResource(t *testing.T) {
 
 func testAccSystemConfigResource(url string, force bool) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
-resource "sonatypeiq_system_config" "config" {
+resource "sonatypeiq_system_config" "test" {
   base_url = "%s"
   force_base_url = %t
 }`, url, force)

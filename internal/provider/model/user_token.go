@@ -19,6 +19,7 @@ package model
 import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	sharedutil "github.com/sonatype-nexus-community/terraform-provider-shared/util"
 )
 
 type UserTokenModel struct {
@@ -30,10 +31,10 @@ type UserTokenModel struct {
 }
 
 func (m *UserTokenModel) MapFromApi(api *sonatypeiq.ApiUserTokenDTO) {
-	// m.Username = types.StringPointerValue(api.Username)
-	// m.Realm = types.StringPointerValue(api.Realm)
-	m.UserCode = types.StringPointerValue(api.UserCode)
-	m.PassCode = types.StringPointerValue(api.PassCode)
+	// m.Username = sharedutil.StringPtrToValue(api.Username)
+	// m.Realm = sharedutil.StringPtrToValue(api.Realm)
+	m.UserCode = sharedutil.StringPtrToValue(api.UserCode)
+	m.PassCode = sharedutil.StringPtrToValue(api.PassCode)
 }
 
 type UserTokenModelResource struct {

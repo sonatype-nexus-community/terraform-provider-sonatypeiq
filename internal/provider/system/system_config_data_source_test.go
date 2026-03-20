@@ -24,6 +24,7 @@ import (
 )
 
 func TestAccSystemConfigDataSource(t *testing.T) {
+	var resourceName = "data.sonatypeiq_system_config.config"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -32,8 +33,9 @@ func TestAccSystemConfigDataSource(t *testing.T) {
 				Config: utils_test.ProviderConfig + `data "sonatypeiq_system_config" "config" {
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.sonatypeiq_system_config.config", "id", "placeholder"),
-					resource.TestCheckResourceAttr("data.sonatypeiq_system_config.config", "base_url", ""),
+					resource.TestCheckResourceAttr(resourceName, "id", "system-configuration"),
+					resource.TestCheckNoResourceAttr(resourceName, "base_url"),
+					resource.TestCheckResourceAttr(resourceName, "force_base_url", "false"),
 				),
 			},
 		},

@@ -31,8 +31,9 @@ var (
 )
 
 type BaseDataSource struct {
-	Auth   sonatypeiq.BasicAuth
-	Client *sonatypeiq.APIClient
+	Auth      sonatypeiq.BasicAuth
+	Client    *sonatypeiq.APIClient
+	IqVersion int32
 }
 
 // Configure implements datasource.DataSourceWithConfigure.
@@ -53,6 +54,12 @@ func (d *BaseDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 
 	d.Auth = config.Auth
 	d.Client = config.Client
+	d.IqVersion = config.IqVersion
+}
+
+// AuthContext returns a new context with authentication set up for API calls
+func (d *BaseDataSource) AuthContext(ctx context.Context) context.Context {
+	return WithAuth(ctx, d.Auth)
 }
 
 // Metadata implements datasource.DataSource.

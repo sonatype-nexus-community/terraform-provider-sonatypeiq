@@ -36,9 +36,20 @@ resource "sonatypeiq_user" "example_user" {
 ### Optional
 
 - `password` (String, Sensitive) Password used to log in to Sonatype IQ Server
+- `realm` (String) Realm the User belongs to. Only 'Internal' is supported at this time.
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
-- `last_updated` (String)
-- `realm` (String) Realm the User belongs to. Only 'Internal' is supported at this time.
+- `id` (String) Internal ID for Terraform State
+- `last_updated` (String) String representation of the date/time the resource was last changed
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# System Property Configuration can be imported.
+
+# Example
+terraform import sonatypeiq_system_config.config system-property-configuration
+```

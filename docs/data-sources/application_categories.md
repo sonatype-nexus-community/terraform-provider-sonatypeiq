@@ -24,7 +24,7 @@ data "sonatypeiq_application_categories" "categories" {
 
 ### Required
 
-- `organization_id` (String) Internal ID of the Organization to which this Application belongs - use 'ROOT_ORGANIZATION_ID' for the Root Organization
+- `organization_id` (String) Internal ID of the Organization to which this Application belongs - use `ROOT_ORGANIZATION_ID` for the Root Organization
 
 ### Read-Only
 
@@ -36,7 +36,8 @@ data "sonatypeiq_application_categories" "categories" {
 
 Read-Only:
 
-- `color` (String) Color of the Tag
-- `description` (String) Description of the Tag
-- `id` (String) Internal ID of the Tag
-- `name` (String) Name of the Tag
+- `color` (String) Color of the Application Category
+- `description` (String) Description of the Application Category
+- `id` (String) Internal ID of the Application Category
+- `name` (String) Name of the Application Category
+- `organization_id` (String) Organization ID this Application Category belongs to

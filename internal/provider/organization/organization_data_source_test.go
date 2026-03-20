@@ -17,6 +17,8 @@
 package organization_test
 
 import (
+	"fmt"
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
@@ -24,17 +26,32 @@ import (
 )
 
 func TestAccOrganizationDataSource(t *testing.T) {
+	var resourceName = "data.sonatypeiq_organization.org"
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// Read testing
+			// Read by ID
 			{
-				Config: utils_test.ProviderConfig + `data "sonatypeiq_organization" "sandbox" {
+				Config: utils_test.ProviderConfig + fmt.Sprintf(`data "sonatypeiq_organization" "org" {
+					id = "%s"
+				}`, common.ROOT_ORGANIZATION_ID),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttr(resourceName, "name", "Root Organization"),
+					resource.TestCheckNoResourceAttr(resourceName, "parent_organization_id"),
+					resource.TestCheckResourceAttr(resourceName, "categories.#", "3"),
+				),
+			},
+			// Read by Name
+			{
+				Config: utils_test.ProviderConfig + `data "sonatypeiq_organization" "org" {
 					name = "Sandbox Organization"
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.sonatypeiq_organization.sandbox", "name", "Sandbox Organization"),
-					resource.TestCheckResourceAttr("data.sonatypeiq_organization.sandbox", "parent_organization_id", "ROOT_ORGANIZATION_ID"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "name", "Sandbox Organization"),
+					resource.TestCheckResourceAttr(resourceName, "parent_organization_id", common.ROOT_ORGANIZATION_ID),
+					resource.TestCheckResourceAttr(resourceName, "categories.#", "0"),
 				),
 			},
 		},

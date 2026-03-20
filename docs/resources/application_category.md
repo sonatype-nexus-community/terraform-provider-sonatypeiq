@@ -42,4 +42,16 @@ resource "sonatypeiq_application_category" "category1" {
 ### Read-Only
 
 - `id` (String) Internal ID of the Application Category
-- `last_updated` (String)
+- `last_updated` (String) String representation of the date/time the resource was last changed
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Application Categories can be imported using the Application Category id.
+# This can be obtained from the WebUI or by calling the Sonatype IQ REST API.
+
+# Example
+terraform import sonatypeiq_application_category.category1 11614d18e28b4cbe9dae03d1cf00d663
+```

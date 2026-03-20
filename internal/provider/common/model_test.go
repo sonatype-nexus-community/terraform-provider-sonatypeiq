@@ -14,13 +14,30 @@
  * limitations under the License.
  */
 
-package model
+package common_test
 
-import "github.com/hashicorp/terraform-plugin-framework/types"
+import (
+	"terraform-provider-sonatypeiq/internal/provider/common"
+	"testing"
 
-type TagModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Color       types.String `tfsdk:"color"`
+	"github.com/stretchr/testify/assert"
+)
+
+type serverVersionTestCase struct {
+	input           string
+	expectedVersion int32
+}
+
+func TestModelServerHeaderVersionParse(t *testing.T) {
+	testCases := []serverVersionTestCase{
+		{
+			input:           "NexusIQ/1.201.0-02",
+			expectedVersion: 201,
+		},
+	}
+
+	for _, tc := range testCases {
+		sv := common.ParseServerHeaderToVersion(tc.input)
+		assert.Equal(t, tc.expectedVersion, sv)
+	}
 }

@@ -18,19 +18,17 @@ on:
 env:
     LC_APPLICATION_ID: terraform-provider-sonatypeiq
 
-# Testing only needs permissions to read the repository contents.
-permissions:
-    contents: read
-
 jobs:
     # Ensure project builds before running testing matrix
     build:
         name: Build
         runs-on: ubuntu-latest
         timeout-minutes: 5
+        permissions:
+            contents: read
         steps:
-            - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
-            - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
               with:
                   go-version-file: 'go.mod'
                   cache: true
@@ -44,9 +42,11 @@ jobs:
     sonatype:
         name: Sonatype Scan
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
         steps:
-            - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
-            - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
               with:
                 go-version-file: 'go.mod'
                 cache: true
@@ -69,9 +69,11 @@ jobs:
     generate:
         name: Ensure Docs are Generated
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
         steps:
-            - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
-            - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
               with:
                   go-version-file: 'go.mod'
                   cache: true
@@ -99,6 +101,8 @@ jobs:
             - generate
         runs-on: ubuntu-latest
         timeout-minutes: 15
+        permissions:
+            contents: read
         strategy:
             fail-fast: false
             matrix:
@@ -108,10 +112,15 @@ jobs:
                     #- '1.190.0-01'
                     # - '1.191.0-01' # Known issues fresh booting with H2 internal DB
                     #- '1.192.0-01'
-                    - '1.193.0-01'
-                    - '1.194.0-01'
+                    #- '1.193.0-01'
+                    # - '1.194.0-01'
                     - '1.195.0-01'
-                    - '1.196.0-01' # LATEST
+                    - '1.196.0-01'
+                    - '1.197.0-01'
+                    - '1.198.0-01'
+                    - '1.199.0-01'
+                    - '1.200.0-01'
+                    - '1.201.0-02' # LATEST
                 # list whatever Terraform versions here you would like to support
                 terraform:
                     - '1.0.*' # Minimum
@@ -137,9 +146,9 @@ jobs:
                 echo "TF_SAFE_VERSION=$TF_SAFE_VERSION" >> "$GITHUB_ENV"
 
             - name: Checkout Source
-              uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-            - uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5
+            - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
               with:
                 distribution: 'corretto'
                 java-version: '17'
@@ -189,7 +198,7 @@ jobs:
                     fi
                   done
 
-            - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
               with:
                   go-version-file: 'go.mod'
                   cache: true

@@ -18,18 +18,21 @@ package application
 
 import (
 	"context"
-	"io"
+	"fmt"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 var _ resource.ResourceWithImportState = &applicationResource{}
@@ -53,30 +56,12 @@ func (r *applicationResource) Metadata(_ context.Context, req resource.MetadataR
 func (r *applicationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Internal ID of the Application",
-				Computed:    true,
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the Application",
-				Required:    true,
-			},
-			"public_id": schema.StringAttribute{
-				Description: "Public ID of the Application",
-				Required:    true,
-			},
-			"organization_id": schema.StringAttribute{
-				Description: "Internal ID of the Organization to which this Application belongs",
-				Required:    true,
-			},
-			"contact_user_name": schema.StringAttribute{
-				Description: "User Name of the Contact for the Application",
-				Optional:    true,
-			},
-			"last_updated": schema.StringAttribute{
-				Description: "String representation of the date/time the resource was last changed by Terraform",
-				Computed:    true,
-			},
+			"id":                sharedrschema.ResourceComputedString("Internal ID of the Application"),
+			"name":              sharedrschema.ResourceRequiredString("Name of the Application"),
+			"public_id":         sharedrschema.ResourceRequiredString("Public ID of the Application"),
+			"organization_id":   sharedrschema.ResourceRequiredString("Internal ID of the Organization to which this Application belongs"),
+			"contact_user_name": sharedrschema.ResourceOptionalString("User Name of the Contact for the Application"),
+			"last_updated":      sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }
@@ -84,45 +69,40 @@ func (r *applicationResource) Schema(_ context.Context, _ resource.SchemaRequest
 // Create creates the resource and sets the initial Terraform state.
 func (r *applicationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
-	var plan model.ApplicationModellResource
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	var plan model.ApplicationModelResource
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Call API to create Application
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	apiResponse, httpResponse, err := r.Client.ApplicationsAPI.AddApplication(r.AuthContext(ctx)).ApiApplicationDTO(plan.MapToApi(false)).Execute()
 
-	application_request := r.Client.ApplicationsAPI.AddApplication(ctx)
-	application_request = application_request.ApiApplicationDTO(sonatypeiq.ApiApplicationDTO{
-		Name:            plan.Name.ValueStringPointer(),
-		PublicId:        plan.PublicId.ValueStringPointer(),
-		OrganizationId:  plan.OrganizationId.ValueStringPointer(),
-		ContactUserName: plan.ContactUserName.ValueStringPointer(),
-	})
-	application, api_response, err := application_request.Execute()
-
-	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		errors.HandleAPIError(
 			"Error creating Application",
-			"Could not create Application, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.HandleAPIError(
+			"Creation of Application was not successful",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}
 
-	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(*application.Id)
-	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	// Map response to State
+	plan.MapFromApi(apiResponse)
 
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, plan)
+	// Update State
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	diags := resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -131,50 +111,39 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 
 // Read refreshes the Terraform state with the latest data.
 func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state model.ApplicationModellResource
-
+	// Retrieve values from state
+	var state model.ApplicationModelResource
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	// Get refreshed Application from IQ
-	application, api_response, err := r.Client.ApplicationsAPI.GetApplication(ctx, state.ID.ValueString()).Execute()
+	apiResponse, httpResponse, err := r.Client.ApplicationsAPI.GetApplication(r.AuthContext(ctx), state.ID.ValueString()).Execute()
 
 	if err != nil {
-		if api_response.StatusCode == 404 {
+		if httpResponse.StatusCode == http.StatusNotFound {
 			resp.State.RemoveResource(ctx)
+			errors.HandleAPIWarning(
+				"Application with ID did not exist",
+				&err,
+				httpResponse,
+				&resp.Diagnostics,
+			)
 		} else {
-			resp.Diagnostics.AddError(
-				"Error Reading IQ Application",
-				"Could not read Application with ID "+state.ID.ValueString()+": "+err.Error(),
+			errors.HandleAPIError(
+				common.ERR_FAILED_READING_APPLICATION,
+				&err,
+				httpResponse,
+				&resp.Diagnostics,
 			)
 		}
 		return
-	} else {
-		// Overwrite items with refreshed state
-		state.ID = types.StringValue(*application.Id)
-		state.Name = types.StringValue(*application.Name)
-		state.PublicId = types.StringValue(*application.PublicId)
-		state.OrganizationId = types.StringValue(*application.OrganizationId)
-		if state.LastUpdated == types.StringValue("") {
-			state.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
-		}
-		if application.ContactUserName != nil {
-			state.ContactUserName = types.StringValue(*application.ContactUserName)
-		} else {
-			state.ContactUserName = types.StringNull()
-		}
 	}
 
-	// Set refreshed state
+	// Update State based on Response
+	state.MapFromApi(apiResponse)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -183,83 +152,87 @@ func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *applicationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan model.ApplicationModellResource
-	var state model.ApplicationModellResource
+	var plan model.ApplicationModelResource
+	var state model.ApplicationModelResource
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Make Update API Call
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
+		return
+	}
+
+	// First Move Application if Org is different
 	if !plan.OrganizationId.Equal(state.OrganizationId) {
-		_, apiResponse, err := r.Client.ApplicationsAPI.MoveApplication(ctx, state.ID.ValueString(), plan.OrganizationId.ValueString()).Execute()
+		_, httpResponse, err := r.Client.ApplicationsAPI.MoveApplication(
+			r.AuthContext(ctx), state.ID.ValueString(), plan.OrganizationId.ValueString(),
+		).Execute()
+
 		if err != nil {
-			errorBody, _ := io.ReadAll(apiResponse.Body)
-			resp.Diagnostics.AddError(
-				"Error moving application", "Could not move the application("+state.ID.ValueString()+") to new organization("+plan.OrganizationId.String()+"): "+apiResponse.Status+": "+string(errorBody),
+			errors.HandleAPIError(
+				common.ERR_FAILED_MOVING_APPLICATION,
+				&err,
+				httpResponse,
+				&resp.Diagnostics,
 			)
 			return
 		}
 	}
-	app_update_request := r.Client.ApplicationsAPI.UpdateApplication(ctx, state.ID.ValueString())
-	app_update_request = app_update_request.ApiApplicationDTO(sonatypeiq.ApiApplicationDTO{
-		Name:            plan.Name.ValueStringPointer(),
-		PublicId:        plan.PublicId.ValueStringPointer(),
-		OrganizationId:  plan.OrganizationId.ValueStringPointer(),
-		ContactUserName: plan.ContactUserName.ValueStringPointer(),
-	})
 
-	application, api_response, err := app_update_request.Execute()
+	// Second Update Application
+	apiResponse, httpResponse, err := r.Client.ApplicationsAPI.UpdateApplication(r.AuthContext(ctx), state.ID.ValueString()).ApiApplicationDTO(plan.MapToApi(true)).Execute()
 
-	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		errors.HandleAPIError(
 			"Error updating Application",
-			"Could not update Application, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.HandleAPIError(
+			"Updating Application was not successful",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}
 
-	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(*application.Id)
-	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	// Map response to State
+	plan.MapFromApi(apiResponse)
 
-	// Set state to fully populated data
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	// Update State
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	diags := resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *applicationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state model.ApplicationModellResource
+	// Retrieve values from state
+	var state model.ApplicationModelResource
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Make Delete API Call
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	httpResponse, err := r.Client.ApplicationsAPI.DeleteApplication(r.AuthContext(ctx), state.ID.ValueString()).Execute()
 
-	api_response, err := r.Client.ApplicationsAPI.DeleteApplication(ctx, state.ID.ValueString()).Execute()
-	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
+	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
 		resp.Diagnostics.AddError(
-			"Error deleting Application",
-			"Could not delete Application, unexpected error: "+api_response.Status+": "+string(error_body),
+			fmt.Sprintf(common.ERR_APPLICATION_DID_NOT_EXIST, state.ID.ValueString()),
+			fmt.Sprintf("%v", err),
 		)
 		return
 	}

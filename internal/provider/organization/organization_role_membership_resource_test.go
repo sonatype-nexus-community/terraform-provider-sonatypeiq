@@ -18,6 +18,7 @@ package organization_test
 
 import (
 	"fmt"
+	"terraform-provider-sonatypeiq/internal/provider/common"
 	utils_test "terraform-provider-sonatypeiq/internal/provider/utils"
 	"testing"
 
@@ -26,74 +27,63 @@ import (
 )
 
 func TestAccOrganizationRoleMembershipResource(t *testing.T) {
-
+	resourceName := "sonatypeiq_organization_role_membership.test"
 	userName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: fmt.Sprintf(utils_test.ProviderConfig+`
-		 data "sonatypeiq_organization" "sandbox" {
-		   name = "Sandbox Organization"
-		 }
- 
-		 data "sonatypeiq_role" "developer" {
-		   name = "Developer"
-		 }
- 
-		 resource "sonatypeiq_user" "user" {
-		   username   = "%s"
-		   password   = "randomthing"
-		   first_name = "Example"
-		   last_name  = "User"
-		   email      = "example@user.tld"
-		 }
- 
-		 resource "sonatypeiq_organization_role_membership" "test" {
-		   role_id         = data.sonatypeiq_role.developer.id
-		   organization_id = data.sonatypeiq_organization.sandbox.id
-		   user_name       = sonatypeiq_user.user.username
-		 }
- 
-		 `, userName),
+				Config: testConfigOrganizationRoleMapping(userName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify application role membership
-					resource.TestCheckResourceAttrSet("sonatypeiq_organization_role_membership.test", "id"),
-					resource.TestCheckResourceAttr("sonatypeiq_organization_role_membership.test", "user_name", userName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "role_id", common.ROLE_ID_REGEX),
+					resource.TestMatchResourceAttr(resourceName, "organization_id", common.ORGANIZATION_ID_REGEX),
+					resource.TestCheckResourceAttr(resourceName, "user_name", userName),
+					resource.TestCheckResourceAttrSet(resourceName, "last_updated"),
 				),
+			},
+			// Validate
+			{
+				Config:             testConfigOrganizationRoleMapping(userName),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 			{
-				Config: fmt.Sprintf(utils_test.ProviderConfig+`
-		 data "sonatypeiq_organization" "sandbox" {
-		   name = "Sandbox Organization"
-		 }
- 
-		 data "sonatypeiq_role" "owner" {
-		   name = "Owner"
-		 }
- 
-		 resource "sonatypeiq_user" "user" {
-		   username   = "%s"
-		   password   = "randomthing"
-		   first_name = "Example"
-		   last_name  = "User"
-		   email      = "example@user.tld"
-		 }
- 
-		 resource "sonatypeiq_organization_role_membership" "test" {
-		   role_id         = data.sonatypeiq_role.owner.id
-		   organization_id = data.sonatypeiq_organization.sandbox.id
-		   user_name       = sonatypeiq_user.user.username
-		 }
- 
-		 `, userName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Verify application role membership
-					resource.TestCheckResourceAttr("sonatypeiq_organization_role_membership.test", "role_id", "1cddabf7fdaa47d6833454af10e0a3ef"),
-				),
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"last_updated"},
 			},
+			// Delete testing automatically occurs in TestCase
 		},
 	})
+}
+
+func testConfigOrganizationRoleMapping(userName string) string {
+	return fmt.Sprintf(utils_test.ProviderConfig+`
+        data "sonatypeiq_organization" "sandbox" {
+		  name = "Sandbox Organization"
+		}
+ 
+		data "sonatypeiq_role" "developer" {
+          name = "Developer"
+        }
+
+        resource "sonatypeiq_user" "user" {
+          username   = "%s"
+          password   = "randomthing"
+          first_name = "Example"
+          last_name  = "User"
+          email      = "example@user.tld"
+        }
+
+        resource "sonatypeiq_organization_role_membership" "test" {
+          role_id        = data.sonatypeiq_role.developer.id
+          organization_id = data.sonatypeiq_organization.sandbox.id
+          user_name      = sonatypeiq_user.user.username
+        }`,
+		userName,
+	)
 }

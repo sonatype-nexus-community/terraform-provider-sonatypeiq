@@ -33,7 +33,7 @@ func TestAccApplicationsDataSource(t *testing.T) {
 				Config: utils_test.ProviderConfig + `data "sonatypeiq_applications" "apps" {
 				}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.sonatypeiq_applications.apps", "id", "placeholder"),
+					resource.TestCheckResourceAttr("data.sonatypeiq_applications.apps", "id", "all-applications"),
 					resource.TestCheckResourceAttrSet("data.sonatypeiq_applications.apps", "applications.#"),
 				),
 			},

@@ -38,8 +38,19 @@ output "sub_org_id" {
 
 ### Read-Only
 
+- `categories` (Attributes Set) Application Categories defined at this Organization (see [below for nested schema](#nestedatt--categories))
 - `id` (String) Internal ID of the Organization
-- `last_updated` (String)
+- `last_updated` (String) String representation of the date/time the resource was last changed
+
+<a id="nestedatt--categories"></a>
+### Nested Schema for `categories`
+
+Read-Only:
+
+- `color` (String) Color of the Application Category
+- `description` (String) Description of the Application Category
+- `id` (String) Internal ID of the Application Category
+- `name` (String) Name of the Application Category
 
 ## Import
 

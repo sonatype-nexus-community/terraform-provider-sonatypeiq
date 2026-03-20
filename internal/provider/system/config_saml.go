@@ -23,23 +23,28 @@ import (
 	"regexp"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // securitySamlResource is the resource implementation.
 type securitySamlResource struct {
-	common.BaseResourceWithImport
+	common.BaseResource
 }
 
 // NewConfigSamlResource is a helper function to simplify the provider implementation.
@@ -57,193 +62,178 @@ func (r *securitySamlResource) Schema(_ context.Context, _ resource.SchemaReques
 	resp.Schema = schema.Schema{
 		Description: "Configure Sonatype IQ SAML connection.",
 		Attributes: map[string]schema.Attribute{
-			"identity_provider_name": schema.StringAttribute{
-				Description: "The name of the Identity Provider that is displayed on the login page when SAML is configured",
-				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(2),
-				},
-			},
-			"idp_metadata": schema.StringAttribute{
-				Description: "SAML Identity Provider Metadata XML",
-				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(10),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`(?s)^\s*<.*>\s*$`),
-						"must be valid XML format",
-					),
-				},
-			},
-			"username_attribute": schema.StringAttribute{
-				Description: "IdP field mappings for username",
-				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-				},
-			},
-			"first_name_attribute": schema.StringAttribute{
-				Description: "IdP field mappings for user's given name",
-				Optional:    true,
-				Computed:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-				},
-				Default: stringdefault.StaticString(common.SAML_DEFAULT_FIRST_NAME_ATTRIBUTE),
-			},
-			"last_name_attribute": schema.StringAttribute{
-				Description: "IdP field mappings for user's family name",
-				Optional:    true,
-				Computed:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-				},
-				Default: stringdefault.StaticString(common.SAML_DEFAULT_LAST_NAME_ATTRIBUTE),
-			},
-			"email_attribute": schema.StringAttribute{
-				Description: "IdP field mappings for user's email",
-				Optional:    true,
-				Computed:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-				},
-				Default: stringdefault.StaticString(common.SAML_DEFAULT_EMAIL_ATTRIBUTE),
-			},
-			"groups_attribute": schema.StringAttribute{
-				Description: "IdP field mappings for user's groups",
-				Optional:    true,
-				Computed:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-				},
-				Default: stringdefault.StaticString(common.SAML_DEFAULT_GROUPS_ATTRIBUTE),
-			},
-			"validate_response_signature": schema.BoolAttribute{
-				Description: "Validate SAML response signature",
-				Optional:    true,
-			},
-			"validate_assertion_signature": schema.BoolAttribute{
-				Description: "By default, if a signing key is found in the IdP metadata, then Sonatype Nexus Repository Manager will attempt to validate signatures on the assertions.",
-				Optional:    true,
-			},
-			"entity_id": schema.StringAttribute{
-				Description: "SAML Entity ID (typically a URI)",
-				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-				},
-			},
+			"id": sharedrschema.ResourceComputedString("Internal ID for Terraform State"),
+			"identity_provider_name": sharedrschema.ResourceRequiredStringWithLengthAtLeast(
+				"Hostname of the Proxy Server", 2,
+			),
+			"idp_metadata": sharedrschema.ResourceRequiredStringWithValidators(
+				"SAML Identity Provider Metadata XML",
+				stringvalidator.LengthAtLeast(10),
+				stringvalidator.RegexMatches(
+					regexp.MustCompile(`(?s)^\s*<.*>\s*$`),
+					"must be valid XML format",
+				),
+			),
+			"username_attribute": sharedrschema.ResourceRequiredStringWithLengthAtLeast(
+				"IdP field mappings for username", 1,
+			),
+			"first_name_attribute": func() schema.StringAttribute {
+				attr := sharedrschema.ResourceComputedOptionalString("IdP field mappings for user's given name")
+				attr.Default = stringdefault.StaticString(common.SAML_DEFAULT_FIRST_NAME_ATTRIBUTE)
+				attr.Validators = []validator.String{stringvalidator.LengthAtLeast(1)}
+				return attr
+			}(),
+			"last_name_attribute": func() schema.StringAttribute {
+				attr := sharedrschema.ResourceComputedOptionalString("IdP field mappings for user's family name")
+				attr.Default = stringdefault.StaticString(common.SAML_DEFAULT_LAST_NAME_ATTRIBUTE)
+				attr.Validators = []validator.String{stringvalidator.LengthAtLeast(1)}
+				return attr
+			}(),
+			"email_attribute": func() schema.StringAttribute {
+				attr := sharedrschema.ResourceComputedOptionalString("IdP field mappings for user's email")
+				attr.Default = stringdefault.StaticString(common.SAML_DEFAULT_EMAIL_ATTRIBUTE)
+				attr.Validators = []validator.String{stringvalidator.LengthAtLeast(1)}
+				return attr
+			}(),
+			"groups_attribute": func() schema.StringAttribute {
+				attr := sharedrschema.ResourceComputedOptionalString("IdP field mappings for user's groups")
+				attr.Default = stringdefault.StaticString(common.SAML_DEFAULT_GROUPS_ATTRIBUTE)
+				attr.Validators = []validator.String{stringvalidator.LengthAtLeast(1)}
+				return attr
+			}(),
+			"validate_response_signature": sharedrschema.ResourceOptionalBoolWithDefault(
+				"Validate SAML response signature", false,
+			),
+			"validate_assertion_signature": sharedrschema.ResourceOptionalBoolWithDefault(
+				"By default, if a signing key is found in the IdP metadata, then Sonatype Nexus Repository Manager will attempt to validate signatures on the assertions.",
+				false,
+			),
+			"entity_id": sharedrschema.ResourceRequiredStringWithLengthAtLeast(
+				"SAML Entity ID (typically a URI)",
+				1,
+			),
+			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *securitySamlResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan model.SecuritySamlModel
+	var plan model.ConfigSamlModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
 		return
 	}
 
-	r.upsert(ctx, plan, &resp.Diagnostics, &resp.State)
+	r.doUpsert(ctx, &plan, &resp.State, &resp.Diagnostics)
+
+	// Update State
+	diags := resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Read refreshes the Terraform state with the latest data.
 func (r *securitySamlResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	r.read(ctx, &resp.Diagnostics, &resp.State)
+	// Retrieve values from state
+	var state model.ConfigSamlModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
+	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
+		return
+	}
+
+	apiResponse := r.doRead(ctx, &resp.State, &resp.Diagnostics)
+	if apiResponse == nil {
+		return
+	}
+
+	// Update State based on Response
+	state.MapFromApi(apiResponse)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *securitySamlResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan model.SecuritySamlModel
+	var plan model.ConfigSamlModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_PLAN, resp.Diagnostics.Errors()))
 		return
 	}
 
-	r.upsert(ctx, plan, &resp.Diagnostics, &resp.State)
+	r.doUpsert(ctx, &plan, &resp.State, &resp.Diagnostics)
+
+	// Update State
+	diags := resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *securitySamlResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	httpResponse, err := r.Client.ConfigSAMLAPI.DeleteSamlConfiguration(r.AuthContext(ctx)).Execute()
 
-	httpResponse, err := r.Client.ConfigSAMLAPI.DeleteSamlConfiguration(ctx).Execute()
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
-		common.HandleApiError(
-			"Error deleting SAML configuration",
-			&err,
-			httpResponse,
-			&resp.Diagnostics,
+		resp.Diagnostics.AddError(
+			common.ERR_SAML_CONFIGURATION_DID_NOT_EXIST,
+			fmt.Sprintf("%v", err),
 		)
 		return
 	}
 }
 
-func (r *securitySamlResource) read(ctx context.Context, respDiags *diag.Diagnostics, respState *tfsdk.State) {
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+func (r *securitySamlResource) doRead(ctx context.Context, respState *tfsdk.State, respDiags *diag.Diagnostics) *sonatypeiq.ApiSamlConfigurationResponseDTO {
+	apiResponse, httpResponse, err := r.Client.ConfigSAMLAPI.GetSamlConfiguration(r.AuthContext(ctx)).Execute()
 
-	apiResponse, httpResponse, err := r.Client.ConfigSAMLAPI.GetSamlConfiguration(ctx).Execute()
 	if err != nil {
-		if httpResponse != nil && httpResponse.StatusCode == http.StatusNotFound {
+		if httpResponse.StatusCode == http.StatusNotFound {
 			respState.RemoveResource(ctx)
-			common.HandleApiWarning(
-				"SAML Configuration did not exist",
+			errors.HandleAPIWarning(
+				"SAML configuration did not exist",
 				&err,
 				httpResponse,
 				respDiags,
 			)
 		} else {
-			common.HandleApiError(
-				"Failed to read SAML configuration",
+			errors.HandleAPIError(
+				common.ERR_SAML_CONFIGURATION_DID_NOT_EXIST,
 				&err,
 				httpResponse,
 				respDiags,
 			)
 		}
-		return
+		return nil
 	}
 
-	state := model.SecuritySamlModel{}
-	state.MapFromApi(apiResponse)
-	respDiags.Append(respState.Set(ctx, &state)...)
+	return apiResponse
 }
 
-func (r *securitySamlResource) upsert(ctx context.Context, plan model.SecuritySamlModel, respDiags *diag.Diagnostics, respState *tfsdk.State) {
-	// Set up authentication context
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+func (r *securitySamlResource) doUpsert(ctx context.Context, model *model.ConfigSamlModel, respState *tfsdk.State, respDiags *diag.Diagnostics) {
+	httpResponse, err := r.Client.ConfigSAMLAPI.InsertOrUpdateSamlConfiguration(r.AuthContext(ctx)).IdentityProviderXml(model.IdpMetadata.ValueString()).SamlConfiguration(*model.MapToApi()).Execute()
 
-	apiSamlRequest := sonatypeiq.NewApiSamlConfigurationDTOWithDefaults()
-	plan.MapToApi(apiSamlRequest)
-
-	httpResponse, err := r.Client.ConfigSAMLAPI.InsertOrUpdateSamlConfiguration(ctx).IdentityProviderXml(plan.IdpMetadata.ValueString()).SamlConfiguration(*apiSamlRequest).Execute()
 	if err != nil {
-		common.HandleApiError(
-			"Error creating SAML configuration",
+		errors.HandleAPIError(
+			"Error creating/updating SAML configuration",
 			&err,
 			httpResponse,
 			respDiags,
 		)
 		return
 	} else if httpResponse.StatusCode != http.StatusNoContent {
-		common.HandleApiError(
-			"Error creating SAML configuration - unexpected response code",
+		errors.HandleAPIError(
+			"Upsertion of SAML configuration was not successful",
 			&err,
 			httpResponse,
 			respDiags,
@@ -251,34 +241,16 @@ func (r *securitySamlResource) upsert(ctx context.Context, plan model.SecuritySa
 		return
 	}
 
-	// Call Read to get actual configured state to put into State
-	apiResponse, httpResponse, err := r.Client.ConfigSAMLAPI.GetSamlConfiguration(ctx).Execute()
-	if err != nil {
-		if httpResponse != nil && httpResponse.StatusCode == http.StatusNotFound {
-			respState.RemoveResource(ctx)
-			common.HandleApiWarning(
-				"SAML Configuration did not exist",
-				&err,
-				httpResponse,
-				respDiags,
-			)
-		} else {
-			common.HandleApiError(
-				"Failed to read SAML configuration",
-				&err,
-				httpResponse,
-				respDiags,
-			)
-		}
+	apiResponse := r.doRead(ctx, respState, respDiags)
+	if apiResponse == nil {
 		return
 	}
 
-	state := model.SecuritySamlModel{}
-	state.MapFromApi(apiResponse)
-	diags := respState.Set(ctx, state)
-	respDiags.Append(diags...)
+	// Map response to State
+	model.MapFromApi(apiResponse)
+	model.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 }
 
 func (r *securitySamlResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	r.read(ctx, &resp.Diagnostics, &resp.State)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

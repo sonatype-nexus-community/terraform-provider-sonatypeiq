@@ -32,7 +32,7 @@ resource "sonatypeiq_config_saml" "saml_config" {
 ### Required
 
 - `entity_id` (String) SAML Entity ID (typically a URI)
-- `identity_provider_name` (String) The name of the Identity Provider that is displayed on the login page when SAML is configured
+- `identity_provider_name` (String) Hostname of the Proxy Server
 - `idp_metadata` (String) SAML Identity Provider Metadata XML
 - `username_attribute` (String) IdP field mappings for username
 
@@ -45,15 +45,18 @@ resource "sonatypeiq_config_saml" "saml_config" {
 - `validate_assertion_signature` (Boolean) By default, if a signing key is found in the IdP metadata, then Sonatype Nexus Repository Manager will attempt to validate signatures on the assertions.
 - `validate_response_signature` (Boolean) Validate SAML response signature
 
+### Read-Only
+
+- `id` (String) Internal ID for Terraform State
+- `last_updated` (String) String representation of the date/time the resource was last changed
+
 ## Import
 
 Import is supported using the following syntax:
 
 ```shell
-# Existing SAML configuraiton can be imported as follows.
-#
-# NOTE: The Identifier (SAML) in below example has no meaning and is just to comply with Terraform syntax.
+# Existing SAML configuraiton can be imported.
 
 # Example
-terraform import sonatypeiq_config_saml.cfg_saml SAML
+terraform import sonatypeiq_config_saml.config system-saml-configuration
 ```

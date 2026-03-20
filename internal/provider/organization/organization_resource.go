@@ -19,8 +19,9 @@ package organization
 import (
 	"context"
 	"fmt"
-	"io"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
+	"terraform-provider-sonatypeiq/internal/provider/model"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -29,16 +30,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	sharedrschema "github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
-
-type organizationModelResouce struct {
-	ID                    types.String `tfsdk:"id"`
-	Name                  types.String `tfsdk:"name"`
-	ParentOrganiziationId types.String `tfsdk:"parent_organization_id"`
-	// Tags                  types.List   `tfsdk:"tags"`
-	LastUpdated types.String `tfsdk:"last_updated"`
-}
 
 // organizationResource is the resource implementation.
 type organizationResource struct {
@@ -60,163 +54,102 @@ func (r *organizationResource) Schema(_ context.Context, _ resource.SchemaReques
 	resp.Schema = schema.Schema{
 		Description: "Use this resource to manage Organizations",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Internal ID of the Organization",
-				Computed:    true,
-				Required:    false,
-				Optional:    false,
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the Organization",
-				Computed:    true,
-				Optional:    true,
-			},
-			"parent_organization_id": schema.StringAttribute{
-				Description: "Internal ID of the Parent Organization if this Organization has a Parent Organization",
-				Computed:    true,
-				Optional:    true,
-			},
-			// "tags": schema.ListNestedAttribute{
-			// 	Optional: true,
-			// 	NestedObject: schema.NestedAttributeObject{
-			// 		Attributes: tagSchemaObjectAttributes,
-			// 	},
-			// },
-			"last_updated": schema.StringAttribute{
-				Computed: true,
-			},
+			"id":                     sharedrschema.ResourceComputedString("Internal ID of the Organization"),
+			"name":                   sharedrschema.ResourceComputedOptionalString("Name of the Organization"),
+			"parent_organization_id": sharedrschema.ResourceComputedOptionalString("Internal ID of the Parent Organization if this Organization has a Parent Organization"),
+			"categories": sharedrschema.ResourceComputedSetNestedAttribute(
+				"Application Categories defined at this Organization",
+				schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"id":          sharedrschema.ResourceComputedString("Internal ID of the Application Category"),
+						"name":        sharedrschema.ResourceComputedString("Name of the Application Category"),
+						"description": sharedrschema.ResourceComputedString("Description of the Application Category"),
+						"color":       sharedrschema.ResourceComputedString("Color of the Application Category"),
+					},
+				},
+			),
+			"last_updated": sharedrschema.ResourceLastUpdated(),
 		},
 	}
 }
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *organizationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
-	var plan organizationModelResouce
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	var plan model.OrganizationModelResource
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
-		print("*** ERRORS ***")
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	tflog.Debug(ctx, "Preparing to create Organization", map[string]interface{}{"orgConfig": fmt.Sprintf("%+v", plan)})
+	apiResponse, httpResponse, err := r.Client.OrganizationsAPI.AddOrganization(r.AuthContext(ctx)).ApiOrganizationDTO(*plan.MapToApi(false)).Execute()
 
-	// Call API to create Organization
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	organization_request := r.Client.OrganizationsAPI.AddOrganization(ctx)
-	orgDto := sonatypeiq.ApiOrganizationDTO{
-		Name:                 plan.Name.ValueStringPointer(),
-		ParentOrganizationId: plan.ParentOrganiziationId.ValueStringPointer(),
-	}
-
-	// if !plan.Tags.IsNull() && !plan.Tags.IsUnknown() && len(plan.Tags.Elements()) > 0 {
-	// 	tflog.Debug(ctx, "Adding Tag to Organization Create Request...")
-
-	// 	tags := make([]tagModel, len(plan.Tags.Elements()))
-
-	// 	for _, tag := range tags {
-	// 		orgDto.Tags = append(orgDto.Tags, sonatypeiq.ApiTagDTO{
-	// 			Id:          tag.ID.ValueStringPointer(),
-	// 			Name:        tag.Name.ValueStringPointer(),
-	// 			Description: tag.Description.ValueStringPointer(),
-	// 			Color:       tag.Color.ValueStringPointer(),
-	// 		})
-	// 	}
-	// }
-
-	organization_request = organization_request.ApiOrganizationDTO(orgDto)
-
-	organization, api_response, err := organization_request.Execute()
-
-	// Call API
 	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
-		resp.Diagnostics.AddError(
+		errors.HandleAPIError(
 			"Error creating Organization",
-			"Could not create Organization, unexpected error: "+api_response.Status+": "+string(error_body),
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.HandleAPIError(
+			"Creation of Organization was not successful",
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
 		)
 		return
 	}
 
-	// Map response body to schema and populate Computed attribute values
-	plan.ID = types.StringValue(*organization.Id)
-	plan.Name = types.StringValue(*organization.Name)
-	plan.ParentOrganiziationId = types.StringValue(*organization.ParentOrganizationId)
-	// plan.Tags = []tagModel{}
-	// for _, tagDto := range organization.Tags {
-	// 	plan.Tags = append(plan.Tags, tagModel{
-	// 		ID:          types.StringValue(*tagDto.Id),
-	// 		Name:        types.StringValue(*tagDto.Name),
-	// 		Description: types.StringValue(*tagDto.Description),
-	// 		Color:       types.StringValue(*tagDto.Color),
-	// 	})
-	// }
-	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	// Map response to State
+	plan.MapFromApi(ctx, apiResponse)
 
-	// Finally, set the state
-	tflog.Debug(ctx, "Storing certificate request info into the state")
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	// Update State
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+	diags := resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Read refreshes the Terraform state with the latest data.
 func (r *organizationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state organizationModelResouce
-
+	// Retrieve values from state
+	var state model.OrganizationModelResource
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
-
-	// Get refreshed Organization from IQ
-	organization, _, err := r.Client.OrganizationsAPI.GetOrganization(ctx, state.ID.ValueString()).Execute()
+	apiResponse, httpResponse, err := r.Client.OrganizationsAPI.GetOrganization(r.AuthContext(ctx), state.ID.ValueString()).Execute()
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading IQ Organization",
-			"Could not read Organization with ID "+state.ID.ValueString()+": "+err.Error(),
-		)
+		if httpResponse.StatusCode == http.StatusNotFound {
+			resp.State.RemoveResource(ctx)
+			errors.HandleAPIWarning(
+				"Organization with ID did not exist",
+				&err,
+				httpResponse,
+				&resp.Diagnostics,
+			)
+		} else {
+			errors.HandleAPIError(
+				common.ERR_FAILED_READING_ORGANIZATION,
+				&err,
+				httpResponse,
+				&resp.Diagnostics,
+			)
+		}
 		return
 	}
 
-	// Overwrite items with refreshed state
-	state.ID = types.StringValue(*organization.Id)
-	state.Name = types.StringValue(*organization.Name)
-	state.ParentOrganiziationId = types.StringValue(*organization.ParentOrganizationId)
-
-	// if len(organization.Tags) > 0 {
-	// 	tflog.Debug(ctx, "Adding Tag to Organization Read response...")
-
-	// 	tags := []attr.Value{}
-
-	// 	for _, tag := range organization.Tags {
-	// 		tag := map[string]attr.Value{
-	// 			"id":          types.StringValue(tag.GetId()),
-	// 			"name":        types.StringValue(tag.GetName()),
-	// 			"description": types.StringValue(tag.GetDescription()),
-	// 			"color":       types.StringValue(tag.GetColor()),
-	// 		}
-
-	// 		tagObj, _ := types.ObjectValue(tagObjectMemberTypes, tag)
-	// 		tags = append(tags, tagObj)
-	// 	}
-
-	// 	state.Tags, _ = types.ListValue(types.ObjectType{AttrTypes: tagObjectMemberTypes}, tags)
-	// }
-
-	// Set refreshed state
+	// Update State based on Response
+	state.MapFromApi(ctx, apiResponse)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -230,25 +163,21 @@ func (r *organizationResource) Update(ctx context.Context, req resource.UpdateRe
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *organizationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state organizationModelResouce
+	// Retrieve values from state
+	var state model.OrganizationModelResource
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf(common.ERR_TF_GETTING_STATE, resp.Diagnostics.Errors()))
 		return
 	}
 
-	// Make Delete API Call
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		r.Auth,
-	)
+	httpResponse, err := r.Client.OrganizationsAPI.DeleteOrganization(r.AuthContext(ctx), state.ID.ValueString()).Execute()
 
-	api_response, err := r.Client.OrganizationsAPI.DeleteOrganization(ctx, state.ID.ValueString()).Execute()
-	if err != nil {
-		error_body, _ := io.ReadAll(api_response.Body)
+	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
 		resp.Diagnostics.AddError(
-			"Error deleting Organization",
-			"Could not delete Organization, unexpected error: "+api_response.Status+": "+string(error_body),
+			fmt.Sprintf(common.ERR_ORGANIZATION_DID_NOT_EXIST, state.ID.ValueString()),
+			fmt.Sprintf("%v", err),
 		)
 		return
 	}

@@ -1,6 +1,4 @@
-# Existing SAML configuraiton can be imported as follows.
-#
-# NOTE: The Identifier (SAML) in below example has no meaning and is just to comply with Terraform syntax.
+# Existing SAML configuraiton can be imported.
 
 # Example
-terraform import sonatypeiq_config_saml.cfg_saml SAML
+terraform import sonatypeiq_config_saml.config system-saml-configuration

@@ -18,13 +18,17 @@ package system
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
+	"terraform-provider-sonatypeiq/internal/provider/model"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -43,11 +47,6 @@ type configSamlDataSource struct {
 	common.BaseDataSource
 }
 
-type configSamlModel struct {
-	ID           types.String `tfsdk:"id"`
-	SamlMetadata types.String `tfsdk:"saml_metadata"`
-}
-
 // Metadata returns the data source type name.
 func (d *configSamlDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_config_saml"
@@ -55,61 +54,46 @@ func (d *configSamlDataSource) Metadata(_ context.Context, req datasource.Metada
 
 // Schema defines the schema for the data source.
 func (d *configSamlDataSource) Schema(_ context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+	resp.Schema = tfschema.Schema{
 		Description: "Use this data source to get SAML Metadata for Sonatype IQ Server",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"saml_metadata": schema.StringAttribute{
-				Description: "SAML Metadata for Sonatype IQ Server",
-				Computed:    true,
-			},
+		Attributes: map[string]tfschema.Attribute{
+			"id":            schema.DataSourceComputedString("The ID of this resource."),
+			"saml_metadata": schema.DataSourceComputedString("SAML Metadata for Sonatype IQ Server"),
 		},
 	}
 }
 
 // Read refreshes the Terraform state with the latest data.
 func (d *configSamlDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data configSamlModel
+	var data model.SecuritySamlMetadataModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		d.Auth,
-	)
-
-	// Make API Call
-	apiResponse, httpResponse, err := d.Client.ConfigSAMLAPI.GetMetadata(ctx).Execute()
+	apiResponse, httpResponse, err := d.Client.ConfigSAMLAPI.GetMetadata(d.AuthContext(ctx)).Execute()
 
 	if err != nil && httpResponse.StatusCode != http.StatusNotFound {
-		resp.Diagnostics.AddError(
-			"Unable to Read IQ System Configuration",
-			err.Error(),
-		)
-
-		return
-	}
-
-	if httpResponse.StatusCode == http.StatusNotFound {
-		data.ID = types.StringValue("placeholder")
-		data.SamlMetadata = types.StringNull()
-	} else if httpResponse.StatusCode != http.StatusOK {
-		common.HandleApiError(
-			"Error Reading SAML configuration",
+		errors.HandleAPIError(
+			common.ERR_FAILED_READING_SAML_METADATA,
 			&err,
 			httpResponse,
 			&resp.Diagnostics,
 		)
 		return
+	} else if httpResponse.StatusCode != http.StatusOK && httpResponse.StatusCode != http.StatusNotFound {
+		errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "SAML Metadata", httpResponse, err)
+		return
 	}
 
-	data.ID = types.StringValue("placeholder")
-	data.SamlMetadata = types.StringValue(apiResponse)
+	data.ID = types.StringValue("saml-metadata")
+	if httpResponse.StatusCode == http.StatusOK {
+		data.SamlMetadata = types.StringValue(apiResponse)
+	} else {
+		data.SamlMetadata = types.StringNull()
+	}
 
 	// Set state
 	diags := resp.State.Set(ctx, &data)

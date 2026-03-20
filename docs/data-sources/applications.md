@@ -22,23 +22,20 @@ data "sonatypeiq_applications" "apps" {}
 
 ### Read-Only
 
-- `applications` (Attributes List) (see [below for nested schema](#nestedatt--applications))
+- `applications` (Attributes List) List of Applications (see [below for nested schema](#nestedatt--applications))
 - `id` (String) The ID of this resource.
 
 <a id="nestedatt--applications"></a>
 ### Nested Schema for `applications`
 
-Optional:
-
-- `contact_user_name` (String) User Name of the Contact for the Application
-- `id` (String) Internal ID of the Application
-- `name` (String) Name of the Application
-- `public_id` (String) Public ID of the Application
-
 Read-Only:
 
 - `application_tags` (Attributes List) List of Tags applied to this Application (see [below for nested schema](#nestedatt--applications--application_tags))
+- `contact_user_name` (String) User Name of the Contact for the Application
+- `id` (String) Internal ID of the Application
+- `name` (String) Name of the Application
 - `organization_id` (String) Internal ID of the Organization to which this Application belongs
+- `public_id` (String) Public ID of the Application
 
 <a id="nestedatt--applications--application_tags"></a>
 ### Nested Schema for `applications.application_tags`

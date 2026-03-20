@@ -28,15 +28,22 @@ import (
 // Ensure the implementation satisfies the expected interfaces.
 var (
 	_ resource.Resource                = &BaseResource{}
-	_ resource.ResourceWithImportState = &BaseResourceWithImport{}
+	_ resource.ResourceWithImportState = &BaseResource{}
 	_ resource.ResourceWithConfigure   = &BaseResource{}
+	_ resource.ResourceWithModifyPlan  = &BaseResource{}
 )
 
 // Base Resource is the resource implementation.
 type BaseResource struct {
-	Auth    sonatypeiq.BasicAuth
-	BaseUrl string
-	Client  *sonatypeiq.APIClient
+	Auth      sonatypeiq.BasicAuth
+	BaseUrl   string
+	Client    *sonatypeiq.APIClient
+	IqVersion int32
+}
+
+// AuthContext returns a new context with authentication set up for API calls
+func (d *BaseResource) AuthContext(ctx context.Context) context.Context {
+	return WithAuth(ctx, d.Auth)
 }
 
 // Create implements resource.Resource.
@@ -88,14 +95,15 @@ func (r *BaseResource) Configure(_ context.Context, req resource.ConfigureReques
 	r.Auth = config.Auth
 	r.BaseUrl = config.BaseUrl
 	r.Client = config.Client
-}
-
-// Base Resource with Import
-type BaseResourceWithImport struct {
-	BaseResource
+	r.IqVersion = config.IqVersion
 }
 
 // ImportState implements resource.ResourceWithImportState.
-func (b *BaseResourceWithImport) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
+func (b *BaseResource) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
 	panic("unimplemented")
+}
+
+// ModifyPlan implements resource.ResourceWithModifyPlan.
+func (r *BaseResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	// Not used for most resources
 }

@@ -2,6 +2,31 @@
 
 ## X.Y.Z (Unreleased)
 
+BREAKING CHANGES:
+
+See the [Migration Guide](./MIGRATION-1.0.md) for help migrating from v0.x.x versions of this provider.
+
+* Updated Data Sources to always have an `id` and be defined consistently [GH-63]. See [Migration Guide](./MIGRATION-1.0.md) for impacted data sources.
+* Updated Resources to ensure they always have an `id` and `last_updated` for consistency [Gh-64]. See [Migration Guide](./MIGRATION-1.0.md) for impacted resources.
+
+FEATURES:
+
+* **New Resource:** `sonatypeiq_role` [GH-61]
+
+ENHANCEMENTS:
+
+* `sonatypeiq_role` data source now returns more complete fields including permissions [GH-67]
+* Adopted shared library to improve mantainability and consistency [GH-60]
+* A number of additional resources now support import - see [Migration Guide](./MIGRATION-1.0.md)
+* Resource `sonatypeiq_organization` now includes nested `categories`
+
+NOTES:
+
+* Tested against [Sonatype IQ Server 197](https://help.sonatype.com/en/sonatype-iq-server-197-release-notes.html) [GH-70]
+* Tested against [Sonatype IQ Server 198](https://help.sonatype.com/en/sonatype-iq-server-198-release-notes.html) [GH-71]
+* Tested against [Sonatype IQ Server 199](https://help.sonatype.com/en/sonatype-iq-server-199-release-notes.html) [GH-72]
+* Tested against [Sonatype IQ Server 200](https://help.sonatype.com/en/sonatype-iq-server-200-release-notes.html) [GH-73]
+* Tested against [Sonatype IQ Server 201](https://help.sonatype.com/en/sonatype-iq-server-201-release-notes.html) [GH-74]
 
 ## 0.12.1 October 24, 2025
 

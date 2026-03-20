@@ -8,13 +8,6 @@ on:
         tags:
             - 'v*'
 
-# Releases need permissions to read and write the repository contents.
-# GitHub considers creating releases and uploading assets as writing contents.
-permissions:
-    contents: write         # required for goreleaser && semantic-release
-    issues: write           # required for semantic-release
-    pull-requests: write    # required for semantic-release
-
 env:
     LC_APPLICATION_ID: terraform-provider-sonatyperepo
 
@@ -22,9 +15,11 @@ jobs:
     sonatype:
         name: Sonatype Scan
         runs-on: ubuntu-latest
+        permissions:
+            contents: write         # required for goreleaser && semantic-release
         steps:
-            - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
-            - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
               with:
                 go-version-file: 'go.mod'
                 cache: true
@@ -48,12 +43,16 @@ jobs:
         name: Run Goreleaser
         needs: sonatype
         runs-on: ubuntu-latest
+        permissions:
+            contents: write         # required for goreleaser && semantic-release
+            issues: write           # required for semantic-release
+            pull-requests: write    # required for semantic-release
         steps:
-            - uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493 # v5
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
               with:
                   # Allow goreleaser to access older tag information.
                   fetch-depth: 0
-            - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
               with:
                   go-version-file: 'go.mod'
             - name: Import GPG key
@@ -70,28 +69,3 @@ jobs:
                   # GitHub sets the GITHUB_TOKEN secret automatically.
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
-
-    # changelog:
-    #     name: Generate Changelog
-    #     needs: goreleaser
-    #     runs-on: ubuntu-latest
-    #     steps:
-    #         - name: Checkout
-    #           uses: actions/checkout@v4
-
-    #         - uses: actions/setup-node@v4
-    #           with:
-    #             node-version: 20
-
-    #         - name: Install Semantic Release Plugins
-    #           run:
-    #             npm install @semantic-release/changelog -D
-    #             npm install @semantic-release/git -D
-            
-    #         - name: Semantic Release
-    #           run: |
-    #             npx semantic-release
-    #           env:
-    #             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-

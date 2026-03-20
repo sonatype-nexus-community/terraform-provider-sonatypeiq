@@ -16,8 +16,13 @@
 
 package model
 
-import "github.com/hashicorp/terraform-plugin-framework/types"
+import (
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+)
 
+// ApplicationModel
+// ------------------------------------------------------------
 type ApplicationModel struct {
 	ID              types.String              `tfsdk:"id"`
 	PublicId        types.String              `tfsdk:"public_id"`
@@ -27,7 +32,39 @@ type ApplicationModel struct {
 	ApplicationTags []ApplicationTagLinkModel `tfsdk:"application_tags"`
 }
 
-type ApplicationModellResource struct {
+func (m *ApplicationModel) MapFromApi(api *sonatypeiq.ApiApplicationDTO) {
+	m.ID = types.StringPointerValue(api.Id)
+	m.PublicId = types.StringPointerValue(api.PublicId)
+	m.Name = types.StringPointerValue(api.Name)
+	m.OrganizationId = types.StringPointerValue(api.OrganizationId)
+	m.ContactUserName = types.StringPointerValue(api.ContactUserName)
+	m.ApplicationTags = make([]ApplicationTagLinkModel, 0)
+	for _, tagLink := range api.ApplicationTags {
+		tl := &ApplicationTagLinkModel{}
+		tl.MapFromApi(&tagLink)
+		m.ApplicationTags = append(m.ApplicationTags, *tl)
+	}
+}
+
+// ApplicationsModel
+// ------------------------------------------------------------
+type ApplicationsModel struct {
+	ID           types.String       `tfsdk:"id"`
+	Applications []ApplicationModel `tfsdk:"applications"`
+}
+
+func (m *ApplicationsModel) MapFromApi(api *sonatypeiq.ApiApplicationListDTO) {
+	m.Applications = make([]ApplicationModel, 0)
+	for _, apiApp := range api.Applications {
+		app := ApplicationModel{}
+		app.MapFromApi(&apiApp)
+		m.Applications = append(m.Applications, app)
+	}
+}
+
+// ApplicationModelResource
+// ------------------------------------------------------------
+type ApplicationModelResource struct {
 	ID              types.String `tfsdk:"id"`
 	PublicId        types.String `tfsdk:"public_id"`
 	Name            types.String `tfsdk:"name"`
@@ -36,8 +73,36 @@ type ApplicationModellResource struct {
 	LastUpdated     types.String `tfsdk:"last_updated"`
 }
 
+func (m *ApplicationModelResource) MapFromApi(api *sonatypeiq.ApiApplicationDTO) {
+	m.ID = types.StringPointerValue(api.Id)
+	m.PublicId = types.StringPointerValue(api.PublicId)
+	m.Name = types.StringPointerValue(api.Name)
+	m.OrganizationId = types.StringPointerValue(api.OrganizationId)
+	m.ContactUserName = types.StringPointerValue(api.ContactUserName)
+}
+
+func (m *ApplicationModelResource) MapToApi(includeId bool) sonatypeiq.ApiApplicationDTO {
+	api := sonatypeiq.NewApiApplicationDTOWithDefaults()
+	if includeId {
+		api.Id = m.ID.ValueStringPointer()
+	}
+	api.PublicId = m.PublicId.ValueStringPointer()
+	api.Name = m.Name.ValueStringPointer()
+	api.OrganizationId = m.OrganizationId.ValueStringPointer()
+	api.ContactUserName = m.ContactUserName.ValueStringPointer()
+	return *api
+}
+
+// ApplicationTagLinkModel
+// ------------------------------------------------------------
 type ApplicationTagLinkModel struct {
 	ID            types.String `tfsdk:"id"`
 	TagId         types.String `tfsdk:"tag_id"`
 	ApplicationId types.String `tfsdk:"application_id"`
+}
+
+func (m *ApplicationTagLinkModel) MapFromApi(api *sonatypeiq.ApiApplicationTagDTO) {
+	m.ID = types.StringPointerValue(api.Id)
+	m.TagId = types.StringPointerValue(api.TagId)
+	m.ApplicationId = types.StringPointerValue(api.ApplicationId)
 }

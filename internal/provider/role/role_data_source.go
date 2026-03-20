@@ -19,13 +19,15 @@ package role
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"terraform-provider-sonatypeiq/internal/provider/common"
+	"terraform-provider-sonatypeiq/internal/provider/model"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	sonatypeiq "github.com/sonatype-nexus-community/nexus-iq-api-client-go"
+	tfschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/errors"
+	"github.com/sonatype-nexus-community/terraform-provider-shared/schema"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -44,11 +46,6 @@ type roleDataSource struct {
 	common.BaseDataSource
 }
 
-type roleDataSourceModel struct {
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
-}
-
 // Metadata returns the data source type name.
 func (d *roleDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_role"
@@ -56,56 +53,116 @@ func (d *roleDataSource) Metadata(_ context.Context, req datasource.MetadataRequ
 
 // Schema defines the schema for the data source.
 func (d *roleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+	resp.Schema = tfschema.Schema{
 		Description: "Use this data source to get a role",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"name": schema.StringAttribute{
-				Description: "The role name",
-				Required:    true,
-			},
+		Attributes: map[string]tfschema.Attribute{
+			"id":          schema.DataSourceComputedString("Internal ID of this Role"),
+			"name":        schema.DataSourceRequiredString("The role name"),
+			"description": schema.DataSourceComputedString("Role Description"),
+			"built_in":    schema.DataSourceComputedBool("Whether this is a built-in Role in Sonatype IQ"),
+			"permissions": schema.DataSourceComputedSingleNestedAttribute(
+				`Permissions for this Role.
+				
+**NOTE:** Requires Sonatype IQ Server 198 or later.`,
+				map[string]tfschema.Attribute{
+					"admin": schema.DataSourceComputedSingleNestedAttribute(
+						"Administrator Permmissions",
+						map[string]tfschema.Attribute{
+							"access_audit_log": schema.DataSourceComputedBool("Access to Audit Logs"),
+							"view_roles":       schema.DataSourceComputedBool("View all Roles"),
+						},
+					),
+					"iq": schema.DataSourceComputedSingleNestedAttribute(
+						"Sonatype IQ Permmissions",
+						map[string]tfschema.Attribute{
+							"add_applications":                      schema.DataSourceComputedBool("Can add Applications"),
+							"claim_components":                      schema.DataSourceComputedBool("Can Claim Components"),
+							"edit_access_control":                   schema.DataSourceComputedBool("Can edit Access Control"),
+							"edit_iq_elements":                      schema.DataSourceComputedBool("Can edit IQ Elements"),
+							"edit_proprietary_components":           schema.DataSourceComputedBool("Can edit Proprietary Components"),
+							"evaluate_applications":                 schema.DataSourceComputedBool("Can Evaluate Applications"),
+							"evaluate_individual_components":        schema.DataSourceComputedBool("Can Evaluate Individual Components"),
+							"manage_automatic_application_creation": schema.DataSourceComputedBool("Can manage Automatic Application creation"),
+							"manage_automatic_scm_configuration":    schema.DataSourceComputedBool("Can manage Automatic SCM Configuration"),
+							"view_iq_elements":                      schema.DataSourceComputedBool("Can view IQ Elements"),
+						},
+					),
+					"remediation": schema.DataSourceComputedSingleNestedAttribute(
+						"Remediation Permmissions",
+						map[string]tfschema.Attribute{
+							"change_licenses":                 schema.DataSourceComputedBool("Can change Licenses"),
+							"change_security_vulnerabilities": schema.DataSourceComputedBool("Can change Security Vulnerabilities"),
+							"create_pull_requests":            schema.DataSourceComputedBool("Can create Pull Requests"),
+							"review_legal_obligations":        schema.DataSourceComputedBool("Can review Legal Obligations"),
+							"waive_policy_violations":         schema.DataSourceComputedBool("Can Waive Policy Violations"),
+						},
+					),
+				},
+			),
 		},
 	}
 }
 
 // Read refreshes the Terraform state with the latest data.
 func (d *roleDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data roleDataSourceModel
-
-	// Read Terraform configuration data into the model
+	var data model.RoleModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
-	ctx = context.WithValue(
-		ctx,
-		sonatypeiq.ContextBasicAuth,
-		d.Auth,
-	)
-
-	roleList, _, err := d.Client.RolesAPI.GetRoles(ctx).Execute()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read IQ Roles",
-			err.Error(),
-		)
+	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, fmt.Sprintf("Getting request data has errors: %v", resp.Diagnostics.Errors()))
 		return
 	}
 
-	for _, role := range roleList.Roles {
-		if role.GetName() == data.Name.ValueString() {
-			data.ID = types.StringValue(role.GetId())
+	apiResponse, httpResponse, err := d.Client.RolesAPI.GetRoles(d.AuthContext(ctx)).Execute()
+
+	if err != nil {
+		errors.HandleAPIError(
+			common.ERR_FAILED_READING_ROLES,
+			&err,
+			httpResponse,
+			&resp.Diagnostics,
+		)
+		return
+	} else if httpResponse.StatusCode != http.StatusOK {
+		errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Roles", httpResponse, err)
+		return
+	}
+
+	for _, apiRole := range apiResponse.Roles {
+		if *apiRole.Name == data.Name.ValueString() {
+			if d.IqVersion >= 198 {
+				apiRoleResponse, httpResponse, err := d.Client.RolesAPI.GetRoleById(d.AuthContext(ctx), *apiRole.Id).Execute()
+
+				if err != nil {
+					errors.HandleAPIError(
+						common.ERR_FAILED_READING_ROLE_BY_ID,
+						&err,
+						httpResponse,
+						&resp.Diagnostics,
+					)
+					return
+				} else if httpResponse.StatusCode != http.StatusOK {
+					errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Role", httpResponse, err)
+					return
+				}
+				data.MapFromApi(apiRoleResponse)
+			} else {
+				data.MapFromApi(&apiRole)
+			}
+			break
 		}
 	}
 
+	// No Role found
 	if data.ID.IsNull() {
-		resp.Diagnostics.AddError(
-			"Unable to find role",
-			fmt.Sprintf("Role '%s' does not exist", data.Name.ValueString()),
-		)
+		errors.AddValidationDiagnostic(&resp.Diagnostics, "Role", fmt.Sprintf("Role '%s' does not exist", data.Name.ValueString()))
 		return
 	}
 
-	// Save data into Terraform state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	// Set state
+	diags := resp.State.Set(ctx, &data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }

@@ -31,4 +31,19 @@ resource "sonatypeiq_config_crowd" "crowd" {
 
 ### Read-Only
 
-- `last_updated` (String)
+- `id` (String) Internal ID for Terraform State
+- `last_updated` (String) String representation of the date/time the resource was last changed
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Users can be imported.
+
+# Format
+terraform import sonatypeiq_user.user1 user-<REALM>-<USERNAME>
+
+# Example for Internal Realm User
+terraform import sonatypeiq_user.user1 user-Internal-<USERNAME>
+```
