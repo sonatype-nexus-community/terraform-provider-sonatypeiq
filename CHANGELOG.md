@@ -2,6 +2,10 @@
 
 ## X.Y.Z (Unreleased)
 
+_TBC_
+
+## 1.0.0 March 20, 2026
+
 BREAKING CHANGES:
 
 See the [Migration Guide](./MIGRATION-1.0.md) for help migrating from v0.x.x versions of this provider.
