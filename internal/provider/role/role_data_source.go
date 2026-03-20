@@ -61,7 +61,9 @@ func (d *roleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 			"description": schema.DataSourceComputedString("Role Description"),
 			"built_in":    schema.DataSourceComputedBool("Whether this is a built-in Role in Sonatype IQ"),
 			"permissions": schema.DataSourceComputedSingleNestedAttribute(
-				"Permissions for this Role",
+				`Permissions for this Role.
+				
+**NOTE:** Requires Sonatype IQ Server 198 or later.`,
 				map[string]tfschema.Attribute{
 					"admin": schema.DataSourceComputedSingleNestedAttribute(
 						"Administrator Permmissions",
@@ -128,22 +130,25 @@ func (d *roleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 
 	for _, apiRole := range apiResponse.Roles {
 		if *apiRole.Name == data.Name.ValueString() {
-			// Match
-			apiRoleResponse, httpResponse, err := d.Client.RolesAPI.GetRoleById(d.AuthContext(ctx), *apiRole.Id).Execute()
+			if d.IqVersion >= 198 {
+				apiRoleResponse, httpResponse, err := d.Client.RolesAPI.GetRoleById(d.AuthContext(ctx), *apiRole.Id).Execute()
 
-			if err != nil {
-				errors.HandleAPIError(
-					common.ERR_FAILED_READING_ROLE_BY_ID,
-					&err,
-					httpResponse,
-					&resp.Diagnostics,
-				)
-				return
-			} else if httpResponse.StatusCode != http.StatusOK {
-				errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Role", httpResponse, err)
-				return
+				if err != nil {
+					errors.HandleAPIError(
+						common.ERR_FAILED_READING_ROLE_BY_ID,
+						&err,
+						httpResponse,
+						&resp.Diagnostics,
+					)
+					return
+				} else if httpResponse.StatusCode != http.StatusOK {
+					errors.AddAPIErrorDiagnostic(&resp.Diagnostics, "read", "Role", httpResponse, err)
+					return
+				}
+				data.MapFromApi(apiRoleResponse)
+			} else {
+				data.MapFromApi(&apiRole)
 			}
-			data.MapFromApi(apiRoleResponse)
 			break
 		}
 	}

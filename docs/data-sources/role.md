@@ -30,7 +30,9 @@ data "sonatypeiq_role" "developer" {
 - `built_in` (Boolean) Whether this is a built-in Role in Sonatype IQ
 - `description` (String) Role Description
 - `id` (String) Internal ID of this Role
-- `permissions` (Attributes) Permissions for this Role (see [below for nested schema](#nestedatt--permissions))
+- `permissions` (Attributes) Permissions for this Role.
+				
+**NOTE:** Requires Sonatype IQ Server 198 or later. (see [below for nested schema](#nestedatt--permissions))
 
 <a id="nestedatt--permissions"></a>
 ### Nested Schema for `permissions`
