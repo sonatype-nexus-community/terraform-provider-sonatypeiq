@@ -27,4 +27,53 @@ data "sonatypeiq_role" "developer" {
 
 ### Read-Only
 
+- `built_in` (Boolean) Whether this is a built-in Role in Sonatype IQ
+- `description` (String) Role Description
 - `id` (String) Internal ID of this Role
+- `permissions` (Attributes) Permissions for this Role (see [below for nested schema](#nestedatt--permissions))
+
+<a id="nestedatt--permissions"></a>
+### Nested Schema for `permissions`
+
+Read-Only:
+
+- `admin` (Attributes) Administrator Permmissions (see [below for nested schema](#nestedatt--permissions--admin))
+- `iq` (Attributes) Sonatype IQ Permmissions (see [below for nested schema](#nestedatt--permissions--iq))
+- `remediation` (Attributes) Remediation Permmissions (see [below for nested schema](#nestedatt--permissions--remediation))
+
+<a id="nestedatt--permissions--admin"></a>
+### Nested Schema for `permissions.admin`
+
+Read-Only:
+
+- `access_audit_log` (Boolean) Access to Audit Logs
+- `view_roles` (Boolean) View all Roles
+
+
+<a id="nestedatt--permissions--iq"></a>
+### Nested Schema for `permissions.iq`
+
+Read-Only:
+
+- `add_applications` (Boolean) Can add Applications
+- `claim_components` (Boolean) Can Claim Components
+- `edit_access_control` (Boolean) Can edit Access Control
+- `edit_iq_elements` (Boolean) Can edit IQ Elements
+- `edit_proprietary_components` (Boolean) Can edit Proprietary Components
+- `evaluate_applications` (Boolean) Can Evaluate Applications
+- `evaluate_individual_components` (Boolean) Can Evaluate Individual Components
+- `manage_automatic_application_creation` (Boolean) Can manage Automatic Application creation
+- `manage_automatic_scm_configuration` (Boolean) Can manage Automatic SCM Configuration
+- `view_iq_elements` (Boolean) Can view IQ Elements
+
+
+<a id="nestedatt--permissions--remediation"></a>
+### Nested Schema for `permissions.remediation`
+
+Read-Only:
+
+- `change_licenses` (Boolean) Can change Licenses
+- `change_security_vulnerabilities` (Boolean) Can change Security Vulnerabilities
+- `create_pull_requests` (Boolean) Can create Pull Requests
+- `review_legal_obligations` (Boolean) Can review Legal Obligations
+- `waive_policy_violations` (Boolean) Can Waive Policy Violations
