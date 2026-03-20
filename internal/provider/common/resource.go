@@ -35,9 +35,10 @@ var (
 
 // Base Resource is the resource implementation.
 type BaseResource struct {
-	Auth    sonatypeiq.BasicAuth
-	BaseUrl string
-	Client  *sonatypeiq.APIClient
+	Auth      sonatypeiq.BasicAuth
+	BaseUrl   string
+	Client    *sonatypeiq.APIClient
+	IqVersion int32
 }
 
 // AuthContext returns a new context with authentication set up for API calls
@@ -94,6 +95,7 @@ func (r *BaseResource) Configure(_ context.Context, req resource.ConfigureReques
 	r.Auth = config.Auth
 	r.BaseUrl = config.BaseUrl
 	r.Client = config.Client
+	r.IqVersion = config.IqVersion
 }
 
 // ImportState implements resource.ResourceWithImportState.
