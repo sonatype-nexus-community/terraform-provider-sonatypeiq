@@ -24,6 +24,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+func TestAccRoleDataSourcePre198(t *testing.T) {
+	var resourceName = "data.sonatypeiq_role.role_by_name"
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Read testing
+			{
+				Config: utils_test.ProviderConfig + `data "sonatypeiq_role" "role_by_name" {
+					name = "Developer"
+				}`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", "1da70fae1fd54d6cb7999871ebdb9a36"),
+					resource.TestCheckResourceAttr(resourceName, "name", "Developer"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccRoleDataSource(t *testing.T) {
 	var resourceName = "data.sonatypeiq_role.role_by_name"
 	resource.Test(t, resource.TestCase{
