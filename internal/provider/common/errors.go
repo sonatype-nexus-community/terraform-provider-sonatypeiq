@@ -39,6 +39,7 @@ const (
 	ERR_FAILED_READING_ORGANIZATIONS                  string = "Unable to read Organizations"
 	ERR_FAILED_READING_PROXY_CONFIGURATION            string = "Unable to read Proxy Server configuration"
 	ERR_FAILED_READING_SCM_CONFIGURATION              string = "Unable to read Source Control configuration"
+	ERR_FAILED_READING_ROLE_BY_ID                     string = "Unable to read Role by ID"
 	ERR_FAILED_READING_ROLES                          string = "Unable to read Roles"
 	ERR_FAILED_READING_SAML_METADATA                  string = "Unable to read SAML Metadata"
 	ERR_FAILED_READING_SYSTEM_CONFIG                  string = "Unable to read System Configuration"
