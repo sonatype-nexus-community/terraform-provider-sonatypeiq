@@ -9,7 +9,7 @@ on:
             - 'v*'
 
 env:
-    LC_APPLICATION_ID: terraform-provider-sonatyperepo
+    LC_APPLICATION_ID: terraform-provider-sonatypeiq
 
 jobs:
     sonatype:
