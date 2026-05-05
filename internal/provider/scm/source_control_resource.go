@@ -255,7 +255,6 @@ func (r *sourceControlResource) Update(ctx context.Context, req resource.UpdateR
 
 	// Map response to State
 	plan.MapFromApi(apiResponse)
-	plan.Token = state.Token
 
 	// Update State
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
