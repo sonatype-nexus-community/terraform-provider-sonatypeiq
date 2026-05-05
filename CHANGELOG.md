@@ -4,6 +4,9 @@
 
 _TBC_
 
+BUG FIXES:
+* Unable to update `token` on `sonatypeiq_source_control` resource [GH-84]
+
 ## 1.0.0 March 20, 2026
 
 BREAKING CHANGES:
