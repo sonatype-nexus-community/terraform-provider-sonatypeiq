@@ -76,6 +76,35 @@ func TestAccUserResource(t *testing.T) {
 	})
 }
 
+// TestAccUserResource_ImportHyphenatedUsername proves GH-89: importing a User whose
+// username contains hyphens fails because ImportState naively splits the import ID
+// on "-", truncating the username at the first embedded hyphen.
+func TestAccUserResource_ImportHyphenatedUsername(t *testing.T) {
+	userName := fmt.Sprintf("test-%s-123", acctest.RandStringFromCharSet(6, acctest.CharSetAlphaNum))
+	password := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	resourceName := "sonatypeiq_user.test"
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccUserResource(userName, password, ""),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", fmt.Sprintf(common.USER_ID_FORMAT, common.USER_REALM_INTERNAL, userName)),
+					resource.TestCheckResourceAttr(resourceName, "username", userName),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateId:           fmt.Sprintf(common.USER_ID_FORMAT, common.USER_REALM_INTERNAL, userName),
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "last_updated"},
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
 func testAccUserResource(username, password, nameSuffix string) string {
 	return fmt.Sprintf(utils_test.ProviderConfig+`
 resource "sonatypeiq_user" "test" {
