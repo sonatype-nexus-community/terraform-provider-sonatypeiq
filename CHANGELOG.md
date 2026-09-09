@@ -2,6 +2,10 @@
 
 ## X.Y.Z (Unreleased)
 
+*tbc*
+
+## 1.0.2 Sep 09, 2026
+
 BUG FIXES:
 * Unable to import `sonatypeiq_user` with a `username` containing `-` [GH-89]
 
