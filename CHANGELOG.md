@@ -2,7 +2,17 @@
 
 ## X.Y.Z (Unreleased)
 
-_TBC_
+BUG FIXES:
+* Unable to import `sonatypeiq_user` with a `username` containing `-` [GH-89]
+
+DEPENDENCIES:
+* Removed legacy `github.com/hashicorp/terraform-plugin-sdk` (v1) in favor of `terraform-plugin-sdk/v2`, resolving several policy violations flagged by Sonatype Lifecycle
+* Bumped `golang.org/x/crypto` to v0.57.0, resolving multiple CVEs (up to CVSS 10.0)
+* Bumped `golang.org/x/net` to v0.59.0, resolving multiple CVEs (up to CVSS 9.6)
+* Bumped `google.golang.org/grpc` to v1.83.2, resolving CVEs (up to CVSS 8.7)
+* Bumped `golang.org/x/mod` to v0.41.0, resolving CVEs (up to CVSS 8.4)
+* Bumped `golang.org/x/text` to v0.42.0, resolving CVE-2026-56852
+* Bumped `golang.org/x/sys` to v0.48.0, resolving CVE-2026-39824
 
 ## 1.0.1 May 05, 2026
 

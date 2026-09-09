@@ -222,7 +222,9 @@ func (r *userResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 }
 
 func (r *userResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	idParts := strings.Split(req.ID, "-")
+	// SplitN with a limit of 3 ensures a Username containing hyphens (e.g. "test-123")
+	// is preserved intact in idParts[2], rather than being truncated at the first hyphen.
+	idParts := strings.SplitN(req.ID, "-", 3)
 	if len(idParts) < 3 {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
