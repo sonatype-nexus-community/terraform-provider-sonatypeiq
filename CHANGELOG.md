@@ -5,6 +5,9 @@
 NOTES:
 * CI aligned to the Sonatype Community [Pull Request CI & Secrets standard](https://contribute.sonatype.com/docs/standards/pull-request-ci/): open checks and a Lifecycle evaluation run for every Pull Request without exposing secrets, and acceptance tests against a licensed Sonatype IQ Server run once a maintainer approves the commit with `/ok-to-test <sha>`. `release.yml` has per-job permissions and a protected `release` Environment [GH-93]
 
+DEPENDENCIES:
+* Bumped `golang.org/x/net` to v0.62.0, resolving multiple CVEs (up to CVSS 9.3), including a Critical Sonatype Lifecycle policy violation. This also moves `golang.org/x/crypto`, `golang.org/x/sync`, `golang.org/x/sys`, `golang.org/x/text` and `golang.org/x/tools` to the minimum versions it requires
+
 ## 1.0.2 Sep 09, 2026
 
 BUG FIXES:
