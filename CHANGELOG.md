@@ -3,6 +3,7 @@
 ## X.Y.Z (Unreleased)
 
 FEATURES:
+* Confirmed support for Sonatype IQ Server 204 [GH-104]
 * Confirmed support for Sonatype IQ Server 203 [GH-103]
 * Confirmed support for Sonatype IQ Server 202 [GH-102]
 
@@ -10,6 +11,7 @@ NOTES:
 * CI aligned to the Sonatype Community [Pull Request CI & Secrets standard](https://contribute.sonatype.com/docs/standards/pull-request-ci/): open checks and a Lifecycle evaluation run for every Pull Request without exposing secrets, and acceptance tests against a licensed Sonatype IQ Server run once a maintainer approves the commit with `/ok-to-test <sha>`. `release.yml` has per-job permissions and a protected `release` Environment [GH-93]
 
 DEPENDENCIES:
+* Bumped `github.com/sonatype-nexus-community/nexus-iq-api-client-go` to v0.204.2
 * Bumped `github.com/sonatype-nexus-community/nexus-iq-api-client-go` to v0.203.2
 * Bumped `golang.org/x/net` to v0.62.0, resolving multiple CVEs (up to CVSS 9.3), including a Critical Sonatype Lifecycle policy violation. This also moves `golang.org/x/crypto`, `golang.org/x/sync`, `golang.org/x/sys`, `golang.org/x/text` and `golang.org/x/tools` to the minimum versions it requires
 
