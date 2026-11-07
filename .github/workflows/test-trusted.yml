@@ -184,7 +184,7 @@ jobs:
               run: |
                   mkdir -p "$(dirname "$NXIQ_LICENSE_FILE")" && chmod 700 "$(dirname "$NXIQ_LICENSE_FILE")"
                   printf '%s' "$NXIQ_LICENSE" | base64 -d > "$NXIQ_LICENSE_FILE" && chmod 600 "$NXIQ_LICENSE_FILE"
-                  wget "https://download.sonatype.com/clm/server/nexus-iq-server-${NXIQ_VERSION}-bundle.tar.gz"
+                  wget --max-redirect=0 "https://download.sonatype.com/clm/server/nexus-iq-server-${NXIQ_VERSION}-bundle.tar.gz"
                   mkdir "${GITHUB_WORKSPACE}/nxiq"
                   tar xvz -f "nexus-iq-server-${NXIQ_VERSION}-bundle.tar.gz" -C "${GITHUB_WORKSPACE}/nxiq"
                   echo "licenseFile: ${NXIQ_LICENSE_FILE}" >> "${GITHUB_WORKSPACE}/nxiq/config.yml"
