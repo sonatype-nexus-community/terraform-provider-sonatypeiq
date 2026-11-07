@@ -307,7 +307,8 @@ jobs:
             matrix:
                 nxiq-docker:
                     - 'sonatype/nexus-iq-server@sha256:d28e5389701e796dac76b96c52822f944d180f404389be7175e78071a8ed02e3' # 1.205.4
-                    - 'sonatype/nexus-iq-server@sha256:f5c2a64a0d3372f101bbdff11661efd7fd7db7c4cc06e62c489e7aeb0dd20dbc' # 1.206.1 LATEST
+                    - 'sonatype/nexus-iq-server@sha256:f5c2a64a0d3372f101bbdff11661efd7fd7db7c4cc06e62c489e7aeb0dd20dbc' # 1.206.1
+                    - 'sonatype/nexus-iq-server@sha256:5b987e60afe7a3200f8c2f43d458108b9e4cd21471ada41ca6676dc3448a3d17' # 1.207.2 LATEST
                 # list whatever Terraform versions here you would like to support
                 terraform:
                     - '1.0.*' # Minimum
