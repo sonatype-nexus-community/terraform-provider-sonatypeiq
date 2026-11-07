@@ -1,0 +1,113 @@
+# Terraform Provider testing workflow - Tier 1 (Open Checks).
+#
+# See https://contribute.sonatype.com/docs/standards/pull-request-ci/
+#
+# This workflow runs on every Pull Request, including those from forks. It therefore has NO
+# access to secrets and every job runs with read-only permissions. Anything that needs a
+# secret or a licensed Sonatype product runs in a separate, trusted workflow - see
+# test-trusted.yml and lifecycle-evaluate.yml (the Lifecycle scan input is prepared by
+# prepare-lifecycle-scan.yml, so that check does not wait for these tests).
+name: Test (Untrusted)
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened]
+    push:
+        branches:
+            - main
+
+permissions: {}
+
+# A new commit on a Pull Request cancels the run for the previous one. Runs on main are not cancelled.
+concurrency:
+    group: test-untrusted-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+    # Ensure project builds before running testing matrix
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              with:
+                  persist-credentials: false
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+              with:
+                  go-version-file: 'go.mod'
+                  cache: true
+            - run: go mod download
+            - run: go build -v .
+            - name: Run linters
+              uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+              with:
+                  version: v2.10.1
+
+    # Unit tests - no TF_ACC, so no IQ Server is needed and every acceptance test skips.
+    # All acceptance tests need a licensed Sonatype IQ Server, so they run in test-trusted.yml.
+    unit-tests:
+        name: Unit Tests
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              with:
+                  persist-credentials: false
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+              with:
+                  go-version-file: 'go.mod'
+                  cache: true
+            - run: go test -cover ./...
+
+    docs-check:
+        name: Ensure Docs are Generated
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              with:
+                  persist-credentials: false
+
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+              with:
+                  go-version-file: 'go.mod'
+                  cache: true
+
+            - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0
+
+            - name: Generate Docs
+              run: go generate ./...
+              working-directory: tools
+
+            - name: Check for Documentation Diffs
+              run: |
+                  git diff --compact-summary --exit-code || \
+                    (echo; echo "Unexpected difference in directories after code generation. Run 'go generate ./...' in the 'tools' directory and commit."; exit 1)
+
+    workflow-lint:
+        name: Lint Workflows
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              with:
+                  persist-credentials: false
+
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+              with:
+                  go-version-file: 'go.mod'
+
+            - name: actionlint
+              run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+
+            - name: zizmor
+              uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+              with:
+                  advanced-security: false
