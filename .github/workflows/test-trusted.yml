@@ -108,7 +108,7 @@ jobs:
                   echo "sha=${INPUT_SHA}" >> "$GITHUB_OUTPUT"
                   echo "Testing approved commit [\`${INPUT_SHA}\`](${SERVER_URL}/${REPO}/commit/${INPUT_SHA})" >> "$GITHUB_STEP_SUMMARY"
 
-    # Run acceptance tests in a matrix with Terraform CLI versions
+    # Run acceptance tests in a matrix with Terraform CLI versions (bundle-based for IQ 202-204)
     test-parallel:
         name: Acc. Tests (NXIQ ${{ matrix.nxiq }} + TF ${{ matrix.terraform }})
         needs:
@@ -144,7 +144,7 @@ jobs:
                     - '1.201.0-02'
                     - '1.202.2-01'
                     - '1.203.4-01'
-                    - '1.204.4-03' # LATEST
+                    - '1.204.4-03'
                 # list whatever Terraform versions here you would like to support
                 terraform:
                     - '1.0.*' # Minimum
@@ -286,6 +286,151 @@ jobs:
                   name: "clm-server.log-niqm-${{ matrix.nxiq }}-terraform-${{ env.TF_SAFE_VERSION }}"
                   path: "${{ github.workspace }}/nxiq/log/clm-server.log"
 
+    # Run acceptance tests in a matrix with Terraform CLI versions (Docker-based for IQ 205+)
+    test-parallel-docker:
+        name: Acc. Tests Docker (NXIQ ${{ matrix.nxiq-docker }} + TF ${{ matrix.terraform }})
+        needs:
+            - verify-approval
+            - sonatype
+        # Pushes to the default branch: do not run the licensed tests if the Lifecycle scan fails.
+        # Dispatched (approved Pull Request) runs skip the scan, which is not a failure.
+        if: ${{ !cancelled() && needs.verify-approval.result == 'success' && (needs.sonatype.result == 'success' || needs.sonatype.result == 'skipped') }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        environment: acceptance-tests
+        permissions:
+            contents: read
+        env:
+            TF_SAFE_VERSION: ${{ matrix.terraform }}
+        strategy:
+            fail-fast: false
+            matrix:
+                nxiq-docker:
+                    - 'sonatype/nexus-iq-server@sha256:d28e5389701e796dac76b96c52822f944d180f404389be7175e78071a8ed02e3' # 1.205.4 LATEST
+                # list whatever Terraform versions here you would like to support
+                terraform:
+                    - '1.0.*' # Minimum
+                    # - '1.1.*'
+                    # - '1.2.*'
+                    # - '1.3.*'
+                    # - '1.4.*'
+                    # - '1.5.*'
+                    # - '1.6.*'
+                    # - '1.7.*'
+                    # - '1.8.*'
+                    # - '1.9.*'
+                    # - '1.10.*'
+                    # - '1.11.*'
+                    # - '1.12.*'
+                    - '1.13.*' # Latest
+                    # - '1.14.*'
+        steps:
+            - name: Set Clean TF Version
+              env:
+                  TF_ORIG: ${{ matrix.terraform }}
+              run: |
+                  echo "TF_SAFE_VERSION=${TF_ORIG//\*/}" >> "$GITHUB_ENV"
+
+            - name: Parse Docker Image
+              id: parse-docker
+              env:
+                  DOCKER_IMAGE: ${{ matrix.nxiq-docker }}
+              run: |
+                  IMAGE_TAG=$(echo "$DOCKER_IMAGE" | sed 's|.*@sha256:||' | cut -c1-12)
+                  echo "image-tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+            - name: Checkout Source
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              with:
+                  ref: ${{ needs.verify-approval.outputs.sha }}
+                  persist-credentials: false
+
+            - name: Setup License File
+              env:
+                  NXIQ_LICENSE: ${{ secrets.NXIQ_LICENSE }}
+              run: |
+                  mkdir -p "$(dirname "$NXIQ_LICENSE_FILE")" && chmod 755 "$(dirname "$NXIQ_LICENSE_FILE")"
+                  printf '%s' "$NXIQ_LICENSE" | base64 -d > "$NXIQ_LICENSE_FILE"
+                  # Readable by the (non-root) user the container runs as; the runner is ephemeral and the file is outside the workspace
+                  chmod 644 "$NXIQ_LICENSE_FILE"
+
+            # Start from the image's own default configuration and add the licence to it
+            - name: Create IQ Server Config
+              env:
+                  NXIQ_IMAGE: ${{ matrix.nxiq-docker }}
+              run: |
+                  docker run --rm --entrypoint cat "$NXIQ_IMAGE" /etc/nexus-iq-server/config.yml > "${RUNNER_TEMP}/nxiq-config.yml"
+                  echo "licenseFile: ${NXIQ_LICENSE_FILE}" >> "${RUNNER_TEMP}/nxiq-config.yml"
+                  chmod 644 "${RUNNER_TEMP}/nxiq-config.yml"
+
+            - name: Start Sonatype IQ Server Container
+              env:
+                  NXIQ_IMAGE: ${{ matrix.nxiq-docker }}
+              run: |
+                  docker run -d \
+                    --name nxiq \
+                    -p 8070:8070 \
+                    -p 8071:8071 \
+                    -v "${RUNNER_TEMP}/nxiq-config.yml:/etc/nexus-iq-server/config.yml:ro" \
+                    -v "${NXIQ_LICENSE_FILE}:${NXIQ_LICENSE_FILE}:ro" \
+                    "$NXIQ_IMAGE"
+
+            - name: Wait for SonatypeIQ Server to be ready
+              run: |
+                  set +e
+                  sleep 20
+                  while true; do
+                    STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8071/healthcheck?pretty=true")
+                    CURL_EXIT=$?
+
+                    echo "CURL Exit Code: $CURL_EXIT"
+
+                    if [ "$CURL_EXIT" -eq 0 ]; then
+                      if [ "$STATUS" -eq 200 ]; then
+                          echo "✅ Received 200 OK from http://localhost:8071/healthcheck?pretty=true"
+                          break
+                      else
+                          echo "⏳ Waiting for 200 OK... Current status: $STATUS for http://localhost:8071/healthcheck?pretty=true"
+                          sleep 5
+                      fi
+                    else
+                      echo "⚠️ curl returned unexpected exit code $CURL_EXIT. Retrying..."
+                      sleep 5
+                    fi
+                  done
+
+            - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+              with:
+                  go-version-file: 'go.mod'
+                  cache: true
+
+            - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0
+              with:
+                  terraform_version: ${{ matrix.terraform }}
+                  terraform_wrapper: false
+
+            - run: go mod download
+
+            - env:
+                  IQ_SERVER_URL: "http://localhost:8070"
+                  IQ_SERVER_USERNAME: "admin"
+                  IQ_SERVER_PASSWORD: "admin123"
+                  TF_ACC: '1'
+              run: go test -v -cover ./...
+              timeout-minutes: 10
+
+            - name: Copy clm-server.log from container
+              if: success() || failure()
+              run: docker cp nxiq:/var/log/nexus-iq-server/clm-server.log "${RUNNER_TEMP}/clm-server.log" || true
+
+            - name: Store clm-server.log
+              if: success() || failure()
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: "clm-server.log-docker-${{ steps.parse-docker.outputs.image-tag }}-terraform-${{ env.TF_SAFE_VERSION }}"
+                  path: "${{ runner.temp }}/clm-server.log"
+                  if-no-files-found: ignore
+
     # Report the result against the tested commit, so it shows on the Pull Request
     report:
         name: Report Status
@@ -293,6 +438,7 @@ jobs:
         needs:
             - verify-approval
             - test-parallel
+            - test-parallel-docker
         runs-on: ubuntu-latest
         timeout-minutes: 5
         permissions:
@@ -301,15 +447,22 @@ jobs:
             GH_TOKEN: ${{ github.token }}
             REPO: ${{ github.repository }}
             SHA: ${{ inputs.sha }}
-            RESULT: ${{ needs.test-parallel.result }}
+            RESULT_BUNDLE: ${{ needs.test-parallel.result }}
+            RESULT_DOCKER: ${{ needs.test-parallel-docker.result }}
             RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         steps:
             - name: Set commit status
               run: |
-                  case "$RESULT" in
-                    success) STATE=success ;;
-                    cancelled) STATE=error ;;
-                    *) STATE=failure ;;
-                  esac
+                  # Combine results: success if both succeed, failure if any fail
+                  if [ "$RESULT_BUNDLE" = "success" ] && [ "$RESULT_DOCKER" = "success" ]; then
+                    STATE=success
+                    RESULT="success"
+                  elif [ "$RESULT_BUNDLE" = "cancelled" ] || [ "$RESULT_DOCKER" = "cancelled" ]; then
+                    STATE=error
+                    RESULT="cancelled"
+                  else
+                    STATE=failure
+                    RESULT="failure"
+                  fi
                   gh api "repos/${REPO}/statuses/${SHA}" -f state="$STATE" \
                     -f context="Acceptance Tests (Licensed IQ)" -f target_url="$RUN_URL" -f description="Result: ${RESULT}"
