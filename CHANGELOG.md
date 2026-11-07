@@ -2,7 +2,8 @@
 
 ## X.Y.Z (Unreleased)
 
-*tbc*
+NOTES:
+* CI aligned to the Sonatype Community [Pull Request CI & Secrets standard](https://contribute.sonatype.com/docs/standards/pull-request-ci/): open checks and a Lifecycle evaluation run for every Pull Request without exposing secrets, and acceptance tests against a licensed Sonatype IQ Server run once a maintainer approves the commit with `/ok-to-test <sha>`. `release.yml` has per-job permissions and a protected `release` Environment [GH-93]
 
 ## 1.0.2 Sep 09, 2026
 
