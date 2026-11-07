@@ -56,7 +56,7 @@ Pull Requests from forks cannot use repository secrets, so the acceptance tests 
 /ok-to-test <sha>
 ```
 
-`<sha>` is the commit you reviewed (at least 7 characters). The approval belongs to that exact commit: it is rejected if the Pull Request head has moved, and a later push needs a new approval. Only people with the Maintain role or higher can approve. Pull Requests opened by maintainers are approved automatically.
+`<sha>` is the commit you reviewed (at least 7 characters). The approval belongs to that exact commit: it is rejected if the Pull Request head has moved, and a later push needs a new approval. Only people with the Maintain role or higher (the `terraform-provider-sonatypeiq` maintainers team) can approve. Pull Requests opened by maintainers are approved automatically.
 
 The result appears on the Pull Request as the `Acceptance Tests (Licensed IQ)` commit status. Pull Requests that only change `CHANGELOG.md` or `README.md` report that status as skipped. A newer commit on a Pull Request cancels the in-progress runs for the older one.
 
