@@ -2,6 +2,9 @@
 
 ## X.Y.Z (Unreleased)
 
+FEATURES:
+* Confirmed support for Sonatype IQ Server 202 [GH-102]
+
 NOTES:
 * CI aligned to the Sonatype Community [Pull Request CI & Secrets standard](https://contribute.sonatype.com/docs/standards/pull-request-ci/): open checks and a Lifecycle evaluation run for every Pull Request without exposing secrets, and acceptance tests against a licensed Sonatype IQ Server run once a maintainer approves the commit with `/ok-to-test <sha>`. `release.yml` has per-job permissions and a protected `release` Environment [GH-93]
 
