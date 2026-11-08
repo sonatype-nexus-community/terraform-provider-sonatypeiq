@@ -19,7 +19,7 @@ generate the username/tokens for a user can be found [here](https://help.sonatyp
 
 ## Compatability
 
-This Provider is tested against Sonatype IQ Server versions `186` through `206` currently.
+This Provider is tested against Sonatype IQ Server versions `186` through `207` currently.
 	
 Some resources and features may depend on the version of Sonatype IQ Server you are running. See individual Data Source and Resource documentaiton for details.
 

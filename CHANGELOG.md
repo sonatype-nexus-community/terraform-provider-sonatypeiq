@@ -3,10 +3,11 @@
 ## X.Y.Z (Unreleased)
 
 FEATURES:
+* Confirmed support for Sonatype IQ Server 207 [GH-107]
 * Confirmed support for Sonatype IQ Server 206 [GH-106]
 
 DEPENDENCIES:
-* Bumped `github.com/sonatype-nexus-community/nexus-iq-api-client-go` to v0.206.0
+* Bumped `github.com/sonatype-nexus-community/nexus-iq-api-client-go` to v0.207.0
 
 ## 1.1.0 Nov 07, 2026
 
