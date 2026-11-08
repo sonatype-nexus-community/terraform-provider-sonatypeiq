@@ -31,6 +31,8 @@ To run Integration Tests locally, set the following 3 environment variables and 
 - `IQ_SERVER_USERNAME`: Username to authenticate with
 - `IQ_SERVER_PASSWORD`: Password to authenticate with
 
+Some tests only apply from a given Sonatype IQ Server release and skip themselves on older servers. They find the release from `NXIQ_VERSION` (for example `1.201.0-02`), which CI sets, and otherwise ask the server at `IQ_SERVER_URL` - so you normally don't need to set it. A test that is skipped because the release could not be determined says so.
+
 It is helpful when submitting Pull Requests to confirm whether you have been able to execute the Integration Tests locally, but not mandatory.
 
 ## Continuous Integration

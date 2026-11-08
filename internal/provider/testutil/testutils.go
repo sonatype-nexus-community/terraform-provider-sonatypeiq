@@ -18,17 +18,22 @@ package testutil
 
 import (
 	"fmt"
+	"net/http"
 	"os"
+	"sync"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"testing"
 )
 
+// CurrenTestIqVersion is the release of the Sonatype IQ Server under test, taken from NXIQ_VERSION (e.g.
+// 1.201.0-02), which CI sets. It is 0 when NXIQ_VERSION is not set: use DetectedIqVersion, which then asks the
+// server itself.
 var CurrenTestIqVersion = common.ParseServerHeaderToVersion(fmt.Sprintf("NexusIQ/%s", os.Getenv("NXIQ_VERSION")))
 
 func SkipIfNxiqVersionEq(t *testing.T, v int32) {
 	t.Helper()
 
-	if v == CurrenTestIqVersion {
+	if v == DetectedIqVersion(t) {
 		t.Skipf("NXIQ Version is == %v - skipping", v)
 	}
 }
@@ -36,7 +41,7 @@ func SkipIfNxiqVersionEq(t *testing.T, v int32) {
 func SkipIfNxiqVersionOlderThan(t *testing.T, v int32) {
 	t.Helper()
 
-	if VersionOlderThan(CurrenTestIqVersion, v) {
+	if VersionOlderThan(DetectedIqVersion(t), v) {
 		t.Skipf("NXIQ Version is older than %v - skipping", v)
 	}
 }
@@ -44,7 +49,7 @@ func SkipIfNxiqVersionOlderThan(t *testing.T, v int32) {
 func SkipIfNxiqVersionInRange(t *testing.T, low, high int32) {
 	t.Helper()
 
-	inRange, err := VersionInRange(CurrenTestIqVersion, low, high)
+	inRange, err := VersionInRange(DetectedIqVersion(t), low, high)
 
 	if err != nil {
 		t.Errorf("Error comparing versions: %v", err)
@@ -66,4 +71,52 @@ func VersionInRange(ver, low, high int32) (bool, error) {
 
 func VersionOlderThan(thisVer, testVer int32) bool {
 	return thisVer < testVer
+}
+
+var (
+	detectOnce    sync.Once
+	detectedIq    int32
+	detectedIqErr error
+)
+
+// DetectedIqVersion returns the release of the Sonatype IQ Server under test. It uses NXIQ_VERSION when set,
+// otherwise it asks the server (IQ_SERVER_URL) for its version, so version-dependent tests are not silently
+// skipped when only the connection details are known, e.g. when running locally. The test is skipped if the
+// version cannot be determined. The server is asked only once.
+func DetectedIqVersion(t *testing.T) int32 {
+	t.Helper()
+
+	detectOnce.Do(func() {
+		if CurrenTestIqVersion != 0 {
+			detectedIq = CurrenTestIqVersion
+			return
+		}
+		detectedIq, detectedIqErr = ProbeIqVersion(os.Getenv("IQ_SERVER_URL"), os.Getenv("IQ_SERVER_USERNAME"), os.Getenv("IQ_SERVER_PASSWORD"))
+	})
+
+	if detectedIqErr != nil {
+		t.Skipf("Cannot determine Sonatype IQ Server version: %v", detectedIqErr)
+	}
+	return detectedIq
+}
+
+// ProbeIqVersion asks a Sonatype IQ Server for its release using the Server header it sends on every response.
+func ProbeIqVersion(serverUrl, username, password string) (int32, error) {
+	req, err := http.NewRequest(http.MethodGet, serverUrl+"/api/v2/users/"+username, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.SetBasicAuth(username, password)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	version := common.ParseServerHeaderToVersion(resp.Header.Get("server"))
+	if version == 0 {
+		return 0, fmt.Errorf("unrecognised Server header %q", resp.Header.Get("server"))
+	}
+	return version, nil
 }
