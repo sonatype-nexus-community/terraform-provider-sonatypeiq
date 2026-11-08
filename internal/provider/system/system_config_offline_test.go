@@ -51,10 +51,16 @@ var fakeIqDefaults = map[string]any{
 
 func newFakeIqServer(t *testing.T, release int) *fakeIqServer {
 	t.Helper()
+	return newFakeIqServerWithHeader(t, fmt.Sprintf("NexusIQ/1.%d.0-01", release))
+}
+
+// newFakeIqServerWithHeader reports the given Server header, e.g. one rewritten by a reverse proxy.
+func newFakeIqServerWithHeader(t *testing.T, serverHeader string) *fakeIqServer {
+	t.Helper()
 	f := &fakeIqServer{store: map[string]any{}, requested: map[string]bool{}}
 
 	f.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Server", fmt.Sprintf("NexusIQ/1.%d.0-01", release))
+		w.Header().Set("Server", serverHeader)
 		f.mu.Lock()
 		defer f.mu.Unlock()
 		f.route(w, r)
@@ -69,7 +75,13 @@ func newFakeIqServer(t *testing.T, release int) *fakeIqServer {
 
 // route dispatches a request. The caller holds the lock.
 func (f *fakeIqServer) route(w http.ResponseWriter, r *http.Request) {
-	if strings.HasPrefix(r.URL.Path, "/api/v2/users/") {
+	switch {
+	case r.URL.Path == "/ping":
+		return // anonymous
+	case r.URL.Path == "/api/v2/userTokens/currentUser/hasToken":
+		http.Error(w, "no token", http.StatusNotFound) // the credentials check: reachable and accepted
+		return
+	case strings.HasPrefix(r.URL.Path, "/api/v2/users/"):
 		f.handleUser(w)
 		return
 	}
@@ -402,6 +414,73 @@ func TestSystemConfigResource_ValidatesValues_Offline(t *testing.T) {
 				Config:      fakeSystemConfig(`success_metrics_stage_id = "nonsense"`),
 				PlanOnly:    true,
 				ExpectError: regexp.MustCompile(`(?s)success_metrics_stage_id.*(one of|must be)`),
+			},
+		},
+	})
+}
+
+func fakeSystemConfigWithHint(hint, extra string) string {
+	providerBlock := `
+provider "sonatypeiq" {
+  username = ""
+  password = ""
+  url      = ""
+`
+	if hint != "" {
+		providerBlock += fmt.Sprintf("  version_hint = %q\n", hint)
+	}
+	providerBlock += "}\n"
+
+	return providerBlock + `
+resource "sonatypeiq_system_config" "test" {
+  base_url       = "https://iq.example.com"
+  force_base_url = false
+` + extra + `
+}`
+}
+
+// Behind a reverse proxy that rewrites the Server header the version is unknown: nothing is blocked, and the
+// provider still works.
+func TestSystemConfigResource_RewrittenServerHeaderIsNotBlocking_Offline(t *testing.T) {
+	f := newFakeIqServerWithHeader(t, "nginx/1.25")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: fakeSystemConfigWithHint("", `integrations_supported_version_count = 5`),
+				Check:  f.checkStored("integrationsSupportedVersionCount", 5),
+			},
+		},
+	})
+}
+
+// version_hint switches the release checks back on when the Server header is rewritten.
+func TestSystemConfigResource_VersionHintRestoresGating_Offline(t *testing.T) {
+	newFakeIqServerWithHeader(t, "nginx/1.25")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      fakeSystemConfigWithHint("1.190.0-01", `integrations_supported_version_count = 5`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?s)introduced in Sonatype IQ Server\s+release\s+197.*connected\s+server\s+is\s+release\s+190`),
+			},
+		},
+	})
+}
+
+// The hint takes precedence over what the server reports.
+func TestSystemConfigResource_VersionHintOverridesTheServer_Offline(t *testing.T) {
+	f := newFakeIqServer(t, 190)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: utils_test.TestAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: fakeSystemConfigWithHint("205", `integrations_supported_version_count = 5`),
+				Check:  f.checkStored("integrationsSupportedVersionCount", 5),
 			},
 		},
 	})
