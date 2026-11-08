@@ -29,6 +29,7 @@ const (
 	ERR_SYSTEM_CONFIGURATION_DID_NOT_EXIST            string = "System Property configuration did not exist"
 	ERR_FAILED_DELETING_APPLICATION_ROLE_MAPPING      string = "Failed to delete Application Role Mapping: %s"
 	ERR_FAILED_DELETING_ORGANIZATION_ROLE_MAPPING     string = "Failed to delete Organization Role Mapping: %s"
+	ERR_FAILED_DELETING_GLOBAL_ROLE_MAPPING           string = "Failed to delete Global Role Mapping: %s"
 	ERR_FAILED_MOVING_APPLICATION                     string = "Failed moving Application to a new Organization"
 	ERR_FAILED_READING_APPLICATION                    string = "Unable to read Application"
 	ERR_FAILED_READING_APPLICATIONS                   string = "Unable to read Applications"

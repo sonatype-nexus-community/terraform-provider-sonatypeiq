@@ -26,6 +26,7 @@ const (
 	MEMBER_TYPE_GROUP                 string = "group"
 	MEMBER_TYPE_USER                  string = "user"
 	OWNER_TYPE_APPLICATION            string = "application"
+	OWNER_TYPE_GLOBAL                 string = "global"
 	OWNER_TYPE_ORGANIZATION           string = "organization"
 	ROOT_ORGANIZATION_ID              string = "ROOT_ORGANIZATION_ID"
 	SAML_DEFAULT_EMAIL_ATTRIBUTE      string = "email"
