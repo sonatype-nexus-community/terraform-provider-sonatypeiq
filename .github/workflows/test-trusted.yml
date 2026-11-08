@@ -275,6 +275,8 @@ jobs:
                   IQ_SERVER_URL: "http://localhost:8070"
                   IQ_SERVER_USERNAME: "admin"
                   IQ_SERVER_PASSWORD: "admin123"
+                  # Tests for features that only exist from a given release skip themselves using this
+                  NXIQ_VERSION: ${{ matrix.nxiq }}
                   TF_ACC: '1'
               run: go test -v -cover ./...
               timeout-minutes: 10
@@ -415,10 +417,25 @@ jobs:
 
             - run: go mod download
 
+            # The matrix holds image digests, so ask the running server which release it is
+            - name: Detect Sonatype IQ Server version
+              id: iq-version
+              run: |
+                  SERVER=$(curl -s -D - -o /dev/null -u admin:admin123 "http://localhost:8070/api/v2/users/admin" \
+                    | tr -d '\r' | awk -F': ' 'tolower($1) == "server" {print $2}')
+                  VERSION=${SERVER#NexusIQ/}
+                  if ! [[ "$VERSION" =~ ^1\.[0-9]+\.[0-9]+-[0-9]+$ ]]; then
+                    echo "::error::Cannot determine the Sonatype IQ Server version from the Server header '${SERVER}'"; exit 1
+                  fi
+                  echo "Testing Sonatype IQ Server ${VERSION}"
+                  echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
             - env:
                   IQ_SERVER_URL: "http://localhost:8070"
                   IQ_SERVER_USERNAME: "admin"
                   IQ_SERVER_PASSWORD: "admin123"
+                  # Tests for features that only exist from a given release skip themselves using this
+                  NXIQ_VERSION: ${{ steps.iq-version.outputs.version }}
                   TF_ACC: '1'
               run: go test -v -cover ./...
               timeout-minutes: 10

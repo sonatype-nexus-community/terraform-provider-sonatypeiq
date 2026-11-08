@@ -18,6 +18,8 @@ package testutil
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"testing"
 
@@ -28,4 +30,37 @@ func TestAccVersionOlderThan(t *testing.T) {
 	var testVer = common.ParseServerHeaderToVersion("NexusIQ/1.201.0-02")
 	assert.False(t, VersionOlderThan(testVer, 199), fmt.Sprintf("%v is not older than 199 as expected", testVer))
 	assert.True(t, VersionOlderThan(testVer, 202))
+}
+
+func TestProbeIqVersionReadsTheServerHeader(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, pass, _ := r.BasicAuth()
+		assert.Equal(t, "admin", user)
+		assert.Equal(t, "secret", pass)
+		assert.Equal(t, "/api/v2/users/admin", r.URL.Path)
+		w.Header().Set("Server", "NexusIQ/1.205.4-01")
+	}))
+	defer server.Close()
+
+	version, err := ProbeIqVersion(server.URL, "admin", "secret")
+
+	assert.NoError(t, err)
+	assert.Equal(t, int32(205), version)
+}
+
+func TestProbeIqVersionRejectsAnUnknownServer(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Server", "nginx")
+	}))
+	defer server.Close()
+
+	_, err := ProbeIqVersion(server.URL, "admin", "secret")
+
+	assert.Error(t, err)
+}
+
+func TestProbeIqVersionFailsWhenTheServerIsUnreachable(t *testing.T) {
+	_, err := ProbeIqVersion("http://127.0.0.1:1", "admin", "secret")
+
+	assert.Error(t, err)
 }
