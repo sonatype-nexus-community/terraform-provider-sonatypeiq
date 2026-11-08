@@ -2,6 +2,10 @@
 
 ## X.Y.Z (Unreleased)
 
+*tbc*
+
+## 1.1.0 Nov 07, 2026
+
 BUG FIXES:
 * CI: acceptance tests against Sonatype IQ Server 204+ now use Java 25 and fail fast with diagnostics if IQ Server does not start [GH-118]
 
@@ -15,9 +19,7 @@ NOTES:
 * CI aligned to the Sonatype Community [Pull Request CI & Secrets standard](https://contribute.sonatype.com/docs/standards/pull-request-ci/): open checks and a Lifecycle evaluation run for every Pull Request without exposing secrets, and acceptance tests against a licensed Sonatype IQ Server run once a maintainer approves the commit with `/ok-to-test <sha>`. `release.yml` has per-job permissions and a protected `release` Environment [GH-93]
 
 DEPENDENCIES:
-* Bumped `github.com/sonatype-nexus-community/nexus-iq-api-client-go` to v0.205.0
-* Bumped `github.com/sonatype-nexus-community/nexus-iq-api-client-go` to v0.204.2
-* Bumped `github.com/sonatype-nexus-community/nexus-iq-api-client-go` to v0.203.2
+* Bumped `github.com/sonatype-nexus-community/nexus-iq-api-client-go` to v0.205.0 (there is no v0.202.x release; the SAML configuration data source now calls the renamed `GetMetadata1`)
 * Bumped `golang.org/x/net` to v0.62.0, resolving multiple CVEs (up to CVSS 9.3), including a Critical Sonatype Lifecycle policy violation. This also moves `golang.org/x/crypto`, `golang.org/x/sync`, `golang.org/x/sys`, `golang.org/x/text` and `golang.org/x/tools` to the minimum versions it requires
 
 ## 1.0.2 Sep 09, 2026
