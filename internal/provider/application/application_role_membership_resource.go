@@ -54,6 +54,8 @@ func (r *applicationRoleMembershipResource) Metadata(_ context.Context, req reso
 // Schema defines the schema for the resource.
 func (r *applicationRoleMembershipResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Use this resource to grant a role to a user or a group on an application. " +
+			"Global roles, such as System Administrator, cannot be granted here: use `sonatypeiq_global_role_membership` for those.",
 		Attributes: map[string]schema.Attribute{
 			"id":             sharedrschema.ResourceComputedString("The ID of this resource."),
 			"role_id":        sharedrschema.ResourceRequiredString("The role ID"),
@@ -99,6 +101,10 @@ func (r *applicationRoleMembershipResource) Create(ctx context.Context, req reso
 	).Execute()
 
 	if err != nil || httpResponse.StatusCode != http.StatusNoContent {
+		if summary, detail, ok := common.RoleMembershipScopeAdvice(err); ok {
+			resp.Diagnostics.AddError(summary, detail)
+			return
+		}
 		errors.HandleAPIError(
 			"Error creating application role membership",
 			&err,

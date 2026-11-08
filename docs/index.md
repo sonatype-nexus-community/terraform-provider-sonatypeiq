@@ -29,6 +29,7 @@ The permissions below are those documented by the Sonatype IQ Server REST API fo
 | `sonatypeiq_organization`, `sonatypeiq_application` (data sources and resources) | _View IQ Elements_ to read; _Edit IQ Elements_ to create, update, move or delete an organization or application. Creating an application needs _Add Application_ on the parent organization |
 | `sonatypeiq_source_control` | _View IQ Elements_ to read; _Edit IQ Elements_ to create, update or delete |
 | `sonatypeiq_application_category` (resource and data source) | Not stated by the Sonatype IQ Server REST API documentation |
+| `sonatypeiq_global_role_membership` | _Edit System Configuration and Users_ |
 | `sonatypeiq_application_role_membership`, `sonatypeiq_organization_role_membership` | _Edit access control_ to grant or revoke; reading needs _View IQ Elements_ (or _Edit System Configuration and Users_ for the root organization) |
 | `sonatypeiq_role` (resource and data source) | _View All Roles_ to read; _Edit Roles_ to create, update or delete |
 | `sonatypeiq_user`, `sonatypeiq_config_crowd`, `sonatypeiq_config_mail`, `sonatypeiq_config_proxy_server`, `sonatypeiq_config_saml` (and its data source), `sonatypeiq_config_product_license` | _Edit System Configuration and Users_ |

@@ -3,12 +3,12 @@
 page_title: "sonatypeiq_application_role_membership Resource - sonatypeiq"
 subcategory: ""
 description: |-
-  
+  Use this resource to grant a role to a user or a group on an application. Global roles, such as System Administrator, cannot be granted here: use sonatypeiq_global_role_membership for those.
 ---
 
 # sonatypeiq_application_role_membership (Resource)
 
-
+Use this resource to grant a role to a user or a group on an application. Global roles, such as System Administrator, cannot be granted here: use `sonatypeiq_global_role_membership` for those.
 
 ## Example Usage
 
