@@ -2,6 +2,9 @@
 
 ## X.Y.Z (Unreleased)
 
+BUG FIXES:
+* CI: acceptance tests against Sonatype IQ Server 204+ now use Java 25 and fail fast with diagnostics if IQ Server does not start [GH-118]
+
 FEATURES:
 * Confirmed support for Sonatype IQ Server 204 [GH-104]
 * Confirmed support for Sonatype IQ Server 203 [GH-103]

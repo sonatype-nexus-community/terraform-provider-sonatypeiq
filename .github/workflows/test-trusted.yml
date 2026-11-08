@@ -175,10 +175,24 @@ jobs:
                   ref: ${{ needs.verify-approval.outputs.sha }}
                   persist-credentials: false
 
+            # IQ Server 204+ requires Java 25 and its bundled jvm.options; earlier versions run on Corretto 17
+            # (https://help.sonatype.com/en/java-compatibility-matrix.html)
+            - name: Select Java for IQ Server
+              id: java
+              env:
+                  NXIQ_VERSION: ${{ matrix.nxiq }}
+              run: |
+                  MINOR=$(echo "$NXIQ_VERSION" | cut -d. -f2)
+                  if [ "$MINOR" -ge 204 ]; then
+                    { echo "distribution=temurin"; echo "version=25"; echo "bundle-jvm-options=true"; } >> "$GITHUB_OUTPUT"
+                  else
+                    { echo "distribution=corretto"; echo "version=17"; echo "bundle-jvm-options=false"; } >> "$GITHUB_OUTPUT"
+                  fi
+
             - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
               with:
-                  distribution: 'corretto'
-                  java-version: '17'
+                  distribution: ${{ steps.java.outputs.distribution }}
+                  java-version: ${{ steps.java.outputs.version }}
 
             - name: Download & Unpack Sonatype IQ Server
               env:
@@ -193,6 +207,12 @@ jobs:
                   echo "licenseFile: ${NXIQ_LICENSE_FILE}" >> "${GITHUB_WORKSPACE}/nxiq/config.yml"
 
             - name: Start Sonatype IQ Server
+              if: ${{ steps.java.outputs.bundle-jvm-options == 'true' }}
+              run: java @jvm.options -jar nexus-iq-server-*.jar server config.yml 2> stderr.log &
+              working-directory: "${{ github.workspace }}/nxiq"
+
+            - name: Start Sonatype IQ Server (legacy JVM options)
+              if: ${{ steps.java.outputs.bundle-jvm-options != 'true' }}
               run: |
                   java \
                     --add-opens=java.base/java.lang=ALL-UNNAMED \
@@ -209,7 +229,8 @@ jobs:
               run: |
                   set +e
                   sleep 20
-                  while true; do
+                  READY=false
+                  for i in {1..60}; do
                     STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8071/healthcheck?pretty=true")
                     CURL_EXIT=$?
 
@@ -218,16 +239,25 @@ jobs:
                     if [ "$CURL_EXIT" -eq 0 ]; then
                       if [ "$STATUS" -eq 200 ]; then
                           echo "✅ Received 200 OK from http://localhost:8071/healthcheck?pretty=true"
+                          READY=true
                           break
                       else
                           echo "⏳ Waiting for 200 OK... Current status: $STATUS for http://localhost:8071/healthcheck?pretty=true"
                           sleep 5
                       fi
                     else
-                      echo "⚠️ curl returned unexpected exit code $CURL_EXIT. Retrying..."
+                      echo "⚠️ curl returned unexpected exit code $CURL_EXIT. Retrying... (attempt $i/60)"
                       sleep 5
                     fi
                   done
+                  if [ "$READY" != "true" ]; then
+                    echo "❌ Sonatype IQ Server failed to become ready - dumping diagnostics:"
+                    echo "--- stderr.log ---"
+                    cat "${GITHUB_WORKSPACE}/nxiq/stderr.log" 2>&1 || echo "(no stderr.log)"
+                    echo "--- clm-server.log (tail) ---"
+                    tail -n 200 "${GITHUB_WORKSPACE}/nxiq/log/clm-server.log" 2>&1 || echo "(no clm-server.log)"
+                    exit 1
+                  fi
 
             - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
               with:
