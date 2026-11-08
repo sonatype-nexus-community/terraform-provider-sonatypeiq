@@ -2,6 +2,9 @@
 
 ## X.Y.Z (Unreleased)
 
+BUG FIXES:
+* `sonatypeiq_system_config` no longer fails with "inconsistent result after apply" when `base_url` is configured without the trailing `/` that Sonatype IQ Server always adds [GH-92]
+
 FEATURES:
 * `sonatypeiq_system_config` resource and data source now support all properties of the Sonatype IQ Server Configuration REST API that the API client models: `session_timeout`, `csrf_protection`, `policy_monitoring_hour`, `user_agent_suffix`, `hds_url`, `frame_ancestors_allowlist`, `event_bus_max_thread_pool_size`, `webhook_secret_passphrase`, `waived_component_upgrade_monitoring_enabled`, `api_access_allow_list`, `max_advanced_search_clause_count`, `advanced_search_csv_export_delimiter`, `advanced_reporting_insights_enabled`, `success_metrics_stage_id`, `purge_scan_files`, `alp_observed_license_detection_enabled` and `integrations_supported_version_count` [GH-92]
 * Setting a `sonatypeiq_system_config` property that the connected Sonatype IQ Server is too old to support now fails at plan time, naming the release that introduced it. Each property's documentation states the release that introduced it [GH-92]

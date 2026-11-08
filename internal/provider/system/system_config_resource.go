@@ -20,11 +20,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"regexp"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 	"terraform-provider-sonatypeiq/internal/provider/model"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -89,10 +91,11 @@ func (r *systemConfigResource) Schema(_ context.Context, _ resource.SchemaReques
 				Optional:    true,
 				Description: systemConfigDescription("alp_observed_license_detection_enabled", "Enable observed license detection for additional ecosystems for users of Lifecycle with Advanced Legal Pack. Sonatype IQ Server default: `true`."),
 			},
-			"api_access_allow_list": schema.ListAttribute{
+			"api_access_allow_list": schema.SetAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: systemConfigDescription("api_access_allow_list", "Usernames that are allowed to access the public REST API. Sonatype IQ Server default: unset."),
+				Description: systemConfigDescription("api_access_allow_list", "Usernames that are allowed to access the public REST API. Sonatype IQ Server removes duplicates and does not keep the order, so this is a set. To remove the restriction, remove the attribute. Sonatype IQ Server default: unset."),
+				Validators:  []validator.Set{setvalidator.SizeAtLeast(1)},
 			},
 			"csrf_protection": schema.BoolAttribute{
 				Optional:    true,
@@ -103,14 +106,15 @@ func (r *systemConfigResource) Schema(_ context.Context, _ resource.SchemaReques
 				Description: systemConfigDescription("event_bus_max_thread_pool_size", "Maximum size of the event bus thread pool. Sonatype IQ Server default: `500`."),
 				Validators:  []validator.Int32{int32validator.AtLeast(1)},
 			},
-			"frame_ancestors_allowlist": schema.ListAttribute{
+			"frame_ancestors_allowlist": schema.SetAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: systemConfigDescription("frame_ancestors_allowlist", "Domain patterns that are allowed to embed Sonatype IQ Server in a frame, e.g. `[\"*first.com\", \"second.*\"]`. Sonatype IQ Server default: unset."),
+				Description: systemConfigDescription("frame_ancestors_allowlist", "Domain patterns that are allowed to embed Sonatype IQ Server in a frame, e.g. `[\"*first.com\", \"second.*\"]`. Sonatype IQ Server always allows `'self'` itself, so you do not need to list it. Use `[\"'none'\"]` on its own to forbid all framing. To remove the allowlist, remove the attribute. Sonatype IQ Server default: unset."),
+				Validators:  []validator.Set{setvalidator.SizeAtLeast(1), noneMustBeAlone{}},
 			},
 			"hds_url": schema.StringAttribute{
 				Optional:    true,
-				Description: systemConfigDescription("hds_url", "URL of the Sonatype Hosted Data Services (HDS). Sonatype IQ Server default: `https://clm.sonatype.com/`."),
+				Description: systemConfigDescription("hds_url", "URL of the Sonatype Hosted Data Services (HDS). Sonatype IQ Server adds a trailing `/`. Sonatype IQ Server default: `https://clm.sonatype.com/`."),
 			},
 			"integrations_supported_version_count": schema.Int32Attribute{
 				Optional:    true,
@@ -134,8 +138,8 @@ func (r *systemConfigResource) Schema(_ context.Context, _ resource.SchemaReques
 			},
 			"session_timeout": schema.Int32Attribute{
 				Optional:    true,
-				Description: systemConfigDescription("session_timeout", "User session timeout, in minutes. Sonatype IQ Server default: `30`."),
-				Validators:  []validator.Int32{int32validator.AtLeast(1)},
+				Description: systemConfigDescription("session_timeout", "User session timeout, in minutes (3 to 120). Sonatype IQ Server default: `30`."),
+				Validators:  []validator.Int32{int32validator.Between(3, 120)},
 			},
 			"success_metrics_stage_id": schema.StringAttribute{
 				Optional:    true,
@@ -144,7 +148,11 @@ func (r *systemConfigResource) Schema(_ context.Context, _ resource.SchemaReques
 			},
 			"user_agent_suffix": schema.StringAttribute{
 				Optional:    true,
-				Description: systemConfigDescription("user_agent_suffix", "Suffix appended to the User-Agent that Sonatype IQ Server sends. Sonatype IQ Server default: unset."),
+				Description: systemConfigDescription("user_agent_suffix", "Suffix appended to the User-Agent that Sonatype IQ Server sends: at most 128 characters, with no control characters. Sonatype IQ Server default: unset."),
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(128),
+					stringvalidator.RegexMatches(regexp.MustCompile(`^[^\x00-\x1f\x7f]*$`), "must not contain control characters"),
+				},
 			},
 			"waived_component_upgrade_monitoring_enabled": schema.BoolAttribute{
 				Optional:    true,

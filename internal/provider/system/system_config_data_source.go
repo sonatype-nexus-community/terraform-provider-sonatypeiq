@@ -73,7 +73,7 @@ func (d *systemConfigDataSource) Schema(_ context.Context, req datasource.Schema
 				Computed:    true,
 				Description: systemConfigDescription("alp_observed_license_detection_enabled", "Whether observed license detection for additional ecosystems is enabled."),
 			},
-			"api_access_allow_list": tfschema.ListAttribute{
+			"api_access_allow_list": tfschema.SetAttribute{
 				Computed:    true,
 				ElementType: types.StringType,
 				Description: systemConfigDescription("api_access_allow_list", "Usernames that are allowed to access the public REST API."),
@@ -86,10 +86,10 @@ func (d *systemConfigDataSource) Schema(_ context.Context, req datasource.Schema
 				Computed:    true,
 				Description: systemConfigDescription("event_bus_max_thread_pool_size", "Maximum size of the event bus thread pool."),
 			},
-			"frame_ancestors_allowlist": tfschema.ListAttribute{
+			"frame_ancestors_allowlist": tfschema.SetAttribute{
 				Computed:    true,
 				ElementType: types.StringType,
-				Description: systemConfigDescription("frame_ancestors_allowlist", "Domain patterns that are allowed to embed Sonatype IQ Server in a frame."),
+				Description: systemConfigDescription("frame_ancestors_allowlist", "Domain patterns that are allowed to embed Sonatype IQ Server in a frame. Sonatype IQ Server always includes `'self'`."),
 			},
 			"hds_url": tfschema.StringAttribute{
 				Computed:    true,

@@ -17,6 +17,7 @@
 package model
 
 import (
+	"strings"
 	"terraform-provider-sonatypeiq/internal/provider/common"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -33,10 +34,10 @@ type SystemConfigModel struct {
 	AdvancedReportingInsightsEnabled        types.Bool   `tfsdk:"advanced_reporting_insights_enabled"`
 	AdvancedSearchCsvExportDelimiter        types.String `tfsdk:"advanced_search_csv_export_delimiter"`
 	AlpObservedLicenseDetectionEnabled      types.Bool   `tfsdk:"alp_observed_license_detection_enabled"`
-	ApiAccessAllowList                      types.List   `tfsdk:"api_access_allow_list"`
+	ApiAccessAllowList                      types.Set    `tfsdk:"api_access_allow_list"`
 	CsrfProtection                          types.Bool   `tfsdk:"csrf_protection"`
 	EventBusMaxThreadPoolSize               types.Int32  `tfsdk:"event_bus_max_thread_pool_size"`
-	FrameAncestorsAllowlist                 types.List   `tfsdk:"frame_ancestors_allowlist"`
+	FrameAncestorsAllowlist                 types.Set    `tfsdk:"frame_ancestors_allowlist"`
 	HdsURL                                  types.String `tfsdk:"hds_url"`
 	IntegrationsSupportedVersionCount       types.Int32  `tfsdk:"integrations_supported_version_count"`
 	MaxAdvancedSearchClauseCount            types.Int32  `tfsdk:"max_advanced_search_clause_count"`
@@ -55,10 +56,10 @@ func (m *SystemConfigModel) MapFromApi(api *sonatypeiq.SystemConfig) {
 	m.AdvancedReportingInsightsEnabled = types.BoolPointerValue(api.ADVANCED_REPORTING_INSIGHTS_ENABLED.Get())
 	m.AdvancedSearchCsvExportDelimiter = types.StringPointerValue(api.AdvancedSearchCSVExportDelimiter.Get())
 	m.AlpObservedLicenseDetectionEnabled = types.BoolPointerValue(api.AlpObservedLicenseDetectionEnabled.Get())
-	m.ApiAccessAllowList = stringListValue(api.ApiAccessAllowList)
+	m.ApiAccessAllowList = stringSetValue(api.ApiAccessAllowList)
 	m.CsrfProtection = types.BoolPointerValue(api.CsrfProtection.Get())
 	m.EventBusMaxThreadPoolSize = types.Int32PointerValue(api.EventBusMaxThreadPoolSize.Get())
-	m.FrameAncestorsAllowlist = stringListValue(api.FrameAncestorsAllowlist)
+	m.FrameAncestorsAllowlist = stringSetValue(api.FrameAncestorsAllowlist)
 	m.HdsURL = types.StringPointerValue(api.HdsUrl.Get())
 	m.IntegrationsSupportedVersionCount = types.Int32PointerValue(api.IntegrationsSupportedVersionCount.Get())
 	m.MaxAdvancedSearchClauseCount = types.Int32PointerValue(api.MaxAdvancedSearchClauseCount.Get())
@@ -199,10 +200,10 @@ func (m *SystemConfigResource) MapToApi() *sonatypeiq.SystemConfig {
 	api.ADVANCED_REPORTING_INSIGHTS_ENABLED = nullableBool(m.AdvancedReportingInsightsEnabled)
 	api.AdvancedSearchCSVExportDelimiter = nullableString(m.AdvancedSearchCsvExportDelimiter)
 	api.AlpObservedLicenseDetectionEnabled = nullableBool(m.AlpObservedLicenseDetectionEnabled)
-	api.ApiAccessAllowList = stringsFromList(m.ApiAccessAllowList)
+	api.ApiAccessAllowList = stringsFromSet(m.ApiAccessAllowList)
 	api.CsrfProtection = nullableBool(m.CsrfProtection)
 	api.EventBusMaxThreadPoolSize = nullableInt32(m.EventBusMaxThreadPoolSize)
-	api.FrameAncestorsAllowlist = stringsFromList(m.FrameAncestorsAllowlist)
+	api.FrameAncestorsAllowlist = stringsFromSet(m.FrameAncestorsAllowlist)
 	api.HdsUrl = nullableString(m.HdsURL)
 	api.IntegrationsSupportedVersionCount = nullableInt32(m.IntegrationsSupportedVersionCount)
 	api.MaxAdvancedSearchClauseCount = nullableInt32(m.MaxAdvancedSearchClauseCount)
@@ -248,7 +249,7 @@ func (m *SystemConfigResource) MapFromApi(api *sonatypeiq.SystemConfig) {
 	fresh.MapFromApi(api)
 
 	m.ID = types.StringValue(common.STATE_ID_SYSTEM_CONFIGURATION)
-	m.BaseURL = fresh.BaseURL
+	m.BaseURL = equivalentURL(m.BaseURL, fresh.BaseURL)
 	m.ForceBaseURL = fresh.ForceBaseURL
 	m.AdvancedReportingInsightsEnabled = refreshIfManaged(m.AdvancedReportingInsightsEnabled, fresh.AdvancedReportingInsightsEnabled)
 	m.AdvancedSearchCsvExportDelimiter = refreshIfManaged(m.AdvancedSearchCsvExportDelimiter, fresh.AdvancedSearchCsvExportDelimiter)
@@ -256,8 +257,8 @@ func (m *SystemConfigResource) MapFromApi(api *sonatypeiq.SystemConfig) {
 	m.ApiAccessAllowList = refreshIfManaged(m.ApiAccessAllowList, fresh.ApiAccessAllowList)
 	m.CsrfProtection = refreshIfManaged(m.CsrfProtection, fresh.CsrfProtection)
 	m.EventBusMaxThreadPoolSize = refreshIfManaged(m.EventBusMaxThreadPoolSize, fresh.EventBusMaxThreadPoolSize)
-	m.FrameAncestorsAllowlist = refreshIfManaged(m.FrameAncestorsAllowlist, fresh.FrameAncestorsAllowlist)
-	m.HdsURL = refreshIfManaged(m.HdsURL, fresh.HdsURL)
+	m.FrameAncestorsAllowlist = refreshFrameAncestors(m.FrameAncestorsAllowlist, fresh.FrameAncestorsAllowlist)
+	m.HdsURL = refreshIfManaged(m.HdsURL, equivalentURL(m.HdsURL, fresh.HdsURL))
 	m.IntegrationsSupportedVersionCount = refreshIfManaged(m.IntegrationsSupportedVersionCount, fresh.IntegrationsSupportedVersionCount)
 	m.MaxAdvancedSearchClauseCount = refreshIfManaged(m.MaxAdvancedSearchClauseCount, fresh.MaxAdvancedSearchClauseCount)
 	m.PolicyMonitoringHour = refreshIfManaged(m.PolicyMonitoringHour, fresh.PolicyMonitoringHour)
@@ -277,22 +278,63 @@ func refreshIfManaged[T attr.Value](prior, fresh T) T {
 	return fresh
 }
 
-// stringListValue maps a list of strings to a Terraform list, null when the API returned none.
-func stringListValue(values []string) types.List {
+// equivalentURL keeps the prior URL when Sonatype IQ Server only differs by the trailing slash that it always
+// adds, so that a configured "https://iq.example.com" is not reported as changed.
+func equivalentURL(prior, fresh types.String) types.String {
+	if prior.IsNull() || prior.IsUnknown() || fresh.IsNull() {
+		return fresh
+	}
+	if strings.TrimSuffix(prior.ValueString(), "/") == strings.TrimSuffix(fresh.ValueString(), "/") {
+		return prior
+	}
+	return fresh
+}
+
+// frameAncestorsSelf is always added by Sonatype IQ Server to a non-empty frame ancestors allowlist.
+const frameAncestorsSelf = "'self'"
+
+// refreshFrameAncestors reads the allowlist back without the 'self' that Sonatype IQ Server always adds,
+// unless 'self' is configured in Terraform.
+func refreshFrameAncestors(prior, fresh types.Set) types.Set {
+	result := refreshIfManaged(prior, fresh)
+	if prior.IsNull() || result.IsNull() || setContains(prior, frameAncestorsSelf) {
+		return result
+	}
+	var kept []string
+	for _, v := range stringsFromSet(result) {
+		if v != frameAncestorsSelf {
+			kept = append(kept, v)
+		}
+	}
+	return stringSetValue(kept)
+}
+
+func setContains(set types.Set, value string) bool {
+	for _, v := range stringsFromSet(set) {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
+// stringSetValue maps a list of strings to a Terraform set, null when the API returned none.
+// Sets are used because Sonatype IQ Server de-duplicates these lists and does not preserve their order.
+func stringSetValue(values []string) types.Set {
 	if values == nil {
-		return types.ListNull(types.StringType)
+		return types.SetNull(types.StringType)
 	}
 	elements := make([]attr.Value, 0, len(values))
 	for _, v := range values {
 		elements = append(elements, types.StringValue(v))
 	}
-	return types.ListValueMust(types.StringType, elements)
+	return types.SetValueMust(types.StringType, elements)
 }
 
-// stringsFromList maps a Terraform list of strings to a Go slice.
-func stringsFromList(list types.List) []string {
-	values := make([]string, 0, len(list.Elements()))
-	for _, e := range list.Elements() {
+// stringsFromSet maps a Terraform set of strings to a Go slice.
+func stringsFromSet(set types.Set) []string {
+	values := make([]string, 0, len(set.Elements()))
+	for _, e := range set.Elements() {
 		if s, ok := e.(types.String); ok {
 			values = append(values, s.ValueString())
 		}

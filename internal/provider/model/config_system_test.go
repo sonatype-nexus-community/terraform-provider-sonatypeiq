@@ -32,10 +32,10 @@ func emptyResource() model.SystemConfigResource {
 	m.AdvancedReportingInsightsEnabled = types.BoolNull()
 	m.AdvancedSearchCsvExportDelimiter = types.StringNull()
 	m.AlpObservedLicenseDetectionEnabled = types.BoolNull()
-	m.ApiAccessAllowList = types.ListNull(types.StringType)
+	m.ApiAccessAllowList = types.SetNull(types.StringType)
 	m.CsrfProtection = types.BoolNull()
 	m.EventBusMaxThreadPoolSize = types.Int32Null()
-	m.FrameAncestorsAllowlist = types.ListNull(types.StringType)
+	m.FrameAncestorsAllowlist = types.SetNull(types.StringType)
 	m.HdsURL = types.StringNull()
 	m.IntegrationsSupportedVersionCount = types.Int32Null()
 	m.MaxAdvancedSearchClauseCount = types.Int32Null()
@@ -146,7 +146,7 @@ func TestSystemConfigUnsupportedMessageNamesTheVersions(t *testing.T) {
 func TestSystemConfigMapToApiOnlySendsSetProperties(t *testing.T) {
 	m := emptyResource()
 	m.SessionTimeout = types.Int32Value(45)
-	m.ApiAccessAllowList = types.ListValueMust(types.StringType, []attr.Value{types.StringValue("alice"), types.StringValue("bob")})
+	m.ApiAccessAllowList = stringSet("alice", "bob")
 
 	api := m.MapToApi()
 	if api.SessionTimeout.Get() == nil || *api.SessionTimeout.Get() != 45 {
@@ -218,6 +218,132 @@ func TestRequestedPropertiesForVersion(t *testing.T) {
 	}
 	if !has(model.RequestedPropertiesFor(205), sonatypeiq.INTEGRATIONS_SUPPORTED_VERSION_COUNT) {
 		t.Errorf("a 205 server supports integrationsSupportedVersionCount")
+	}
+}
+
+func stringSet(values ...string) types.Set {
+	elements := make([]attr.Value, 0, len(values))
+	for _, v := range values {
+		elements = append(elements, types.StringValue(v))
+	}
+	return types.SetValueMust(types.StringType, elements)
+}
+
+func apiFromServer() *sonatypeiq.SystemConfig {
+	api := sonatypeiq.NewSystemConfigWithDefaults()
+	api.BaseUrl = *sonatypeiq.NewNullableString(strPtr("https://iq.example.com/"))
+	api.ForceBaseUrl = *sonatypeiq.NewNullableBool(boolPtr(false))
+	return api
+}
+
+func setElements(set types.Set) []string {
+	var out []string
+	for _, e := range set.Elements() {
+		out = append(out, e.(types.String).ValueString())
+	}
+	return out
+}
+
+// Sonatype IQ Server always adds 'self' to a frame ancestors allowlist; it must not look like drift.
+func TestSystemConfigFrameAncestorsIgnoresTheImpliedSelf(t *testing.T) {
+	api := apiFromServer()
+	api.FrameAncestorsAllowlist = []string{"'self'", "*.example.com"}
+
+	m := emptyResource()
+	m.FrameAncestorsAllowlist = stringSet("*.example.com")
+	m.MapFromApi(api)
+
+	if got := setElements(m.FrameAncestorsAllowlist); len(got) != 1 || got[0] != "*.example.com" {
+		t.Errorf("'self' must be hidden when it is not configured, got %v", got)
+	}
+}
+
+func TestSystemConfigFrameAncestorsKeepsSelfWhenConfigured(t *testing.T) {
+	api := apiFromServer()
+	api.FrameAncestorsAllowlist = []string{"'self'", "*.example.com"}
+
+	m := emptyResource()
+	m.FrameAncestorsAllowlist = stringSet("*.example.com", "'self'") // order is irrelevant for a set
+	m.MapFromApi(api)
+
+	if got := setElements(m.FrameAncestorsAllowlist); len(got) != 2 {
+		t.Errorf("a configured 'self' must be kept, got %v", got)
+	}
+	if !m.FrameAncestorsAllowlist.Equal(stringSet("'self'", "*.example.com")) {
+		t.Errorf("the set must equal the configured values regardless of order")
+	}
+}
+
+func TestSystemConfigFrameAncestorsNoneStaysAlone(t *testing.T) {
+	api := apiFromServer()
+	api.FrameAncestorsAllowlist = []string{"'none'"}
+
+	m := emptyResource()
+	m.FrameAncestorsAllowlist = stringSet("'none'")
+	m.MapFromApi(api)
+
+	if !m.FrameAncestorsAllowlist.Equal(stringSet("'none'")) {
+		t.Errorf("'none' must round-trip unchanged, got %v", setElements(m.FrameAncestorsAllowlist))
+	}
+}
+
+func TestSystemConfigFrameAncestorsUnmanagedStaysNull(t *testing.T) {
+	api := apiFromServer()
+	api.FrameAncestorsAllowlist = []string{"'self'"}
+
+	m := emptyResource()
+	m.MapFromApi(api)
+
+	if !m.FrameAncestorsAllowlist.IsNull() {
+		t.Errorf("an unmanaged allowlist must stay null")
+	}
+}
+
+// Sonatype IQ Server de-duplicates the API access list and does not keep its order.
+func TestSystemConfigApiAccessAllowListIgnoresOrder(t *testing.T) {
+	api := apiFromServer()
+	api.ApiAccessAllowList = []string{"bob", "alice"}
+
+	m := emptyResource()
+	m.ApiAccessAllowList = stringSet("alice", "bob")
+	m.MapFromApi(api)
+
+	if !m.ApiAccessAllowList.Equal(stringSet("alice", "bob")) {
+		t.Errorf("order must not matter, got %v", setElements(m.ApiAccessAllowList))
+	}
+}
+
+// Sonatype IQ Server always adds a trailing slash to URLs.
+func TestSystemConfigUrlsIgnoreTheTrailingSlashTheServerAdds(t *testing.T) {
+	api := apiFromServer()
+	api.BaseUrl = *sonatypeiq.NewNullableString(strPtr("https://iq.example.com/"))
+	api.HdsUrl = *sonatypeiq.NewNullableString(strPtr("https://hds.example.com/"))
+
+	m := emptyResource()
+	m.BaseURL = types.StringValue("https://iq.example.com")
+	m.HdsURL = types.StringValue("https://hds.example.com")
+	m.MapFromApi(api)
+
+	if m.BaseURL.ValueString() != "https://iq.example.com" || m.HdsURL.ValueString() != "https://hds.example.com" {
+		t.Errorf("a configured URL without the slash must be kept, got %q and %q", m.BaseURL.ValueString(), m.HdsURL.ValueString())
+	}
+}
+
+func TestSystemConfigBaseUrlIsReadOnImportOrWhenItReallyChanged(t *testing.T) {
+	api := apiFromServer()
+
+	imported := model.SystemConfigResource{}
+	imported.BaseURL = types.StringNull()
+	imported.MapFromApi(api)
+	if imported.BaseURL.ValueString() != "https://iq.example.com/" {
+		t.Errorf("on import the base URL must come from the server, got %q", imported.BaseURL.ValueString())
+	}
+
+	m := emptyResource()
+	m.BaseURL = types.StringValue("https://old.example.com")
+	m.MapFromApi(api)
+	if m.BaseURL.ValueString() != "https://iq.example.com/" {
+		t.Errorf("a genuinely different base URL must be reported, got %q", m.BaseURL.ValueString())
 	}
 }
 

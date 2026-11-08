@@ -50,12 +50,12 @@ data "sonatypeiq_system_config" "config" {}
 - `advanced_reporting_insights_enabled` (Boolean) Whether non-anonymized telemetry data is sent to Sonatype for Advanced Reporting Insights. Requires Sonatype IQ Server release 175 or later.
 - `advanced_search_csv_export_delimiter` (String) Delimiter used when exporting Advanced Search results to CSV. Requires Sonatype IQ Server release 142 or later.
 - `alp_observed_license_detection_enabled` (Boolean) Whether observed license detection for additional ecosystems is enabled. Requires Sonatype IQ Server release 161 or later.
-- `api_access_allow_list` (List of String) Usernames that are allowed to access the public REST API. Requires Sonatype IQ Server release 175 or later.
+- `api_access_allow_list` (Set of String) Usernames that are allowed to access the public REST API. Requires Sonatype IQ Server release 175 or later.
 - `base_url` (String) Base URL for Sonatype IQ Server
 - `csrf_protection` (Boolean) Whether Cross-Site Request Forgery (CSRF) protection is enabled. Requires Sonatype IQ Server release 142 or later.
 - `event_bus_max_thread_pool_size` (Number) Maximum size of the event bus thread pool. Requires Sonatype IQ Server release 142 or later.
 - `force_base_url` (Boolean) Should the Base URL be forced?
-- `frame_ancestors_allowlist` (List of String) Domain patterns that are allowed to embed Sonatype IQ Server in a frame. Requires Sonatype IQ Server release 142 or later.
+- `frame_ancestors_allowlist` (Set of String) Domain patterns that are allowed to embed Sonatype IQ Server in a frame. Sonatype IQ Server always includes `'self'`. Requires Sonatype IQ Server release 142 or later.
 - `hds_url` (String) URL of the Sonatype Hosted Data Services (HDS). Requires Sonatype IQ Server release 142 or later.
 - `id` (String) The ID of this resource.
 - `integrations_supported_version_count` (Number) How many of the most recent Sonatype integration versions are permitted to perform policy evaluations. Requires Sonatype IQ Server release 197 or later.

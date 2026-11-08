@@ -102,9 +102,74 @@ func (f *fakeIqServer) handlePut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for k, v := range body {
-		f.store[k] = v
+		f.storeNormalised(k, v)
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// storeNormalised stores a property the way Sonatype IQ Server does, including the normalisation it applies.
+func (f *fakeIqServer) storeNormalised(property string, value any) {
+	switch property {
+	case "baseUrl", "hdsUrl":
+		// A trailing slash is always added
+		if s, ok := value.(string); ok && !strings.HasSuffix(s, "/") {
+			value = s + "/"
+		}
+	case "frameAncestorsAllowlist":
+		value = normaliseFrameAncestors(toStrings(value))
+	case "apiAccessAllowList":
+		// Duplicates are removed (through a hash set) and the order is not kept
+		value = reverse(distinct(toStrings(value)))
+	}
+	if list, ok := value.([]string); ok && len(list) == 0 {
+		delete(f.store, property)
+		return
+	}
+	f.store[property] = value
+}
+
+func toStrings(value any) []string {
+	var out []string
+	items, _ := value.([]any)
+	for _, i := range items {
+		if s, ok := i.(string); ok {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func distinct(values []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, v := range values {
+		if !seen[v] {
+			seen[v] = true
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+func reverse(values []string) []string {
+	out := make([]string, 0, len(values))
+	for i := len(values) - 1; i >= 0; i-- {
+		out = append(out, values[i])
+	}
+	return out
+}
+
+// normaliseFrameAncestors mirrors Sonatype IQ Server: 'none' is stored alone, otherwise 'self' is always added first.
+func normaliseFrameAncestors(values []string) []string {
+	for _, v := range values {
+		if v == "'none'" {
+			return []string{"'none'"}
+		}
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	return distinct(append([]string{"'self'"}, values...))
 }
 
 func (f *fakeIqServer) handleGet(w http.ResponseWriter, r *http.Request) {
@@ -178,7 +243,7 @@ func (f *fakeIqServer) checkDeleted(property string) resource.TestCheckFunc {
 func fakeSystemConfig(extra string) string {
 	return utils_test.ProviderConfig + `
 resource "sonatypeiq_system_config" "test" {
-  base_url       = "https://iq.example.com/"
+  base_url       = "https://iq.example.com"
   force_base_url = false
 ` + extra + `
 }`
@@ -252,21 +317,55 @@ func TestSystemConfigResource_AcceptsNewPropertiesOnNewReleases_Offline(t *testi
 				Config: fakeSystemConfig(`
   integrations_supported_version_count = 5
   api_access_allow_list                = ["alice", "bob"]
-  frame_ancestors_allowlist            = ["*.example.com"]`),
+  frame_ancestors_allowlist            = ["*.example.com"]
+  hds_url                              = "https://hds.example.com"`),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "integrations_supported_version_count", "5"),
 					resource.TestCheckResourceAttr(resourceName, "api_access_allow_list.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "api_access_allow_list.0", "alice"),
-					resource.TestCheckResourceAttr(resourceName, "frame_ancestors_allowlist.0", "*.example.com"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "api_access_allow_list.*", "alice"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "api_access_allow_list.*", "bob"),
+					// 'self' is added by the server but is not part of the configuration
+					resource.TestCheckResourceAttr(resourceName, "frame_ancestors_allowlist.#", "1"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "frame_ancestors_allowlist.*", "*.example.com"),
+					// The server adds a trailing slash; the configured value is kept
+					resource.TestCheckResourceAttr(resourceName, "base_url", "https://iq.example.com"),
+					resource.TestCheckResourceAttr(resourceName, "hds_url", "https://hds.example.com"),
 					f.checkStored("integrationsSupportedVersionCount", 5),
+					f.checkStored("frameAncestorsAllowlist", []string{"'self'", "*.example.com"}),
+					f.checkStored("baseUrl", "https://iq.example.com/"),
 				),
 			},
 			{
 				Config: fakeSystemConfig(`
   integrations_supported_version_count = 5
   api_access_allow_list                = ["alice", "bob"]
-  frame_ancestors_allowlist            = ["*.example.com"]`),
+  frame_ancestors_allowlist            = ["*.example.com"]
+  hds_url                              = "https://hds.example.com"`),
 				PlanOnly: true,
+			},
+			// 'self' may be configured explicitly, and the order is irrelevant
+			{
+				Config: fakeSystemConfig(`
+  api_access_allow_list     = ["bob", "alice"]
+  frame_ancestors_allowlist = ["*.example.com", "'self'"]`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "frame_ancestors_allowlist.#", "2"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "frame_ancestors_allowlist.*", "'self'"),
+				),
+			},
+			{
+				Config: fakeSystemConfig(`
+  api_access_allow_list     = ["bob", "alice"]
+  frame_ancestors_allowlist = ["*.example.com", "'self'"]`),
+				PlanOnly: true,
+			},
+			// 'none' forbids all framing and stands alone
+			{
+				Config: fakeSystemConfig(`frame_ancestors_allowlist = ["'none'"]`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "frame_ancestors_allowlist.#", "1"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "frame_ancestors_allowlist.*", "'none'"),
+				),
 			},
 		},
 	})
@@ -283,6 +382,21 @@ func TestSystemConfigResource_ValidatesValues_Offline(t *testing.T) {
 				Config:      fakeSystemConfig(`policy_monitoring_hour = 24`),
 				PlanOnly:    true,
 				ExpectError: regexp.MustCompile(`(?s)policy_monitoring_hour.*(between|0 and 23)`),
+			},
+			{
+				Config:      fakeSystemConfig(`frame_ancestors_allowlist = ["'none'", "*.example.com"]`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?s)Invalid frame ancestors allowlist`),
+			},
+			{
+				Config:      fakeSystemConfig(`session_timeout = 2`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?s)session_timeout.*(between|3 and 120)`),
+			},
+			{
+				Config:      fakeSystemConfig(`api_access_allow_list = []`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?s)api_access_allow_list.*(at least|1)`),
 			},
 			{
 				Config:      fakeSystemConfig(`success_metrics_stage_id = "nonsense"`),
