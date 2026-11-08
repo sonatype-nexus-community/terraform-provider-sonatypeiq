@@ -290,7 +290,7 @@ jobs:
 
     # Run acceptance tests in a matrix with Terraform CLI versions (Docker-based for IQ 205+)
     test-parallel-docker:
-        name: Acc. Tests Docker (NXIQ ${{ matrix.nxiq-docker }} + TF ${{ matrix.terraform }})
+        name: Acc. Tests Docker (NXIQ ${{ matrix.nxiq-docker.version }} + TF ${{ matrix.terraform }})
         needs:
             - verify-approval
             - sonatype
@@ -308,11 +308,16 @@ jobs:
             fail-fast: false
             matrix:
                 nxiq-docker:
-                    - 'sonatype/nexus-iq-server@sha256:d28e5389701e796dac76b96c52822f944d180f404389be7175e78071a8ed02e3' # 1.205.4
-                    - 'sonatype/nexus-iq-server@sha256:f5c2a64a0d3372f101bbdff11661efd7fd7db7c4cc06e62c489e7aeb0dd20dbc' # 1.206.1
-                    - 'sonatype/nexus-iq-server@sha256:5b987e60afe7a3200f8c2f43d458108b9e4cd21471ada41ca6676dc3448a3d17' # 1.207.2
-                    - 'sonatype/nexus-iq-server@sha256:b17f55a43cab7738a129ed15bd256593458a3caff0d8035d46c5256e87d5d29a' # 1.208.1
-                    - 'sonatype/nexus-iq-server@sha256:e3b3fc21664dd7759b4eb0f191b17020d8ce0b20fd6d66dc41817b4bce26168c' # 1.209.1 LATEST
+                    - version: '1.205.4'
+                      image: 'sonatype/nexus-iq-server@sha256:d28e5389701e796dac76b96c52822f944d180f404389be7175e78071a8ed02e3'
+                    - version: '1.206.1'
+                      image: 'sonatype/nexus-iq-server@sha256:f5c2a64a0d3372f101bbdff11661efd7fd7db7c4cc06e62c489e7aeb0dd20dbc'
+                    - version: '1.207.2'
+                      image: 'sonatype/nexus-iq-server@sha256:5b987e60afe7a3200f8c2f43d458108b9e4cd21471ada41ca6676dc3448a3d17'
+                    - version: '1.208.1'
+                      image: 'sonatype/nexus-iq-server@sha256:b17f55a43cab7738a129ed15bd256593458a3caff0d8035d46c5256e87d5d29a'
+                    - version: '1.209.1' # LATEST
+                      image: 'sonatype/nexus-iq-server@sha256:e3b3fc21664dd7759b4eb0f191b17020d8ce0b20fd6d66dc41817b4bce26168c'
                 # list whatever Terraform versions here you would like to support
                 terraform:
                     - '1.0.*' # Minimum
@@ -337,14 +342,6 @@ jobs:
               run: |
                   echo "TF_SAFE_VERSION=${TF_ORIG//\*/}" >> "$GITHUB_ENV"
 
-            - name: Parse Docker Image
-              id: parse-docker
-              env:
-                  DOCKER_IMAGE: ${{ matrix.nxiq-docker }}
-              run: |
-                  IMAGE_TAG=$(echo "$DOCKER_IMAGE" | sed 's|.*@sha256:||' | cut -c1-12)
-                  echo "image-tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
-
             - name: Checkout Source
               uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
               with:
@@ -363,7 +360,7 @@ jobs:
             # Start from the image's own default configuration and add the licence to it
             - name: Create IQ Server Config
               env:
-                  NXIQ_IMAGE: ${{ matrix.nxiq-docker }}
+                  NXIQ_IMAGE: ${{ matrix.nxiq-docker.image }}
               run: |
                   docker run --rm --entrypoint cat "$NXIQ_IMAGE" /etc/nexus-iq-server/config.yml > "${RUNNER_TEMP}/nxiq-config.yml"
                   echo "licenseFile: ${NXIQ_LICENSE_FILE}" >> "${RUNNER_TEMP}/nxiq-config.yml"
@@ -371,7 +368,7 @@ jobs:
 
             - name: Start Sonatype IQ Server Container
               env:
-                  NXIQ_IMAGE: ${{ matrix.nxiq-docker }}
+                  NXIQ_IMAGE: ${{ matrix.nxiq-docker.image }}
               run: |
                   docker run -d \
                     --name nxiq \
@@ -448,7 +445,7 @@ jobs:
               if: success() || failure()
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               with:
-                  name: "clm-server.log-docker-${{ steps.parse-docker.outputs.image-tag }}-terraform-${{ env.TF_SAFE_VERSION }}"
+                  name: "clm-server.log-docker-${{ matrix.nxiq-docker.version }}-terraform-${{ env.TF_SAFE_VERSION }}"
                   path: "${{ runner.temp }}/clm-server.log"
                   if-no-files-found: ignore
 
