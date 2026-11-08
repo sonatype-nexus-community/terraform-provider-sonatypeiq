@@ -25,6 +25,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
 // Every registered property must be an attribute of both the resource and the data source, and the
@@ -44,33 +45,39 @@ func TestSystemConfigSchemasMatchTheRegistry(t *testing.T) {
 			t.Errorf("resource schema has no attribute %q", p.Attribute)
 			continue
 		}
-		if p.Attribute == "webhook_secret_passphrase" {
-			if _, inDataSource := dataSourceResp.Schema.Attributes[p.Attribute]; inDataSource {
-				t.Errorf("the data source must not expose the webhook secret")
-			}
-		} else if _, ok := dataSourceResp.Schema.Attributes[p.Attribute]; !ok {
-			t.Errorf("data source schema has no attribute %q", p.Attribute)
-		}
-
-		if p.Attribute == "base_url" || p.Attribute == "force_base_url" {
-			continue
-		}
-		if !resourceAttr.IsOptional() {
-			t.Errorf("%s must be optional so that it is only managed when set", p.Attribute)
-		}
-		if want := p.AvailabilityNote(); !containsString(resourceAttr.GetDescription(), want) {
-			t.Errorf("%s description does not state its availability %q", p.Attribute, want)
-		}
+		checkDataSourceAttribute(t, dataSourceResp, p)
+		checkOptionalAttributeDocumentsAvailability(t, resourceAttr, p)
 	}
 }
 
-func containsString(s, sub string) bool {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
+// checkDataSourceAttribute checks the data source exposes the property, except for the webhook secret which it must not.
+func checkDataSourceAttribute(t *testing.T, dataSourceResp *datasource.SchemaResponse, p model.SystemConfigPropertyInfo) {
+	t.Helper()
+
+	_, inDataSource := dataSourceResp.Schema.Attributes[p.Attribute]
+	isSecret := p.Attribute == "webhook_secret_passphrase"
+	if isSecret && inDataSource {
+		t.Errorf("the data source must not expose the webhook secret")
 	}
-	return false
+	if !isSecret && !inDataSource {
+		t.Errorf("data source schema has no attribute %q", p.Attribute)
+	}
+}
+
+// checkOptionalAttributeDocumentsAvailability checks an optional property is only managed when set and states its release.
+// base_url and force_base_url are required and predate this documentation.
+func checkOptionalAttributeDocumentsAvailability(t *testing.T, attribute schema.Attribute, p model.SystemConfigPropertyInfo) {
+	t.Helper()
+
+	if p.Attribute == "base_url" || p.Attribute == "force_base_url" {
+		return
+	}
+	if !attribute.IsOptional() {
+		t.Errorf("%s must be optional so that it is only managed when set", p.Attribute)
+	}
+	if want := p.AvailabilityNote(); !strings.Contains(attribute.GetDescription(), want) {
+		t.Errorf("%s description does not state its availability %q", p.Attribute, want)
+	}
 }
 
 // The documentation templates carry the availability table. It must match the registry exactly, so the

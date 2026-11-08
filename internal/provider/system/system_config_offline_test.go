@@ -57,42 +57,7 @@ func newFakeIqServer(t *testing.T, release int) *fakeIqServer {
 		w.Header().Set("Server", fmt.Sprintf("NexusIQ/1.%d.0-01", release))
 		f.mu.Lock()
 		defer f.mu.Unlock()
-
-		switch {
-		case strings.HasPrefix(r.URL.Path, "/api/v2/users/"):
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"username":"admin"}`))
-		case r.URL.Path == "/api/v2/config" && r.Method == http.MethodPut:
-			var body map[string]any
-			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			for k, v := range body {
-				f.store[k] = v
-			}
-			w.WriteHeader(http.StatusNoContent)
-		case r.URL.Path == "/api/v2/config" && r.Method == http.MethodGet:
-			resp := map[string]any{}
-			for _, p := range propertyNames(r) {
-				f.requested[p] = true
-				if v, ok := f.store[p]; ok {
-					resp[p] = v
-				} else if v, ok := fakeIqDefaults[p]; ok {
-					resp[p] = v
-				}
-			}
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(resp)
-		case r.URL.Path == "/api/v2/config" && r.Method == http.MethodDelete:
-			for _, p := range propertyNames(r) {
-				f.deleted = append(f.deleted, p)
-				delete(f.store, p)
-			}
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			http.NotFound(w, r)
-		}
+		f.route(w, r)
 	}))
 	t.Cleanup(f.Close)
 
@@ -100,6 +65,68 @@ func newFakeIqServer(t *testing.T, release int) *fakeIqServer {
 	t.Setenv("IQ_SERVER_USERNAME", "admin")
 	t.Setenv("IQ_SERVER_PASSWORD", "admin123")
 	return f
+}
+
+// route dispatches a request. The caller holds the lock.
+func (f *fakeIqServer) route(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, "/api/v2/users/") {
+		f.handleUser(w)
+		return
+	}
+	if r.URL.Path != "/api/v2/config" {
+		http.NotFound(w, r)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodPut:
+		f.handlePut(w, r)
+	case http.MethodGet:
+		f.handleGet(w, r)
+	case http.MethodDelete:
+		f.handleDelete(w, r)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func (f *fakeIqServer) handleUser(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write([]byte(`{"username":"admin"}`))
+}
+
+func (f *fakeIqServer) handlePut(w http.ResponseWriter, r *http.Request) {
+	var body map[string]any
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	for k, v := range body {
+		f.store[k] = v
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (f *fakeIqServer) handleGet(w http.ResponseWriter, r *http.Request) {
+	resp := map[string]any{}
+	for _, p := range propertyNames(r) {
+		f.requested[p] = true
+		if v, ok := f.store[p]; ok {
+			resp[p] = v
+		} else if v, ok := fakeIqDefaults[p]; ok {
+			resp[p] = v
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func (f *fakeIqServer) handleDelete(w http.ResponseWriter, r *http.Request) {
+	for _, p := range propertyNames(r) {
+		f.deleted = append(f.deleted, p)
+		delete(f.store, p)
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func propertyNames(r *http.Request) []string {

@@ -194,127 +194,87 @@ func (m *SystemConfigResource) RemovedProperties(plan *SystemConfigResource) []S
 // MapToApi maps only the properties that are set, so unset properties keep their server default.
 func (m *SystemConfigResource) MapToApi() *sonatypeiq.SystemConfig {
 	api := sonatypeiq.NewSystemConfigWithDefaults()
-	if m.IsSet("base_url") {
-		api.BaseUrl = *sonatypeiq.NewNullableString(m.BaseURL.ValueStringPointer())
-	}
-	if m.IsSet("force_base_url") {
-		api.ForceBaseUrl = *sonatypeiq.NewNullableBool(m.ForceBaseURL.ValueBoolPointer())
-	}
-	if m.IsSet("advanced_reporting_insights_enabled") {
-		api.ADVANCED_REPORTING_INSIGHTS_ENABLED = *sonatypeiq.NewNullableBool(m.AdvancedReportingInsightsEnabled.ValueBoolPointer())
-	}
-	if m.IsSet("advanced_search_csv_export_delimiter") {
-		api.AdvancedSearchCSVExportDelimiter = *sonatypeiq.NewNullableString(m.AdvancedSearchCsvExportDelimiter.ValueStringPointer())
-	}
-	if m.IsSet("alp_observed_license_detection_enabled") {
-		api.AlpObservedLicenseDetectionEnabled = *sonatypeiq.NewNullableBool(m.AlpObservedLicenseDetectionEnabled.ValueBoolPointer())
-	}
-	if m.IsSet("api_access_allow_list") {
-		api.ApiAccessAllowList = stringsFromList(m.ApiAccessAllowList)
-	}
-	if m.IsSet("csrf_protection") {
-		api.CsrfProtection = *sonatypeiq.NewNullableBool(m.CsrfProtection.ValueBoolPointer())
-	}
-	if m.IsSet("event_bus_max_thread_pool_size") {
-		api.EventBusMaxThreadPoolSize = *sonatypeiq.NewNullableInt32(m.EventBusMaxThreadPoolSize.ValueInt32Pointer())
-	}
-	if m.IsSet("frame_ancestors_allowlist") {
-		api.FrameAncestorsAllowlist = stringsFromList(m.FrameAncestorsAllowlist)
-	}
-	if m.IsSet("hds_url") {
-		api.HdsUrl = *sonatypeiq.NewNullableString(m.HdsURL.ValueStringPointer())
-	}
-	if m.IsSet("integrations_supported_version_count") {
-		api.IntegrationsSupportedVersionCount = *sonatypeiq.NewNullableInt32(m.IntegrationsSupportedVersionCount.ValueInt32Pointer())
-	}
-	if m.IsSet("max_advanced_search_clause_count") {
-		api.MaxAdvancedSearchClauseCount = *sonatypeiq.NewNullableInt32(m.MaxAdvancedSearchClauseCount.ValueInt32Pointer())
-	}
-	if m.IsSet("policy_monitoring_hour") {
-		api.PolicyMonitoringHour = *sonatypeiq.NewNullableInt32(m.PolicyMonitoringHour.ValueInt32Pointer())
-	}
-	if m.IsSet("purge_scan_files") {
-		api.PurgeScanFiles = *sonatypeiq.NewNullableString(m.PurgeScanFiles.ValueStringPointer())
-	}
-	if m.IsSet("session_timeout") {
-		api.SessionTimeout = *sonatypeiq.NewNullableInt32(m.SessionTimeout.ValueInt32Pointer())
-	}
-	if m.IsSet("success_metrics_stage_id") {
-		api.SuccessMetricsStageId = *sonatypeiq.NewNullableString(m.SuccessMetricsStageID.ValueStringPointer())
-	}
-	if m.IsSet("user_agent_suffix") {
-		api.UserAgentSuffix = *sonatypeiq.NewNullableString(m.UserAgentSuffix.ValueStringPointer())
-	}
-	if m.IsSet("waived_component_upgrade_monitoring_enabled") {
-		api.WaivedComponentUpgradeMonitoringEnabled = *sonatypeiq.NewNullableBool(m.WaivedComponentUpgradeMonitoringEnabled.ValueBoolPointer())
-	}
-	if m.IsSet("webhook_secret_passphrase") {
-		api.WebhookSecretPassphrase = *sonatypeiq.NewNullableString(m.WebhookSecretPassphrase.ValueStringPointer())
-	}
+	api.BaseUrl = nullableString(m.BaseURL)
+	api.ForceBaseUrl = nullableBool(m.ForceBaseURL)
+	api.ADVANCED_REPORTING_INSIGHTS_ENABLED = nullableBool(m.AdvancedReportingInsightsEnabled)
+	api.AdvancedSearchCSVExportDelimiter = nullableString(m.AdvancedSearchCsvExportDelimiter)
+	api.AlpObservedLicenseDetectionEnabled = nullableBool(m.AlpObservedLicenseDetectionEnabled)
+	api.ApiAccessAllowList = stringsFromList(m.ApiAccessAllowList)
+	api.CsrfProtection = nullableBool(m.CsrfProtection)
+	api.EventBusMaxThreadPoolSize = nullableInt32(m.EventBusMaxThreadPoolSize)
+	api.FrameAncestorsAllowlist = stringsFromList(m.FrameAncestorsAllowlist)
+	api.HdsUrl = nullableString(m.HdsURL)
+	api.IntegrationsSupportedVersionCount = nullableInt32(m.IntegrationsSupportedVersionCount)
+	api.MaxAdvancedSearchClauseCount = nullableInt32(m.MaxAdvancedSearchClauseCount)
+	api.PolicyMonitoringHour = nullableInt32(m.PolicyMonitoringHour)
+	api.PurgeScanFiles = nullableString(m.PurgeScanFiles)
+	api.SessionTimeout = nullableInt32(m.SessionTimeout)
+	api.SuccessMetricsStageId = nullableString(m.SuccessMetricsStageID)
+	api.UserAgentSuffix = nullableString(m.UserAgentSuffix)
+	api.WaivedComponentUpgradeMonitoringEnabled = nullableBool(m.WaivedComponentUpgradeMonitoringEnabled)
+	api.WebhookSecretPassphrase = nullableString(m.WebhookSecretPassphrase)
 	return api
+}
+
+// nullableString maps a Terraform string to the API, leaving it unset (not sent) when it is null.
+func nullableString(v types.String) sonatypeiq.NullableString {
+	if v.IsNull() {
+		return sonatypeiq.NullableString{}
+	}
+	return *sonatypeiq.NewNullableString(v.ValueStringPointer())
+}
+
+// nullableBool maps a Terraform bool to the API, leaving it unset (not sent) when it is null.
+func nullableBool(v types.Bool) sonatypeiq.NullableBool {
+	if v.IsNull() {
+		return sonatypeiq.NullableBool{}
+	}
+	return *sonatypeiq.NewNullableBool(v.ValueBoolPointer())
+}
+
+// nullableInt32 maps a Terraform int32 to the API, leaving it unset (not sent) when it is null.
+func nullableInt32(v types.Int32) sonatypeiq.NullableInt32 {
+	if v.IsNull() {
+		return sonatypeiq.NullableInt32{}
+	}
+	return *sonatypeiq.NewNullableInt32(v.ValueInt32Pointer())
 }
 
 // MapFromApi updates the state from the API. Optional properties that are not managed in Terraform stay
 // null, so that Sonatype IQ Server's own defaults never show up as drift. The webhook secret is never
 // read back: Terraform keeps the value from the configuration.
 func (m *SystemConfigResource) MapFromApi(api *sonatypeiq.SystemConfig) {
-	prior := *m
 	var fresh SystemConfigModel
 	fresh.MapFromApi(api)
 
 	m.ID = types.StringValue(common.STATE_ID_SYSTEM_CONFIGURATION)
 	m.BaseURL = fresh.BaseURL
 	m.ForceBaseURL = fresh.ForceBaseURL
+	m.AdvancedReportingInsightsEnabled = refreshIfManaged(m.AdvancedReportingInsightsEnabled, fresh.AdvancedReportingInsightsEnabled)
+	m.AdvancedSearchCsvExportDelimiter = refreshIfManaged(m.AdvancedSearchCsvExportDelimiter, fresh.AdvancedSearchCsvExportDelimiter)
+	m.AlpObservedLicenseDetectionEnabled = refreshIfManaged(m.AlpObservedLicenseDetectionEnabled, fresh.AlpObservedLicenseDetectionEnabled)
+	m.ApiAccessAllowList = refreshIfManaged(m.ApiAccessAllowList, fresh.ApiAccessAllowList)
+	m.CsrfProtection = refreshIfManaged(m.CsrfProtection, fresh.CsrfProtection)
+	m.EventBusMaxThreadPoolSize = refreshIfManaged(m.EventBusMaxThreadPoolSize, fresh.EventBusMaxThreadPoolSize)
+	m.FrameAncestorsAllowlist = refreshIfManaged(m.FrameAncestorsAllowlist, fresh.FrameAncestorsAllowlist)
+	m.HdsURL = refreshIfManaged(m.HdsURL, fresh.HdsURL)
+	m.IntegrationsSupportedVersionCount = refreshIfManaged(m.IntegrationsSupportedVersionCount, fresh.IntegrationsSupportedVersionCount)
+	m.MaxAdvancedSearchClauseCount = refreshIfManaged(m.MaxAdvancedSearchClauseCount, fresh.MaxAdvancedSearchClauseCount)
+	m.PolicyMonitoringHour = refreshIfManaged(m.PolicyMonitoringHour, fresh.PolicyMonitoringHour)
+	m.PurgeScanFiles = refreshIfManaged(m.PurgeScanFiles, fresh.PurgeScanFiles)
+	m.SessionTimeout = refreshIfManaged(m.SessionTimeout, fresh.SessionTimeout)
+	m.SuccessMetricsStageID = refreshIfManaged(m.SuccessMetricsStageID, fresh.SuccessMetricsStageID)
+	m.UserAgentSuffix = refreshIfManaged(m.UserAgentSuffix, fresh.UserAgentSuffix)
+	m.WaivedComponentUpgradeMonitoringEnabled = refreshIfManaged(m.WaivedComponentUpgradeMonitoringEnabled, fresh.WaivedComponentUpgradeMonitoringEnabled)
+}
 
-	keep := func(attribute string) bool { return prior.IsSet(attribute) }
-	if keep("advanced_reporting_insights_enabled") {
-		m.AdvancedReportingInsightsEnabled = fresh.AdvancedReportingInsightsEnabled
+// refreshIfManaged returns the value read from the API when the property is managed in Terraform (the
+// prior value is not null), and keeps it null otherwise.
+func refreshIfManaged[T attr.Value](prior, fresh T) T {
+	if prior.IsNull() {
+		return prior
 	}
-	if keep("advanced_search_csv_export_delimiter") {
-		m.AdvancedSearchCsvExportDelimiter = fresh.AdvancedSearchCsvExportDelimiter
-	}
-	if keep("alp_observed_license_detection_enabled") {
-		m.AlpObservedLicenseDetectionEnabled = fresh.AlpObservedLicenseDetectionEnabled
-	}
-	if keep("api_access_allow_list") {
-		m.ApiAccessAllowList = fresh.ApiAccessAllowList
-	}
-	if keep("csrf_protection") {
-		m.CsrfProtection = fresh.CsrfProtection
-	}
-	if keep("event_bus_max_thread_pool_size") {
-		m.EventBusMaxThreadPoolSize = fresh.EventBusMaxThreadPoolSize
-	}
-	if keep("frame_ancestors_allowlist") {
-		m.FrameAncestorsAllowlist = fresh.FrameAncestorsAllowlist
-	}
-	if keep("hds_url") {
-		m.HdsURL = fresh.HdsURL
-	}
-	if keep("integrations_supported_version_count") {
-		m.IntegrationsSupportedVersionCount = fresh.IntegrationsSupportedVersionCount
-	}
-	if keep("max_advanced_search_clause_count") {
-		m.MaxAdvancedSearchClauseCount = fresh.MaxAdvancedSearchClauseCount
-	}
-	if keep("policy_monitoring_hour") {
-		m.PolicyMonitoringHour = fresh.PolicyMonitoringHour
-	}
-	if keep("purge_scan_files") {
-		m.PurgeScanFiles = fresh.PurgeScanFiles
-	}
-	if keep("session_timeout") {
-		m.SessionTimeout = fresh.SessionTimeout
-	}
-	if keep("success_metrics_stage_id") {
-		m.SuccessMetricsStageID = fresh.SuccessMetricsStageID
-	}
-	if keep("user_agent_suffix") {
-		m.UserAgentSuffix = fresh.UserAgentSuffix
-	}
-	if keep("waived_component_upgrade_monitoring_enabled") {
-		m.WaivedComponentUpgradeMonitoringEnabled = fresh.WaivedComponentUpgradeMonitoringEnabled
-	}
+	return fresh
 }
 
 // stringListValue maps a list of strings to a Terraform list, null when the API returned none.
