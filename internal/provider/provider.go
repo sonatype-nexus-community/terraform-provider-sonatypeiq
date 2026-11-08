@@ -30,11 +30,13 @@ import (
 	"terraform-provider-sonatypeiq/internal/provider/system"
 	"terraform-provider-sonatypeiq/internal/provider/user"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -54,9 +56,10 @@ type SonatypeIqProvider struct {
 
 // SonatypeIqProviderModel describes the provider data model.
 type SonatypeIqProviderModel struct {
-	Url      types.String `tfsdk:"url"`
-	Username types.String `tfsdk:"username"`
-	Password types.String `tfsdk:"password"`
+	Url         types.String `tfsdk:"url"`
+	Username    types.String `tfsdk:"username"`
+	Password    types.String `tfsdk:"password"`
+	VersionHint types.String `tfsdk:"version_hint"`
 }
 
 func (p *SonatypeIqProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -83,6 +86,19 @@ func (p *SonatypeIqProvider) Schema(ctx context.Context, req provider.SchemaRequ
 				Sensitive:           true,
 				// Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
+			"version_hint": schema.StringAttribute{
+				MarkdownDescription: `The version of Sonatype IQ Server you are connecting to, either in full as shown in the Server header (e.g. ` + "`1.205.4-01`" + `) or as just the release number (e.g. ` + "`205`" + `).
+
+> [!NOTE]
+> By default, this provider determines the version of Sonatype IQ Server automatically, from the _Server_ HTTP header. A reverse proxy or load balancer may strip or rewrite that header, in which case the version cannot be determined.
+
+> [!TIP]
+> Only set this if you receive a warning that the version of Sonatype IQ Server could not be determined, or if a reverse proxy rewrites the _Server_ header. When set, it takes precedence over what the server reports.`,
+				Optional: true,
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(common.VersionHintExp, "must be the full version (e.g. 1.205.4-01) or the release number (e.g. 205)"),
+				},
+			},
 		},
 	}
 }
@@ -96,7 +112,7 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 		return
 	}
 
-	iqUrl, username, password := p.parseConfig(&config)
+	iqUrl, username, password, versionHint := p.parseConfig(&config)
 
 	p.validateConfig(resp, iqUrl, &config)
 	if resp.Diagnostics.HasError() {
@@ -105,13 +121,13 @@ func (p *SonatypeIqProvider) Configure(ctx context.Context, req provider.Configu
 
 	ds := p.createClient(iqUrl, username, password)
 
-	p.checkVersion(ctx, &ds, resp)
+	p.checkVersion(ctx, &ds, resp, versionHint)
 
 	resp.DataSourceData = ds
 	resp.ResourceData = ds
 }
 
-func (p *SonatypeIqProvider) parseConfig(config *SonatypeIqProviderModel) (string, string, string) {
+func (p *SonatypeIqProvider) parseConfig(config *SonatypeIqProviderModel) (string, string, string, *string) {
 	iqUrl := os.Getenv("IQ_SERVER_URL")
 	username := os.Getenv("IQ_SERVER_USERNAME")
 	password := os.Getenv("IQ_SERVER_PASSWORD")
@@ -128,7 +144,13 @@ func (p *SonatypeIqProvider) parseConfig(config *SonatypeIqProviderModel) (strin
 		password = config.Password.ValueString()
 	}
 
-	return iqUrl, username, password
+	var versionHint *string
+	if !config.VersionHint.IsNull() && len(config.VersionHint.ValueString()) > 0 {
+		hint := config.VersionHint.ValueString()
+		versionHint = &hint
+	}
+
+	return iqUrl, username, password, versionHint
 }
 
 func (p *SonatypeIqProvider) validateConfig(resp *provider.ConfigureResponse, iqUrl string, config *SonatypeIqProviderModel) {
@@ -183,9 +205,23 @@ func (p *SonatypeIqProvider) createClient(iqUrl, username, password string) comm
 	}
 }
 
-func (p *SonatypeIqProvider) checkVersion(ctx context.Context, ds *common.SonatypeDataSourceData, resp *provider.ConfigureResponse) {
-	ds.CheckWritableAndGetVersion(ctx, &resp.Diagnostics)
+func (p *SonatypeIqProvider) checkVersion(ctx context.Context, ds *common.SonatypeDataSourceData, resp *provider.ConfigureResponse, versionHint *string) {
+	ds.CheckConnectionAndGetVersion(ctx, &resp.Diagnostics, versionHint)
 	tflog.Info(ctx, fmt.Sprintf("Detected Sonatype IQ Server to be version %v", ds.IqVersion))
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if ds.IqVersion == 0 {
+		resp.Diagnostics.AddWarning(
+			`Could not determine the version of Sonatype IQ Server`,
+			`The _Server_ HTTP header that identifies the version was missing or not recognised, for example because a reverse proxy or load balancer rewrites it. `+
+				`Everything will work, but features that depend on the version of Sonatype IQ Server are not checked. `+
+				`Set 'version_hint' in the provider configuration to the version you are running (e.g. '1.205.4-01' or '205') to turn those checks back on.`,
+		)
+		return
+	}
 
 	if ds.IqVersion < 186 {
 		resp.Diagnostics.AddWarning(

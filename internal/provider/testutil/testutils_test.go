@@ -34,15 +34,14 @@ func TestAccVersionOlderThan(t *testing.T) {
 
 func TestProbeIqVersionReadsTheServerHeader(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, pass, _ := r.BasicAuth()
-		assert.Equal(t, "admin", user)
-		assert.Equal(t, "secret", pass)
-		assert.Equal(t, "/api/v2/users/admin", r.URL.Path)
+		_, _, hasCredentials := r.BasicAuth()
+		assert.False(t, hasCredentials, "the probe must not need credentials")
+		assert.Equal(t, "/ping", r.URL.Path)
 		w.Header().Set("Server", "NexusIQ/1.205.4-01")
 	}))
 	defer server.Close()
 
-	version, err := ProbeIqVersion(server.URL, "admin", "secret")
+	version, err := ProbeIqVersion(server.URL)
 
 	assert.NoError(t, err)
 	assert.Equal(t, int32(205), version)
@@ -54,13 +53,13 @@ func TestProbeIqVersionRejectsAnUnknownServer(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := ProbeIqVersion(server.URL, "admin", "secret")
+	_, err := ProbeIqVersion(server.URL)
 
 	assert.Error(t, err)
 }
 
 func TestProbeIqVersionFailsWhenTheServerIsUnreachable(t *testing.T) {
-	_, err := ProbeIqVersion("http://127.0.0.1:1", "admin", "secret")
+	_, err := ProbeIqVersion("http://127.0.0.1:1")
 
 	assert.Error(t, err)
 }

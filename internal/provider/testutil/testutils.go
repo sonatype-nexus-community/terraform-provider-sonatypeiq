@@ -91,7 +91,7 @@ func DetectedIqVersion(t *testing.T) int32 {
 			detectedIq = CurrenTestIqVersion
 			return
 		}
-		detectedIq, detectedIqErr = ProbeIqVersion(os.Getenv("IQ_SERVER_URL"), os.Getenv("IQ_SERVER_USERNAME"), os.Getenv("IQ_SERVER_PASSWORD"))
+		detectedIq, detectedIqErr = ProbeIqVersion(os.Getenv("IQ_SERVER_URL"))
 	})
 
 	if detectedIqErr != nil {
@@ -100,15 +100,10 @@ func DetectedIqVersion(t *testing.T) int32 {
 	return detectedIq
 }
 
-// ProbeIqVersion asks a Sonatype IQ Server for its release using the Server header it sends on every response.
-func ProbeIqVersion(serverUrl, username, password string) (int32, error) {
-	req, err := http.NewRequest(http.MethodGet, serverUrl+"/api/v2/users/"+username, nil)
-	if err != nil {
-		return 0, err
-	}
-	req.SetBasicAuth(username, password)
-
-	resp, err := http.DefaultClient.Do(req)
+// ProbeIqVersion asks a Sonatype IQ Server for its release using the Server header of its anonymous /ping
+// endpoint, so it needs no credentials.
+func ProbeIqVersion(serverUrl string) (int32, error) {
+	resp, err := http.Get(serverUrl + "/ping") //nolint:gosec // the URL is the Sonatype IQ Server under test
 	if err != nil {
 		return 0, err
 	}

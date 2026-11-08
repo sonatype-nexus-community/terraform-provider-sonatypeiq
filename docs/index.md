@@ -17,6 +17,29 @@ When using the provider the username/password need to have the correct role/perm
 documentation. Creating roles is also documented [here](https://help.sonatype.com/en/role-management.html) and how to
 generate the username/tokens for a user can be found [here](https://help.sonatype.com/en/iq-server-user-tokens.html)
 
+## Required permissions
+
+The user that the provider connects as only needs the permissions for the resources you manage with it. The provider itself needs nothing beyond a valid user: it does not require administrator permissions just to connect, and it works out which release of Sonatype IQ Server it is talking to from the anonymous `/ping` endpoint.
+
+The permissions below are those documented by the Sonatype IQ Server REST API for the calls that each resource and data source makes. Where a permission applies to an organization or application, it must be granted for that organization or application (or one above it).
+
+| Resource / Data Source | Permission required |
+|---|---|
+| `sonatypeiq_user_token` | None - any authenticated user can manage their own User Token |
+| `sonatypeiq_organization`, `sonatypeiq_application` (data sources and resources) | _View IQ Elements_ to read; _Edit IQ Elements_ to create, update, move or delete an organization or application. Creating an application needs _Add Application_ on the parent organization |
+| `sonatypeiq_source_control` | _View IQ Elements_ to read; _Edit IQ Elements_ to create, update or delete |
+| `sonatypeiq_application_category` (resource and data source) | Not stated by the Sonatype IQ Server REST API documentation |
+| `sonatypeiq_application_role_membership`, `sonatypeiq_organization_role_membership` | _Edit access control_ to grant or revoke; reading needs _View IQ Elements_ (or _Edit System Configuration and Users_ for the root organization) |
+| `sonatypeiq_role` (resource and data source) | _View All Roles_ to read; _Edit Roles_ to create, update or delete |
+| `sonatypeiq_user`, `sonatypeiq_config_crowd`, `sonatypeiq_config_mail`, `sonatypeiq_config_proxy_server`, `sonatypeiq_config_saml` (and its data source), `sonatypeiq_config_product_license` | _Edit System Configuration and Users_ |
+| `sonatypeiq_system_config` (resource and data source) | _Edit System Configuration and Users_ (reading some system properties may need less, depending on the property) |
+
+A call that the user is not permitted to make fails with a `403 Forbidden` on that resource.
+
+## Behind a reverse proxy or load balancer
+
+The provider reads the release of Sonatype IQ Server from the `Server` HTTP header, to restrict features that only exist from a given release and to give you clear feedback if you use one on a release that is too old. If a reverse proxy or load balancer in front of Sonatype IQ Server removes or rewrites that header, the provider warns that the version could not be determined and does not restrict anything. Set `version_hint` in the provider configuration to the version you are running (for example `1.205.4-01`, or just `205`) to turn those checks back on. A `version_hint` takes precedence over what the server reports.
+
 ## Compatability
 
 This Provider is tested against Sonatype IQ Server versions `186` through `209` currently.
@@ -30,6 +53,10 @@ provider "sonatypeiq" {
   url      = "https://my-sonatype-iq-server.tld"
   username = "username"
   password = "password"
+
+  # Only needed if a reverse proxy or load balancer in front of Sonatype IQ Server removes or rewrites
+  # the Server HTTP header, so the provider cannot work out the version for itself.
+  # version_hint = "1.205.4-01"
 }
 ```
 
@@ -41,4 +68,11 @@ provider "sonatypeiq" {
 - `password` (String, Sensitive) Password for your user for Sonatype IQ Server, if not provided will attempt to fall back to environment variable `IQ_SERVER_PASSWORD`
 - `url` (String) Sonatype IQ Server URL, must start `http://` or `https://`, if not provided will attempt to fall back to environment variable `IQ_SERVER_URL`
 - `username` (String) Username for Sonatype IQ Server, requires role/permissions scoped to the resources you wish to manage, if not provided will attempt to fall back to environment variable `IQ_SERVER_USERNAME`
+- `version_hint` (String) The version of Sonatype IQ Server you are connecting to, either in full as shown in the Server header (e.g. `1.205.4-01`) or as just the release number (e.g. `205`).
+
+> [!NOTE]
+> By default, this provider determines the version of Sonatype IQ Server automatically, from the _Server_ HTTP header. A reverse proxy or load balancer may strip or rewrite that header, in which case the version cannot be determined.
+
+> [!TIP]
+> Only set this if you receive a warning that the version of Sonatype IQ Server could not be determined, or if a reverse proxy rewrites the _Server_ header. When set, it takes precedence over what the server reports.
 
