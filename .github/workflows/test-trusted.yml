@@ -309,7 +309,8 @@ jobs:
                     - 'sonatype/nexus-iq-server@sha256:d28e5389701e796dac76b96c52822f944d180f404389be7175e78071a8ed02e3' # 1.205.4
                     - 'sonatype/nexus-iq-server@sha256:f5c2a64a0d3372f101bbdff11661efd7fd7db7c4cc06e62c489e7aeb0dd20dbc' # 1.206.1
                     - 'sonatype/nexus-iq-server@sha256:5b987e60afe7a3200f8c2f43d458108b9e4cd21471ada41ca6676dc3448a3d17' # 1.207.2
-                    - 'sonatype/nexus-iq-server@sha256:b17f55a43cab7738a129ed15bd256593458a3caff0d8035d46c5256e87d5d29a' # 1.208.1 LATEST
+                    - 'sonatype/nexus-iq-server@sha256:b17f55a43cab7738a129ed15bd256593458a3caff0d8035d46c5256e87d5d29a' # 1.208.1
+                    - 'sonatype/nexus-iq-server@sha256:e3b3fc21664dd7759b4eb0f191b17020d8ce0b20fd6d66dc41817b4bce26168c' # 1.209.1 LATEST
                 # list whatever Terraform versions here you would like to support
                 terraform:
                     - '1.0.*' # Minimum
