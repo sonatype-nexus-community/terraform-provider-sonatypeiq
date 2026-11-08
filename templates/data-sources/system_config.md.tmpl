@@ -11,29 +11,29 @@ description: |-
 
 ## Availability of properties
 
-A property can only be used with the Sonatype IQ Server release that introduced it. Setting a property on an older Sonatype IQ Server fails at plan time and names both releases. Where Sonatype does not document a release the property is assumed to be available in every release supported by this provider.
+A property can only be used with the Sonatype IQ Server release that introduced it. Setting a property on an older Sonatype IQ Server fails at plan time and names both releases. The releases below were established from the Sonatype IQ Server release history.
 
 | Attribute | Configuration REST API property | Introduced in Sonatype IQ Server release |
 |---|---|---|
-| `base_url` | `baseUrl` | not documented by Sonatype |
-| `force_base_url` | `forceBaseUrl` | not documented by Sonatype |
+| `base_url` | `baseUrl` | 138 |
+| `force_base_url` | `forceBaseUrl` | 138 |
 | `advanced_reporting_insights_enabled` | `ADVANCED_REPORTING_INSIGHTS_ENABLED` | 175 |
-| `advanced_search_csv_export_delimiter` | `advancedSearchCSVExportDelimiter` | not documented by Sonatype |
-| `alp_observed_license_detection_enabled` | `alpObservedLicenseDetectionEnabled` | 165 |
+| `advanced_search_csv_export_delimiter` | `advancedSearchCSVExportDelimiter` | 142 |
+| `alp_observed_license_detection_enabled` | `alpObservedLicenseDetectionEnabled` | 161 |
 | `api_access_allow_list` | `apiAccessAllowList` | 175 |
-| `csrf_protection` | `csrfProtection` | not documented by Sonatype |
-| `event_bus_max_thread_pool_size` | `eventBus.maxThreadPoolSize` | not documented by Sonatype |
-| `frame_ancestors_allowlist` | `frameAncestorsAllowlist` | not documented by Sonatype |
-| `hds_url` | `hdsUrl` | not documented by Sonatype |
+| `csrf_protection` | `csrfProtection` | 142 |
+| `event_bus_max_thread_pool_size` | `eventBus.maxThreadPoolSize` | 142 |
+| `frame_ancestors_allowlist` | `frameAncestorsAllowlist` | 142 |
+| `hds_url` | `hdsUrl` | 142 |
 | `integrations_supported_version_count` | `integrationsSupportedVersionCount` | 197 |
 | `max_advanced_search_clause_count` | `maxAdvancedSearchClauseCount` | 142 |
-| `policy_monitoring_hour` | `policyMonitoringHour` | not documented by Sonatype |
+| `policy_monitoring_hour` | `policyMonitoringHour` | 142 |
 | `purge_scan_files` | `purgeScanFiles` | 152 |
-| `session_timeout` | `sessionTimeout` | not documented by Sonatype |
+| `session_timeout` | `sessionTimeout` | 143 |
 | `success_metrics_stage_id` | `successMetricsStageId` | 182 |
-| `user_agent_suffix` | `userAgentSuffix` | not documented by Sonatype |
+| `user_agent_suffix` | `userAgentSuffix` | 142 |
 | `waived_component_upgrade_monitoring_enabled` | `waivedComponentUpgradeMonitoringEnabled` | 162 |
-| `webhook_secret_passphrase` | `webhookSecretPassphrase` | not documented by Sonatype |
+| `webhook_secret_passphrase` | `webhookSecretPassphrase` | 142 |
 
 {{ if .HasExample -}}
 ## Example Usage

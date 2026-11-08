@@ -66,16 +66,32 @@ func TestSystemConfigPropertiesCoverTheClient(t *testing.T) {
 }
 
 func TestSystemConfigIntroducedInReleases(t *testing.T) {
-	// From the "Released" column of https://help.sonatype.com/en/configuration-rest-api.html
+	// Established from the Sonatype IQ Server release history; Sonatype's published documentation
+	// (https://help.sonatype.com/en/configuration-rest-api.html) agrees wherever it states a release, except for
+	// alp_observed_license_detection_enabled, which it gives as 165.
 	expected := map[string]int32{
+		"base_url":                                    138,
+		"force_base_url":                              138,
+		"advanced_search_csv_export_delimiter":        142,
+		"csrf_protection":                             142,
+		"event_bus_max_thread_pool_size":              142,
+		"frame_ancestors_allowlist":                   142,
+		"hds_url":                                     142,
 		"max_advanced_search_clause_count":            142,
+		"policy_monitoring_hour":                      142,
+		"user_agent_suffix":                           142,
+		"webhook_secret_passphrase":                   142,
+		"session_timeout":                             143,
 		"purge_scan_files":                            152,
+		"alp_observed_license_detection_enabled":      161,
 		"waived_component_upgrade_monitoring_enabled": 162,
-		"alp_observed_license_detection_enabled":      165,
 		"advanced_reporting_insights_enabled":         175,
 		"api_access_allow_list":                       175,
 		"success_metrics_stage_id":                    182,
 		"integrations_supported_version_count":        197,
+	}
+	if len(expected) != len(model.SystemConfigProperties) {
+		t.Errorf("expected %d properties, registry has %d", len(expected), len(model.SystemConfigProperties))
 	}
 	for attribute, release := range expected {
 		p, ok := model.SystemConfigPropertyByAttribute(attribute)
@@ -97,7 +113,7 @@ func TestSystemConfigUnsupportedProperties(t *testing.T) {
 
 	m.IntegrationsSupportedVersionCount = types.Int32Value(5) // 197
 	m.SuccessMetricsStageID = types.StringValue("build")      // 182
-	m.SessionTimeout = types.Int32Value(60)                   // undocumented
+	m.SessionTimeout = types.Int32Value(60)                   // 143
 
 	got := m.UnsupportedProperties(190)
 	if len(got) != 1 || got[0].Attribute != "integrations_supported_version_count" {
@@ -111,6 +127,9 @@ func TestSystemConfigUnsupportedProperties(t *testing.T) {
 	}
 	if len(m.UnsupportedProperties(181)) != 2 {
 		t.Errorf("on 181 both 182 and 197 properties should be unsupported, got %v", m.UnsupportedProperties(181))
+	}
+	if len(m.UnsupportedProperties(142)) != 3 {
+		t.Errorf("on 142 the 143, 182 and 197 properties should be unsupported, got %v", m.UnsupportedProperties(142))
 	}
 }
 

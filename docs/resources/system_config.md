@@ -11,29 +11,29 @@ Use this resource to manage System Configuration. Every optional property is onl
 
 ## Availability of properties
 
-A property can only be used with the Sonatype IQ Server release that introduced it. Setting a property on an older Sonatype IQ Server fails at plan time and names both releases. Where Sonatype does not document a release the property is assumed to be available in every release supported by this provider.
+A property can only be used with the Sonatype IQ Server release that introduced it. Setting a property on an older Sonatype IQ Server fails at plan time and names both releases. The releases below were established from the Sonatype IQ Server release history.
 
 | Attribute | Configuration REST API property | Introduced in Sonatype IQ Server release |
 |---|---|---|
-| `base_url` | `baseUrl` | not documented by Sonatype |
-| `force_base_url` | `forceBaseUrl` | not documented by Sonatype |
+| `base_url` | `baseUrl` | 138 |
+| `force_base_url` | `forceBaseUrl` | 138 |
 | `advanced_reporting_insights_enabled` | `ADVANCED_REPORTING_INSIGHTS_ENABLED` | 175 |
-| `advanced_search_csv_export_delimiter` | `advancedSearchCSVExportDelimiter` | not documented by Sonatype |
-| `alp_observed_license_detection_enabled` | `alpObservedLicenseDetectionEnabled` | 165 |
+| `advanced_search_csv_export_delimiter` | `advancedSearchCSVExportDelimiter` | 142 |
+| `alp_observed_license_detection_enabled` | `alpObservedLicenseDetectionEnabled` | 161 |
 | `api_access_allow_list` | `apiAccessAllowList` | 175 |
-| `csrf_protection` | `csrfProtection` | not documented by Sonatype |
-| `event_bus_max_thread_pool_size` | `eventBus.maxThreadPoolSize` | not documented by Sonatype |
-| `frame_ancestors_allowlist` | `frameAncestorsAllowlist` | not documented by Sonatype |
-| `hds_url` | `hdsUrl` | not documented by Sonatype |
+| `csrf_protection` | `csrfProtection` | 142 |
+| `event_bus_max_thread_pool_size` | `eventBus.maxThreadPoolSize` | 142 |
+| `frame_ancestors_allowlist` | `frameAncestorsAllowlist` | 142 |
+| `hds_url` | `hdsUrl` | 142 |
 | `integrations_supported_version_count` | `integrationsSupportedVersionCount` | 197 |
 | `max_advanced_search_clause_count` | `maxAdvancedSearchClauseCount` | 142 |
-| `policy_monitoring_hour` | `policyMonitoringHour` | not documented by Sonatype |
+| `policy_monitoring_hour` | `policyMonitoringHour` | 142 |
 | `purge_scan_files` | `purgeScanFiles` | 152 |
-| `session_timeout` | `sessionTimeout` | not documented by Sonatype |
+| `session_timeout` | `sessionTimeout` | 143 |
 | `success_metrics_stage_id` | `successMetricsStageId` | 182 |
-| `user_agent_suffix` | `userAgentSuffix` | not documented by Sonatype |
+| `user_agent_suffix` | `userAgentSuffix` | 142 |
 | `waived_component_upgrade_monitoring_enabled` | `waivedComponentUpgradeMonitoringEnabled` | 162 |
-| `webhook_secret_passphrase` | `webhookSecretPassphrase` | not documented by Sonatype |
+| `webhook_secret_passphrase` | `webhookSecretPassphrase` | 142 |
 
 ## Example Usage
 
@@ -74,22 +74,22 @@ resource "sonatypeiq_system_config" "iq_config" {
 ### Optional
 
 - `advanced_reporting_insights_enabled` (Boolean) Allow Sonatype IQ Server to send non-anonymized telemetry data to Sonatype for Advanced Reporting Insights. Sonatype IQ Server default: `true`. Requires Sonatype IQ Server release 175 or later.
-- `advanced_search_csv_export_delimiter` (String) Single character used as the delimiter when exporting Advanced Search results to CSV. Sonatype IQ Server default: `,`. Sonatype does not document the release that introduced this property.
-- `alp_observed_license_detection_enabled` (Boolean) Enable observed license detection for additional ecosystems for users of Lifecycle with Advanced Legal Pack. Sonatype IQ Server default: `true`. Requires Sonatype IQ Server release 165 or later.
+- `advanced_search_csv_export_delimiter` (String) Single character used as the delimiter when exporting Advanced Search results to CSV. Sonatype IQ Server default: `,`. Requires Sonatype IQ Server release 142 or later.
+- `alp_observed_license_detection_enabled` (Boolean) Enable observed license detection for additional ecosystems for users of Lifecycle with Advanced Legal Pack. Sonatype IQ Server default: `true`. Requires Sonatype IQ Server release 161 or later.
 - `api_access_allow_list` (List of String) Usernames that are allowed to access the public REST API. Sonatype IQ Server default: unset. Requires Sonatype IQ Server release 175 or later.
-- `csrf_protection` (Boolean) Enable Cross-Site Request Forgery (CSRF) protection. Sonatype IQ Server default: `true`. Sonatype does not document the release that introduced this property.
-- `event_bus_max_thread_pool_size` (Number) Maximum size of the event bus thread pool. Sonatype IQ Server default: `500`. Sonatype does not document the release that introduced this property.
-- `frame_ancestors_allowlist` (List of String) Domain patterns that are allowed to embed Sonatype IQ Server in a frame, e.g. `["*first.com", "second.*"]`. Sonatype IQ Server default: unset. Sonatype does not document the release that introduced this property.
-- `hds_url` (String) URL of the Sonatype Hosted Data Services (HDS). Sonatype IQ Server default: `https://clm.sonatype.com/`. Sonatype does not document the release that introduced this property.
+- `csrf_protection` (Boolean) Enable Cross-Site Request Forgery (CSRF) protection. Sonatype IQ Server default: `true`. Requires Sonatype IQ Server release 142 or later.
+- `event_bus_max_thread_pool_size` (Number) Maximum size of the event bus thread pool. Sonatype IQ Server default: `500`. Requires Sonatype IQ Server release 142 or later.
+- `frame_ancestors_allowlist` (List of String) Domain patterns that are allowed to embed Sonatype IQ Server in a frame, e.g. `["*first.com", "second.*"]`. Sonatype IQ Server default: unset. Requires Sonatype IQ Server release 142 or later.
+- `hds_url` (String) URL of the Sonatype Hosted Data Services (HDS). Sonatype IQ Server default: `https://clm.sonatype.com/`. Requires Sonatype IQ Server release 142 or later.
 - `integrations_supported_version_count` (Number) How many of the most recent Sonatype integration versions are permitted to perform policy evaluations. Must be a positive number. Sonatype IQ Server default: unset. Requires Sonatype IQ Server release 197 or later.
 - `max_advanced_search_clause_count` (Number) Maximum number of clauses (query parameters) in an Advanced Search. Sonatype IQ Server default: `2048`. Requires Sonatype IQ Server release 142 or later.
-- `policy_monitoring_hour` (Number) Hour of the day (0-23, system time) at which Continuous Monitoring starts. Sonatype IQ Server default: `0`. Sonatype does not document the release that introduced this property.
+- `policy_monitoring_hour` (Number) Hour of the day (0-23, system time) at which Continuous Monitoring starts. Sonatype IQ Server default: `0`. Requires Sonatype IQ Server release 142 or later.
 - `purge_scan_files` (String) Purge scan files after evaluation. The only supported value is `withReports`. Sonatype IQ Server default: unset. Requires Sonatype IQ Server release 152 or later.
-- `session_timeout` (Number) User session timeout, in minutes. Sonatype IQ Server default: `30`. Sonatype does not document the release that introduced this property.
+- `session_timeout` (Number) User session timeout, in minutes. Sonatype IQ Server default: `30`. Requires Sonatype IQ Server release 143 or later.
 - `success_metrics_stage_id` (String) Restrict Success Metrics to a single Lifecycle stage. One of `source`, `build`, `stage-release`, `release`, `operate`, `proxy`, `compliance`. Sonatype IQ Server default: unset. Requires Sonatype IQ Server release 182 or later.
-- `user_agent_suffix` (String) Suffix appended to the User-Agent that Sonatype IQ Server sends. Sonatype IQ Server default: unset. Sonatype does not document the release that introduced this property.
+- `user_agent_suffix` (String) Suffix appended to the User-Agent that Sonatype IQ Server sends. Sonatype IQ Server default: unset. Requires Sonatype IQ Server release 142 or later.
 - `waived_component_upgrade_monitoring_enabled` (Boolean) Monitor waived components for available upgrades. Sonatype IQ Server default: `false`. Requires Sonatype IQ Server release 162 or later.
-- `webhook_secret_passphrase` (String, Sensitive) Secret key passphrase used to sign webhook payloads. It is never read back from Sonatype IQ Server, so Terraform cannot detect it being changed outside of Terraform. Sonatype does not document the release that introduced this property.
+- `webhook_secret_passphrase` (String, Sensitive) Secret key passphrase used to sign webhook payloads. It is never read back from Sonatype IQ Server, so Terraform cannot detect it being changed outside of Terraform. Requires Sonatype IQ Server release 142 or later.
 
 ### Read-Only
 
