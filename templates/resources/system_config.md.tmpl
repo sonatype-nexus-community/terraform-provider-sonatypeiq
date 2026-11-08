@@ -1,0 +1,52 @@
+---
+page_title: "{{.Name}} {{.Type}} - {{.ProviderName}}"
+subcategory: ""
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# {{.Name}} ({{.Type}})
+
+{{ .Description | trimspace }}
+
+## Availability of properties
+
+A property can only be used with the Sonatype IQ Server release that introduced it. Setting a property on an older Sonatype IQ Server fails at plan time and names both releases. Where Sonatype does not document a release the property is assumed to be available in every release supported by this provider.
+
+| Attribute | Configuration REST API property | Introduced in Sonatype IQ Server release |
+|---|---|---|
+| `base_url` | `baseUrl` | not documented by Sonatype |
+| `force_base_url` | `forceBaseUrl` | not documented by Sonatype |
+| `advanced_reporting_insights_enabled` | `ADVANCED_REPORTING_INSIGHTS_ENABLED` | 175 |
+| `advanced_search_csv_export_delimiter` | `advancedSearchCSVExportDelimiter` | not documented by Sonatype |
+| `alp_observed_license_detection_enabled` | `alpObservedLicenseDetectionEnabled` | 165 |
+| `api_access_allow_list` | `apiAccessAllowList` | 175 |
+| `csrf_protection` | `csrfProtection` | not documented by Sonatype |
+| `event_bus_max_thread_pool_size` | `eventBus.maxThreadPoolSize` | not documented by Sonatype |
+| `frame_ancestors_allowlist` | `frameAncestorsAllowlist` | not documented by Sonatype |
+| `hds_url` | `hdsUrl` | not documented by Sonatype |
+| `integrations_supported_version_count` | `integrationsSupportedVersionCount` | 197 |
+| `max_advanced_search_clause_count` | `maxAdvancedSearchClauseCount` | 142 |
+| `policy_monitoring_hour` | `policyMonitoringHour` | not documented by Sonatype |
+| `purge_scan_files` | `purgeScanFiles` | 152 |
+| `session_timeout` | `sessionTimeout` | not documented by Sonatype |
+| `success_metrics_stage_id` | `successMetricsStageId` | 182 |
+| `user_agent_suffix` | `userAgentSuffix` | not documented by Sonatype |
+| `waived_component_upgrade_monitoring_enabled` | `waivedComponentUpgradeMonitoringEnabled` | 162 |
+| `webhook_secret_passphrase` | `webhookSecretPassphrase` | not documented by Sonatype |
+
+{{ if .HasExample -}}
+## Example Usage
+
+{{ tffile .ExampleFile }}
+{{- end }}
+
+{{ .SchemaMarkdown | trimspace }}
+{{- if .HasImport }}
+
+## Import
+
+Import is supported using the following syntax:
+
+{{ codefile "shell" .ImportFile }}
+{{- end }}

@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.0
 	github.com/hashicorp/terraform-plugin-testing v1.15.0
-	github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.209.0
+	github.com/sonatype-nexus-community/nexus-iq-api-client-go v0.209.1
 	github.com/sonatype-nexus-community/terraform-provider-shared v0.9.4
 	github.com/stretchr/testify v1.12.1
 )
