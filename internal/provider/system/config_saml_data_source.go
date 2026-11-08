@@ -73,7 +73,7 @@ func (d *configSamlDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	apiResponse, httpResponse, err := d.Client.ConfigSAMLAPI.GetMetadata(d.AuthContext(ctx)).Execute()
+	apiResponse, httpResponse, err := d.Client.ConfigSAMLAPI.GetMetadata1(d.AuthContext(ctx)).Execute()
 
 	if err != nil && httpResponse.StatusCode != http.StatusNotFound {
 		errors.HandleAPIError(
