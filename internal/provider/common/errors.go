@@ -51,4 +51,6 @@ const (
 	ERR_ROLE_DID_NOT_EXIST                                        string = "Role did not exist: %s"
 	ERR_SOURCE_CONTROL_CONFIGURATION_DID_NOT_EXIST                string = "Source Control configuration did not exist: %s"
 	ERR_USER_DID_NOT_EXIST                                        string = "User did not exist: %s"
+	ERR_JIRA_CONFIGURATION_DID_NOT_EXIST                          string = "Jira configuration did not exist"
+	ERR_FAILED_READING_JIRA_CONFIGURATION                         string = "Unable to read Jira configuration"
 )

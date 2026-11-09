@@ -50,6 +50,7 @@ const (
 	USER_REALM_SAML                                     string = "SAML"
 	USER_REALM_OAUTH2                                   string = "OAUTH2"
 	USER_REALM_CROWD                                    string = "CROWD"
+	STATE_ID_JIRA_CONFIGURATION                         string = "system-jira-configuration"
 )
 
 var (
