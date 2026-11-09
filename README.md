@@ -27,11 +27,11 @@ We test this Provider against a range of Terraform versions and Sonatype IQ Serv
 
 This provider aims to support the versions of Sonatype IQ Server that have not reached sunset. Sonatype publishes the status of every release on the [Sonatype IQ Server versions status](https://help.sonatype.com/en/sonatype-iq-server-versions-status.html) page; once a release reaches sunset, we drop support for it.
 
-We test on `N - 5` releases (where possible, but no earlier than `192`). See [here](https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq/blob/main/.github/workflows/test-trusted.yml) for the current list.
+We test every supported release, from `192` to the latest. See [here](https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq/blob/main/.github/workflows/test-trusted.yml) for the current list.
 
 ### Terraform Version support
 
-We test on the latest patch release of each the earliest and latest version of Terraform i.e. `1.0.x` and  `1.12.x` - i.e. we aim to support all Terraform versions since `1.0.0`.
+We test on the latest patch release of each the earliest and latest version of Terraform i.e. `1.0.x` and `1.13.x` - i.e. we aim to support all Terraform versions since `1.0.0`.
 
 ## Usage
 
@@ -55,8 +55,8 @@ Phew, that was easier than I thought. Last but not least of all - have fun!
 
 
 [shield_gh-workflow-test]: https://img.shields.io/github/actions/workflow/status/sonatype-nexus-community/terraform-provider-sonatypeiq/test-trusted.yml?branch=main&logo=GitHub&logoColor=white "build"
-[shield_otr-version]: https://img.shields.io/badge/OpenTofu%20Registry-v1.2.0-8A2BE2
-[shield_tfr-version]: https://img.shields.io/badge/Terraform%20Registry-v1.2.0-8A2BE2
+[shield_otr-version]: https://img.shields.io/badge/OpenTofu%20Registry-v1.3.0-8A2BE2
+[shield_tfr-version]: https://img.shields.io/badge/Terraform%20Registry-v1.3.0-8A2BE2
 [shield_license]: https://img.shields.io/github/license/sonatype-nexus-community/terraform-provider-sonatypeiq?logo=open%20source%20initiative&logoColor=white "license"
 [shield_tf_version]: https://img.shields.io/badge/Terraform-1.0.0+-blue
 [shield_nxiq_version]: https://img.shields.io/badge/Sonatype_IQ-192&nbsp;&ndash;&nbsp;209-blue

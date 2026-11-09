@@ -1,18 +1,17 @@
 <!-- See https://developer.hashicorp.com/terraform/plugin/best-practices/versioning#changelog-specification -->
 
-## X.Y.Z (Unreleased)
+## 1.3.0 Nov 09, 2026
 
 FEATURES:
-* New resource `sonatypeiq_config_reverse_proxy_authentication` to manage reverse proxy authentication configuration for when users authenticate via a reverse proxy [GH-134]
-* New resource `sonatypeiq_config_jira` to manage the Jira integration configuration for Sonatype IQ Server [GH-135]
-* New resource `sonatypeiq_user_token_configuration` to manage the default expiration of user tokens [GH-133]
+* New resource `sonatypeiq_config_oidc` to manage OpenID Connect (OIDC) single sign-on. The JWS algorithm, and a JWKS URL or a JWKS, are required, as Sonatype IQ Server requires them. Requires Sonatype IQ Server release 198 or later [GH-125]
+* New resource `sonatypeiq_user_token_configuration` to manage the default expiration, in days, of user tokens. Requires Sonatype IQ Server release 199 or later; using it on an older server fails at plan time and names the release [GH-133]
+* New resource `sonatypeiq_config_reverse_proxy_authentication` to manage reverse proxy authentication, for when users authenticate through a reverse proxy. Enabling it changes how users sign in, so use it with care [GH-134]
+* New resource `sonatypeiq_config_jira` to manage the Jira integration. `username` and `password` must be set together or not at all, and `custom_fields` takes a JSON object [GH-135]
 
 NOTES:
-* Support for Sonatype IQ Server 186, 187, 188, 189, 190 and 191 has been dropped. The provider is now supported from release 192 onwards [GH-96] [GH-97] [GH-98] [GH-99] [GH-100] [GH-101]
+* Support for Sonatype IQ Server 186, 187, 188, 189, 190 and 191 has been dropped, as those releases have reached sunset. The provider is now supported from release 192 onwards [GH-96] [GH-97] [GH-98] [GH-99] [GH-100] [GH-101]
 * The automated tests now also run against Sonatype IQ Server 192, 193 and 194, so every supported release is tested
-* New resource `sonatypeiq_config_oidc` to manage OpenID Connect (OIDC) SSO configuration [GH-125]
-
-_tbc_
+* The permission each new resource needs is listed in the provider documentation
 
 ## 1.2.0 Nov 08, 2026
 
