@@ -2,6 +2,10 @@
 
 ## X.Y.Z (Unreleased)
 
+_tbc_
+
+## 1.2.0 Nov 08, 2026
+
 BUG FIXES:
 * `sonatypeiq_system_config` no longer fails with "inconsistent result after apply" when `base_url` is configured without the trailing `/` that Sonatype IQ Server always adds [GH-92]
 * The provider no longer requires administrator permissions just to start. It checked that it could reach Sonatype IQ Server by reading a user, which needs _Edit System Configuration and Users_, so any other user failed with `403 Forbidden` before any resource was used. It now reads the version from the anonymous `/ping` endpoint and checks the credentials with a call that needs no permissions, so a user with only the permissions for the resources they manage (for example `sonatypeiq_user_token`) can use it. The permission each resource and data source needs is now documented [GH-91]
