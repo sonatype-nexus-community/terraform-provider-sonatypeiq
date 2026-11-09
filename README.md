@@ -23,9 +23,11 @@ This provider does not provide functionality for actually deploying Sonatype IQ 
 
 We test this Provider against a range of Terraform versions and Sonatype IQ Server versions as noted below.
 
-### Sonatype Nexus Repository Manager
+### Sonatype IQ Server
 
-We test on `N - 5` releases (where possible, but no earlier than `186`). See [here](https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq/blob/main/.github/workflows/test-trusted.yml) for the current list.
+This provider aims to support the versions of Sonatype IQ Server that have not reached sunset. Sonatype publishes the status of every release on the [Sonatype IQ Server versions status](https://help.sonatype.com/en/sonatype-iq-server-versions-status.html) page; once a release reaches sunset, we drop support for it.
+
+We test on `N - 5` releases (where possible, but no earlier than `192`). See [here](https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq/blob/main/.github/workflows/test-trusted.yml) for the current list.
 
 ### Terraform Version support
 
@@ -57,7 +59,7 @@ Phew, that was easier than I thought. Last but not least of all - have fun!
 [shield_tfr-version]: https://img.shields.io/badge/Terraform%20Registry-v1.2.0-8A2BE2
 [shield_license]: https://img.shields.io/github/license/sonatype-nexus-community/terraform-provider-sonatypeiq?logo=open%20source%20initiative&logoColor=white "license"
 [shield_tf_version]: https://img.shields.io/badge/Terraform-1.0.0+-blue
-[shield_nxiq_version]: https://img.shields.io/badge/Sonatype_IQ-186&nbsp;&ndash;&nbsp;209-blue
+[shield_nxiq_version]: https://img.shields.io/badge/Sonatype_IQ-192&nbsp;&ndash;&nbsp;209-blue
 
 [link_otr]: https://search.opentofu.org/provider/sonatype-nexus-community/sonatypeiq/latest
 [link_tfr]: https://registry.terraform.io/providers/sonatype-nexus-community/sonatypeiq/latest
