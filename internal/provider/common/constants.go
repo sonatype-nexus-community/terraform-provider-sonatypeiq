@@ -51,6 +51,7 @@ const (
 	USER_REALM_OAUTH2                                   string = "OAUTH2"
 	USER_REALM_CROWD                                    string = "CROWD"
 	STATE_ID_JIRA_CONFIGURATION                         string = "system-jira-configuration"
+	STATE_ID_USER_TOKEN_CONFIGURATION                   string = "system-user-token-configuration"
 )
 
 var (

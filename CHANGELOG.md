@@ -5,6 +5,7 @@
 FEATURES:
 * New resource `sonatypeiq_config_reverse_proxy_authentication` to manage reverse proxy authentication configuration for when users authenticate via a reverse proxy [GH-134]
 * New resource `sonatypeiq_config_jira` to manage the Jira integration configuration for Sonatype IQ Server [GH-135]
+* New resource `sonatypeiq_user_token_configuration` to manage the default expiration of user tokens [GH-133]
 
 NOTES:
 * Support for Sonatype IQ Server 186, 187, 188, 189, 190 and 191 has been dropped. The provider is now supported from release 192 onwards [GH-96] [GH-97] [GH-98] [GH-99] [GH-100] [GH-101]

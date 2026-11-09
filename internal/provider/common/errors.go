@@ -53,4 +53,6 @@ const (
 	ERR_USER_DID_NOT_EXIST                                        string = "User did not exist: %s"
 	ERR_JIRA_CONFIGURATION_DID_NOT_EXIST                          string = "Jira configuration did not exist"
 	ERR_FAILED_READING_JIRA_CONFIGURATION                         string = "Unable to read Jira configuration"
+	ERR_USER_TOKEN_CONFIGURATION_DID_NOT_EXIST                    string = "User Token configuration did not exist"
+	ERR_FAILED_READING_USER_TOKEN_CONFIGURATION                   string = "Unable to read User Token configuration"
 )
