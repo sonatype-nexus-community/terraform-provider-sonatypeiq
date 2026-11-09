@@ -23,7 +23,9 @@ This provider does not provide functionality for actually deploying Sonatype IQ 
 
 We test this Provider against a range of Terraform versions and Sonatype IQ Server versions as noted below.
 
-### Sonatype Nexus Repository Manager
+### Sonatype IQ Server
+
+This provider aims to support the versions of Sonatype IQ Server that have not reached sunset. Sonatype publishes the status of every release on the [Sonatype IQ Server versions status](https://help.sonatype.com/en/sonatype-iq-server-versions-status.html) page; once a release reaches sunset, we drop support for it.
 
 We test on `N - 5` releases (where possible, but no earlier than `192`). See [here](https://github.com/sonatype-nexus-community/terraform-provider-sonatypeiq/blob/main/.github/workflows/test-trusted.yml) for the current list.
 
