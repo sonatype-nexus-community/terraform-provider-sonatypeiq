@@ -2,7 +2,8 @@
 
 ## X.Y.Z (Unreleased)
 
-_tbc_
+NOTES:
+* Support for Sonatype IQ Server 186, 187, 188, 189, 190 and 191 has been dropped. The provider is now supported from release 192 onwards [GH-96] [GH-97] [GH-98] [GH-99] [GH-100] [GH-101]
 
 ## 1.2.0 Nov 08, 2026
 

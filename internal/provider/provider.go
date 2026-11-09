@@ -223,10 +223,10 @@ func (p *SonatypeIqProvider) checkVersion(ctx context.Context, ds *common.Sonaty
 		return
 	}
 
-	if ds.IqVersion < 186 {
+	if ds.IqVersion < 192 {
 		resp.Diagnostics.AddWarning(
-			`You are running against Sonatype IQ Server version older than 186`,
-			`This provide has not been validated against versions older than 186 - things will probably work fine, but proceed with caution.`,
+			`You are running against Sonatype IQ Server version older than 192`,
+			`This provider has not been validated against versions older than 192 - things will probably work fine, but proceed with caution.`,
 		)
 	}
 }

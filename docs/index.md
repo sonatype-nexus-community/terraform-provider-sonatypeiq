@@ -43,7 +43,7 @@ The provider reads the release of Sonatype IQ Server from the `Server` HTTP head
 
 ## Compatability
 
-This Provider is tested against Sonatype IQ Server versions `186` through `209` currently.
+This Provider is supported from Sonatype IQ Server release `192` through `209`; the automated tests currently run against `195` and later.
 	
 Some resources and features may depend on the version of Sonatype IQ Server you are running. See individual Data Source and Resource documentaiton for details.
 
