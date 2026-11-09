@@ -2,6 +2,9 @@
 
 ## X.Y.Z (Unreleased)
 
+FEATURES:
+* New resource `sonatypeiq_config_reverse_proxy_authentication` to manage reverse proxy authentication configuration for when users authenticate via a reverse proxy [GH-134]
+
 NOTES:
 * Support for Sonatype IQ Server 186, 187, 188, 189, 190 and 191 has been dropped. The provider is now supported from release 192 onwards [GH-96] [GH-97] [GH-98] [GH-99] [GH-100] [GH-101]
 * The automated tests now also run against Sonatype IQ Server 192, 193 and 194, so every supported release is tested
